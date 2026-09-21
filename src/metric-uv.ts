@@ -9,7 +9,8 @@ export function metricUV(source:T.BufferGeometry):T.BufferGeometry {
     a.fromBufferAttribute(p,i);b.fromBufferAttribute(p,i+1);c.fromBufferAttribute(p,i+2);
     normal.crossVectors(b.sub(a),c.sub(a));
     const x=Math.abs(normal.x),y=Math.abs(normal.y),z=Math.abs(normal.z);
-    for(let j=i;j<i+3;j++)uv.setXY(j,(x>z?p.getZ(j):p.getX(j))/2,(y>Math.max(x,z)?p.getZ(j):p.getY(j))/2);
+    const horizontal=y>=Math.max(x,z);
+    for(let j=i;j<i+3;j++)uv.setXY(j,(horizontal||z>=x?p.getX(j):p.getZ(j))/2,(horizontal?p.getZ(j):p.getY(j))/2);
   }
   g.setAttribute('uv',uv);return g;
 }
