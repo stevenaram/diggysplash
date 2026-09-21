@@ -85,6 +85,8 @@ Important contraptions should be large, immediately recognizable focal points, f
 
 The reserved north bank holds flowers that bloom and twist into a 3D plant. Its jaws use hollow shells, uneven teeth, normal-expanded inverted-hull outlines, and metric pixel textures (32 pixels per two world units). Continuous tapered vines update preallocated buffers. The shepherd has panic/flailing frames and stays at the shared sprite scale while entering the mouth. A curved palm trunk and feathered fronds become the spit-roast setup; the three roast models remain unchanged.
 
-The 20-second timeline drives growth, grabs, the palm, cooking, camera pan/zoom, and eight synthesized sound types. Camera angles remain 60° tilt, 0° orbit, 0° roll. Undo/restart resets the scene and stops its sounds; reduced motion presents the final tableau. No external art or audio assets are required.
+The 18.88-second timeline drives growth, grabs, the palm, cooking, camera pan/zoom, and eight synthesized sound types. Camera angles remain 60° tilt, 0° orbit, 0° roll. Undo/restart resets the scene and stops its sounds; reduced motion presents the final tableau. No external art or audio assets are required.
 
 First-time players get a text-free shovel cue over stage one’s first solution tile. It follows camera movement, disappears after that dig, and stays off once completion or stars have been saved. The north-bank flowers are enlarged in geometry before texture mapping; decorative pebbles are removed and the camp props stay on reserved tiles.
+
+Stage one’s wilted flowers use four 28×36 billboard frames at the shared 32px/tile density, handing off to 3D petals as the creature grows. The palm transfer lasts 1.68 seconds (60% of its original 2.8 seconds), with subsequent action and sound cues shifted forward together.

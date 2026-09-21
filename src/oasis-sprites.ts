@@ -3,13 +3,14 @@ import { gridWorld, SIZE } from './game';
 import type { World } from './world';
 import { PixelSprites } from './pixel-sprites';
 import { OasisMonster, PLANT_X, PLANT_Z } from './oasis-monster';
-import { oasisBeats, oasisCuesBetween } from './oasis-timeline';
+import { oasisBeats, oasisCuesBetween, PALM_END } from './oasis-timeline';
 
 type Walker = { sprite: T.Sprite; kind: 'sheep' | 'shepherd'; start: T.Vector3; end: T.Vector3; phase: number };
 /** Stage-one cast and choreography. Sprite frames retain the shared 32px/tile scale. */
 export class OasisSprites extends PixelSprites {
   walkers: Walker[] = [];
   grass: T.Sprite[] = [];
+  flowers: T.Sprite[] = [];
   dust: { sprite: T.Sprite; born: number; x:number; z:number; vx: number; vz: number }[] = [];
   time = 0;
   monster: OasisMonster;
@@ -18,6 +19,7 @@ export class OasisSprites extends PixelSprites {
   constructor(world: World) {
     super(world);
     this.monster = new OasisMonster(world);
+    for(let n=0;n<3;n++)this.flowers.push(this.add('flower',PLANT_X+(n-1)*1.05,PLANT_Z+.1+(n%2)*.12));
 
     world.game.level.tiles.forEach((t,i)=>{
       const x=gridWorld(i%SIZE), z=gridWorld(Math.floor(i/SIZE));
@@ -71,9 +73,9 @@ export class OasisSprites extends PixelSprites {
     if(!reduced){
       for(const cue of oasisCuesBetween(this.previousBeatTime,beat.time))this.world.onCreatureSound(cue);
       // Only pan/zoom: the approved camera tilt, orbit and roll never change.
-      for(const [at,x,y,z,zoom] of [[2,1.3,.7,-1,1.08],[11.1,3,1,.1,1.25]]){
+      for(const [at,x,y,z,zoom] of [[2,1.3,.7,-1,1.08],[PALM_END+.1,3,1,.1,1.25]]){
         if(this.previousBeatTime<at&&beat.time>=at){
-          this.world.cameraTransition={from:this.world.viewTarget.clone(),to:new T.Vector3(x,y,z),start:this.world.elapsed,fromZoom:this.world.zoom,toZoom:this.startingZoom*(at>10&&this.world.camera.aspect<.85?1.6:zoom)};
+          this.world.cameraTransition={from:this.world.viewTarget.clone(),to:new T.Vector3(x,y,z),start:this.world.elapsed,fromZoom:this.world.zoom,toZoom:this.startingZoom*(at>8&&this.world.camera.aspect<.85?1.6:zoom)};
           this.world.viewChanged=true;
         }
       }
@@ -111,6 +113,12 @@ export class OasisSprites extends PixelSprites {
         }
       }
     }
+    this.flowers.forEach(s=>{
+      s.visible=beat.grow<.25;
+      const frame=beat.grow>.06?3:beat.bloom>.7?2:beat.bloom>.25?1:0;
+      s.material=this.material('flower',frame);
+      s.userData.frame=frame;
+    });
     this.grass.forEach(s=>{s.visible=beat.bloom>.5;s.material=this.material('grass',1);});
   }
   override dispose(){super.dispose();this.monster.dispose();}

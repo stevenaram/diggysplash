@@ -4,7 +4,7 @@ export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'g
 export const PIXEL_SIZES: Record<PixelKind, readonly [number, number]> = {
   villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
   grass: [10, 12], basket: [16, 16], blanket: [22, 12], heart: [12, 12],
-  pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20], flower:[16,22], jug:[16,24], 'camp-rug':[48,24],
+  pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20], flower:[28,36], jug:[16,24], 'camp-rug':[48,24],
 };
 export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const [w, h] = PIXEL_SIZES[kind];
@@ -29,13 +29,25 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
     oval(12,12,3,4,'#9d6047');oval(12,12,1,2,'#00000000');
     rect(3,17,10,2,'#ead0a0');rect(5,18,2,1,'#9f6150');rect(9,18,2,1,'#9f6150');
   } else if(kind==='flower') {
-    const fresh=frame>0;
-    poly(fresh?[[7,20],[8,7],[10,7],[9,20]]:[[7,20],[8,10],[11,8],[13,11],[11,12],[10,10],[9,20]],fresh?'#47795b':'#8b895c');
-    poly([[8,17],[3,13],[2,15],[5,18],[8,18]],fresh?'#83b873':'#a3a16b');
-    poly([[9,15],[13,12],[15,13],[12,17],[9,17]],fresh?'#619b69':'#8b895c');
-    const x=fresh?9:12,y=fresh?6:12;
-    for(const [dx,dy] of [[-3,0],[3,0],[0,-3],[0,3]])oval(x+dx,y+dy,2,2,fresh?'#f2a2b5':'#c3949e');
-    oval(x,y,2,2,'#f6ce7a');dot(x,y-1,'#fff0b2');
+    const wilt=frame===0,twist=frame===3;
+    const stem=twist?'#474f3c':wilt?'#7a8352':'#43734a';
+    const x=wilt?18:twist?17:14,y=wilt?18:twist?11:frame===1?11:8;
+    // A tall hooked stem, hanging petals and folded leaves make thirst readable.
+    poly(wilt?[[12,33],[12,20],[10,13],[12,9],[16,9],[20,12],[19,17],[17,17],[17,13],[15,12],[13,12],[13,15],[15,21],[15,33]]:
+      [[12,33],[13,21],[11,16],[12,8],[15,7],[16,10],[14,18],[16,23],[15,33]],stem);
+    poly(wilt?[[13,25],[7,21],[3,22],[5,27],[10,29],[13,28]]:[[13,25],[5,18],[2,19],[5,25],[11,28]],wilt?'#91945f':'#79a55c');
+    poly(wilt?[[15,28],[19,24],[24,25],[22,30],[17,31]]:[[15,28],[20,20],[25,21],[23,27],[17,30]],wilt?'#717d4f':'#538950');
+    poly([[5,23],[10,25],[12,27],[8,25]],'#b4b27a');
+    const edge=twist?'#673449':wilt?'#b9798a':'#c56c92';
+    const petal=twist?'#a44f72':wilt?'#e0a6ac':'#f0aac1';
+    const shine=twist?'#ce748b':wilt?'#f0c8bc':'#ffdacd';
+    for(const [dx,dy] of [[-5,0],[-3,-4],[2,-5],[5,-1],[3,4],[-2,5]]){
+      const py=y+Math.round(dy*(wilt?.65:1))+(wilt&&dy>0?2:0);
+      oval(x+dx,py,3,4,edge);oval(x+dx,py-1,2,3,petal);dot(x+dx-1,py-2,shine);
+    }
+    oval(x,y,4,3,'#97613e');oval(x,y-1,3,2,'#ebbb61');
+    rect(x-2,y-2,3,1,'#ffe29a');dot(x+1,y,'#b88242');dot(x-1,y+1,'#754d3c');
+    if(twist){poly([[12,30],[8,27],[12,28]],'#583946');poly([[15,24],[20,21],[16,25]],'#583946');}
   } else if(kind==='shepherd'||kind==='villager') {
     // Human frames 6/7/8 are rear idle / left step / right step.
     const rear=frame>=6&&frame<=8, pose=rear?frame-6:frame>=10?1+(frame%2):frame;

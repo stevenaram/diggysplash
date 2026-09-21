@@ -50,7 +50,7 @@ export class OasisMonster {
     }
     // These same flowers remain attached as the shrub mutates into a thorny collar.
     for(let n=0;n<3;n++){
-      const flower=new T.Group();flower.position.set(PLANT_X+(n-1)*.85,.05,PLANT_Z+.05+(n%2)*.12);this.root.add(flower);this.flowers.push(flower);
+      const flower=new T.Group();flower.position.set(PLANT_X+(n-1)*1.05,.05,PLANT_Z+.1+(n%2)*.12);this.root.add(flower);this.flowers.push(flower);
       const stalk=new T.CatmullRomCurve3([new T.Vector3(0,0,0),new T.Vector3(.07,.35,0),new T.Vector3(.18,.7,.05)]);
       this.mesh(flower,new T.TubeGeometry(stalk,6,.065,5,false),dark,0,0,0);
       for(let k=0;k<6;k++){
@@ -194,6 +194,7 @@ export class OasisMonster {
     this.blossomMaterial.color.setRGB(1-b.grow*.25,1-b.grow*.55,1-b.grow*.1);
     this.petalMaterial.color.setRGB(1-b.grow*.15,1-b.grow*.4,1-b.grow*.04);
     this.flowers.forEach((flower,n)=>{
+      flower.visible=b.grow>=.25;
       flower.scale.setScalar(.65+b.bloom*.65-b.grow*.3);
       flower.position.y=.05+b.grow*(n===1?2.2:1.2);
       flower.rotation.y=b.grow*(n-1)*1.7;
