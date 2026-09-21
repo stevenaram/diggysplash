@@ -1,4 +1,5 @@
 import * as T from "three";
+import { CampaignScene } from "./campaign";
 import type { World } from "./world";
 
 type Actor = {
@@ -17,6 +18,7 @@ const ease = (t: number) => {
 
 /** Story props have real moving geometry; the result waits for their consequence to finish. */
 export class StoryScene {
+  campaign?: CampaignScene;
   progress = 0;
   done = false;
   actors: Actor[] = [];
@@ -32,6 +34,8 @@ export class StoryScene {
     if (kind === "oasis") this.oasis();
     if (kind === "bridge") this.crossing();
     if (kind === "city") this.city();
+    if (kind && !["oasis", "bridge", "city"].includes(kind))
+      this.campaign = new CampaignScene(this);
     this.hearts.visible = false;
   }
   at(x: number, z: number) {
@@ -497,7 +501,9 @@ export class StoryScene {
         : Math.min(
             1,
             this.progress +
-              dt / (this.world.game.level.story?.kind === "city" ? 6 : 4),
+              dt /
+                (this.campaign?.duration ??
+                  (this.world.game.level.story?.kind === "city" ? 6 : 4)),
           );
       this.done = this.progress >= 1;
     }
@@ -553,5 +559,6 @@ export class StoryScene {
         actor.head.rotation.y = this.progress > 0.92 && !actor.sheep ? -0.2 : 0;
       if (kind === "city" && moving) actor.root.rotation.y = Math.PI;
     });
+    this.campaign?.update(dt, active, time);
   }
 }

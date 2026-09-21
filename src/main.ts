@@ -42,7 +42,7 @@ function save(key: string, value: string) {
 }
 let completed = Math.max(
   0,
-  Math.min(3, Number(read("diggy-completed", "0")) || 0),
+  Math.min(levels.length, Number(read("diggy-completed", "0")) || 0),
 );
 let stage = 0;
 let game = new Game(levels[stage]);
@@ -51,7 +51,7 @@ let audio: AudioContext | undefined;
 let celebrated = false;
 let lastPowered = 0;
 let focused = game.level.solution[0];
-let bestStars: number[] = [0, 0, 0];
+let bestStars: number[] = levels.map(() => 0);
 try {
   const saved = JSON.parse(read("diggy-story-stars", "[]"));
   if (Array.isArray(saved))
@@ -96,11 +96,11 @@ function sound(kind: "dig" | "water" | "win" | "undo" | "machine") {
 }
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 <header><a class="brand" href="./" aria-label="Diggy Splash home"><span class="brand-mark">${svg("drop")}</span><span>DIGGY<span class="brand-bottom">SPLASH<span class="brand-dot">.</span></span></span></a>
-<nav aria-label="Stages">${[0, 1, 2].map((n) => `<button class="stage" data-stage="${n}" aria-label="Stage ${n + 1}"><span>${n + 1}</span><small class="stage-stars" aria-hidden="true"></small></button>${n < 2 ? '<span class="connector"></span>' : ""}`).join("")}</nav>
+<nav aria-label="Stages">${levels.map((_, n) => `<button class="stage" data-stage="${n}" aria-label="Stage ${n + 1}"><span>${n + 1}</span><small class="stage-stars" aria-hidden="true"></small></button>`).join("")}</nav>
 <button class="icon-button sound" aria-label="Mute sound">${svg("sound")}</button></header>
 <main><div class="sun-disc" aria-hidden="true"></div>
 <div class="scene" tabindex="0" role="application" aria-label="Desert puzzle board. Click sand to dig. Drag to pan; scroll or pinch to zoom. Arrow keys select a tile, Enter digs, Z undoes."></div>
-<section class="story-heading" aria-label="Level objective"><div class="chapter" id="chapter">01 / 03</div><h1 id="story-title"></h1><p id="story-goal"></p><div class="score-guide"><span id="rating-preview" aria-label="Potential stars"></span><span id="thresholds"></span></div></section>
+<section class="story-heading" aria-label="Level objective"><div class="chapter" id="chapter">01 / ${String(levels.length).padStart(2, "0")}</div><h1 id="story-title"></h1><p id="story-goal"></p><div class="score-guide"><span id="rating-preview" aria-label="Potential stars"></span><span id="thresholds"></span></div></section>
 <div class="view-controls" role="group" aria-label="Camera controls"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">${svg("minus")}</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">${svg("plus")}</button><button id="overview" class="icon-button" aria-label="Show whole board" title="Show whole board">${svg("fit")}</button></div>
 <div class="intro-gesture" aria-hidden="true">${svg("shovel")}</div>
 <div class="dig-tooltip" aria-hidden="true" hidden>${svg("shovel")}<strong id="hover-remaining"></strong></div>
@@ -142,7 +142,7 @@ function closeResult() {
 function showResult() {
   const success = game.won;
   $("#result-chapter").textContent =
-    `${String(stage + 1).padStart(2, "0")} / 03`;
+    `${String(stage + 1).padStart(2, "0")} / ${String(levels.length).padStart(2, "0")}`;
   $("#result-title").textContent = success ? "Level complete" : "Level failed";
   $("#result-message").textContent = success
     ? game.level.story!.success
@@ -153,7 +153,7 @@ function showResult() {
   $("#result-score").innerHTML =
     `${svg("shovel")} <strong>${game.digs.length}</strong> / ${game.level.budget}<span>digs used</span>`;
   $("#result-primary").innerHTML = success
-    ? stage === 2
+    ? stage === levels.length - 1
       ? `Play again ${svg("restart")}`
       : `Next level ${svg("arrow")}`
     : `Retry ${svg("restart")}`;
@@ -185,7 +185,8 @@ function update() {
   $(".toolbar").classList.toggle("empty", game.failed && world.settled);
   $("#story-title").textContent = game.level.story!.title;
   $("#story-goal").textContent = game.level.story!.goal;
-  $("#chapter").textContent = `${String(stage + 1).padStart(2, "0")} / 03`;
+  $("#chapter").textContent =
+    `${String(stage + 1).padStart(2, "0")} / ${String(levels.length).padStart(2, "0")}`;
   $("#rating-preview").innerHTML = starMarkup(
     ratingForDigs(game.level, game.digs.length),
   );
@@ -264,7 +265,7 @@ function undo() {
 $("#undo").onclick = undo;
 $("#restart").onclick = () => load(stage);
 $("#result-primary").onclick = () =>
-  load(game.won ? (stage === 2 ? 0 : stage + 1) : stage);
+  load(game.won ? (stage === levels.length - 1 ? 0 : stage + 1) : stage);
 $("#result-secondary").onclick = () => (game.won ? load(stage) : undo());
 result.addEventListener("cancel", (e) => e.preventDefault());
 $("#zoom-in").onclick = () => world.zoomBy(1.25);
@@ -323,6 +324,7 @@ if (import.meta.env.DEV)
       },
       get story() {
         return {
+          power: world.story?.campaign?.power,
           progress: world.story?.progress,
           done: world.story?.done,
           actors: world.story?.actors.map((a) => ({

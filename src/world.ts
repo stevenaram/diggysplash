@@ -440,6 +440,7 @@ export class World {
     this.cylinder(this.root, x + 0.12, h - 0.12, z, 0.2, 0.28, 0x887049);
   }
   machine(i: number, n: number) {
+    const firstChild = this.root.children.length;
     const x = (i % 16) - 7.5,
       z = Math.floor(i / 16) - 7.5;
     // Machine stays inside its blocked target cell; neighboring sand remains visible.
@@ -492,6 +493,20 @@ export class World {
     this.root.add(marker);
     this.markers.push(marker);
     this.box(this.root, x, 0.13, z + 0.42, 0.45, 0.06, 0.16, 0xe9b965);
+    if (this.game.level.story?.consequenceFocus) {
+      // Dense later puzzles need compact wheels so paddles do not cover the
+      // centers of neighboring sand tiles at the portrait camera angle.
+      const parts = this.root.children.slice(firstChild);
+      const machine = new T.Group();
+      machine.position.set(x, 0, z);
+      machine.scale.setScalar(0.78);
+      parts.forEach((part) => {
+        part.position.x -= x;
+        part.position.z -= z;
+        machine.add(part);
+      });
+      this.root.add(machine);
+    }
   }
   addWater(i: number) {
     if (this.waters.has(i)) return;
@@ -807,13 +822,16 @@ export class World {
   focusConsequence() {
     const kind = this.game.level.story?.kind;
     const [x, z] =
-      kind === "oasis"
+      this.game.level.story?.consequenceFocus ??
+      (kind === "oasis"
         ? [11.6, 8.4]
         : kind === "bridge"
           ? [10.6, 10]
-          : [9.7, 5.2];
+          : [9.7, 5.2]);
     const target = new T.Vector3(x - 7.5, 0, z - 7.5),
-      zoom = Math.max(this.zoom, 1.45);
+      zoom = this.game.level.story?.consequenceFocus
+        ? this.zoom
+        : Math.max(this.zoom, 1.45);
     if (this.reduced) {
       this.viewTarget.copy(target);
       this.zoom = zoom;
@@ -899,6 +917,8 @@ export class World {
     this.scene.remove(this.root);
     this.root.traverse((o) => {
       if (o instanceof T.Mesh) o.geometry.dispose();
+      o.userData.ownedTexture?.dispose();
+      o.userData.ownedMaterial?.dispose();
     });
   }
 }

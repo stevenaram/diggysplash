@@ -928,3 +928,67 @@ footer {
     gap: 12px;
   }
 }
+
+/* Eight chapters stay available in both orientations without squeezing the board. */
+header nav {
+  gap: 7px;
+}
+header nav .stage {
+  flex: 0 0 40px;
+  width: 40px;
+}
+@media (max-width: 760px) and (min-height: 521px) {
+  header {
+    height: 122px;
+  }
+  header nav {
+    top: 70px;
+    width: calc(100% - 28px);
+    max-width: 420px;
+    justify-content: space-between;
+    gap: 2px;
+  }
+  header nav .stage {
+    flex-basis: 36px;
+    width: 36px;
+    height: 39px;
+  }
+}
+@media (max-height: 520px) {
+  header nav {
+    gap: 5px;
+  }
+  header nav .stage {
+    flex-basis: 34px;
+    width: 34px;
+    height: 36px;
+  }
+}
+@media (max-width: 620px) {
+  #targets {
+    gap: 3px;
+  }
+  #targets .target {
+    width: 25px;
+    height: 25px;
+  }
+  #targets .target svg {
+    width: 17px;
+    height: 17px;
+  }
+  .toolbar {
+    gap: 9px;
+  }
+  .dig-pips {
+    max-width: 80px;
+  }
+}
+@media (max-width: 620px) and (max-height: 520px) {
+  header .brand {
+    display: none;
+  }
+  header nav {
+    left: 14px;
+    transform: none;
+  }
+}

@@ -26,9 +26,9 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, 256);
-    assert.equal(minimumDigs(l), [6, 7, 6][n]);
+    assert.equal(minimumDigs(l), [6, 7, 6, 12, 17, 18, 19, 20][n]);
     assert.equal(l.starThresholds!.three, minimumDigs(l));
-    assert.ok(l.budget - l.starThresholds!.three >= 8);
+    assert.ok(l.budget - l.starThresholds!.three >= 5);
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);
     assert.equal(g.won, true);
@@ -152,4 +152,31 @@ test("failure is reported only when the budget is exhausted without reaching the
   game.undo();
   assert.equal(game.failed, false);
   assert.equal(game.remaining, 1);
+});
+
+test("the campaign escalates through five distinct consequences and a four-objective battle", () => {
+  assert.equal(levels.length, 8);
+  assert.deepEqual(
+    levels.slice(3).map((l) => l.story!.kind),
+    ["harvest", "caravan", "temple", "fortress", "battle"],
+  );
+  for (let n = 4; n < 8; n++)
+    assert.ok(
+      levels[n].starThresholds!.three > levels[n - 1].starThresholds!.three,
+    );
+  assert.equal(levels[7].targets.length, 4);
+  for (const level of levels.slice(3)) {
+    const g = new Game(level);
+    assert.ok(g.active.every((a) => !a));
+    level.solution.forEach((i) => g.dig(i));
+    assert.ok(g.won);
+    g.undo();
+    assert.ok(!g.won);
+    g.reset();
+    assert.ok(g.active.every((a) => !a));
+    const exact = new Game({ ...level, budget: level.solution.length });
+    level.solution.forEach((i) => exact.dig(i));
+    assert.ok(exact.won);
+    assert.equal(exact.remaining, 0);
+  }
 });

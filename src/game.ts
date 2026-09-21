@@ -18,11 +18,20 @@ export interface Level {
   links?: [number, number][];
   starThresholds?: { three: number; two: number };
   story?: {
-    kind: "oasis" | "bridge" | "city";
+    kind:
+      | "oasis"
+      | "bridge"
+      | "city"
+      | "harvest"
+      | "caravan"
+      | "temple"
+      | "fortress"
+      | "battle";
     title: string;
     goal: string;
     success: string;
     focus: number[];
+    consequenceFocus?: [number, number];
   };
 }
 export const cell = (x: number, z: number) => z * SIZE + x;
@@ -115,7 +124,7 @@ export class Game {
         }
   }
 }
-// Exact node-weighted Steiner tree DP. At most four terminals on 256 cells.
+// Exact node-weighted Steiner tree DP. At most five terminals on 256 cells.
 export function minimumDigs(level: Level): number {
   const terminals = [level.sources[0], ...level.targets],
     count = 1 << terminals.length;
