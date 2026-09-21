@@ -1,4 +1,5 @@
 import * as T from "three";
+import { BridgeSprites } from "./bridge-sprites";
 import { OasisSprites } from "./oasis-sprites";
 import { SIZE, gridWorld } from "./game";
 import { CampaignScene } from "./campaign";
@@ -22,6 +23,7 @@ const ease = (t: number) => {
 export class StoryScene {
   campaign?: CampaignScene;
   oasisSprites?: OasisSprites;
+  bridgeSprites?: BridgeSprites;
   progress = 0;
   done = false;
   actors: Actor[] = [];
@@ -287,8 +289,7 @@ export class StoryScene {
   }
   crossing() {
     const w = this.world;
-    w.palm(-5.5, -5.5, 2.3);
-    w.palm(6.7, -4.5, 1.9);
+    this.bridgeSprites = new BridgeSprites(w);
     const bridge = this.at(12.5, 10);
     bridge.position.y = 0.13;
     this.bridge = bridge;
@@ -297,14 +298,14 @@ export class StoryScene {
         bridge,
         0.1 + j * 0.225,
         0,
-        0,
+        .65,
         0.205,
         0.12,
-        1.08,
+        3.1,
         j % 3 ? 0xba8957 : 0xa97649,
         "wood",
       );
-    for (const z of [-0.47, 0.47]) {
+    for (const z of [-0.85, 2.15]) {
       w.box(bridge, 1.55, -0.1, z, 3.2, 0.15, 0.1, 0x80533b);
       for (const x of [0.05, 1.05, 2.05, 3.05])
         w.box(bridge, x, 0.29, z, 0.065, 0.66, 0.065, 0x916749);
@@ -318,8 +319,8 @@ export class StoryScene {
         );
     }
     bridge.children.forEach((child) => (child.position.x *= -1));
-    bridge.rotation.z = -Math.PI * 0.47;
-    for (const z of [9.3, 10.7]) {
+    bridge.rotation.z = -Math.PI * 0.36;
+    for (const z of [9.15, 12.15]) {
       const anchor = this.at(9.4, z);
       w.cylinder(anchor, 0, 0.25, 0, 0.18, 0.5, 0x9c8060);
       w.box(anchor, 0, 0.65, 0, 0.12, 0.65, 0.12, 0x80533b);
@@ -327,34 +328,25 @@ export class StoryScene {
     // A crank shaft visibly connects the powered wheel to the bridge winch.
     this.pole(
       w.root,
-      new T.Vector3(0.5, 0.45, 0.5),
-      new T.Vector3(0.5, 0.45, 2.5),
+      new T.Vector3(0, 2.24, -1),
+      new T.Vector3(0, 1.14, 1.65),
       0.045,
       0x8d7657,
     );
     this.pole(
       w.root,
-      new T.Vector3(0.5, 0.45, 2.5),
-      new T.Vector3(2, 0.45, 2.5),
+      new T.Vector3(0, 1.14, 1.65),
+      new T.Vector3(1.9, 1.14, 1.65),
       0.045,
       0x8d7657,
     );
-    const shepherd = this.shepherd(8.65, 10);
-    shepherd.destination.set(12.8 - 7.5, 0, 10 - 7.5);
-    shepherd.root.rotation.y = Math.PI / 2;
-    const flock = this.actor(7.5, 10.3, true);
-    flock.destination.set(12.25 - 7.5, 0, 10.25 - 7.5);
-    flock.root.rotation.y = Math.PI / 2;
-    const lost = this.actor(13.55, 10, true);
-    lost.root.rotation.y = -Math.PI / 2;
-    this.heart(13, 1.5, 10);
-    this.heart(12.4, 1.15, 10.5);
     // Exposed strata and broken ledges emphasize the depth of the canyon.
     for (let z = 1; z < 15; z += 2) {
       for (const side of [9.6, 11.4]) {
         const rock = w.shaded(
           new T.DodecahedronGeometry(0.36, 0),
           z % 3 ? 0x956349 : 0xab7753,
+          "stone",
         );
         rock.position.set(side - 7.5, -0.8 - (z % 3) * 0.18, z - 7.5);
         rock.scale.set(0.6, 1.4, 1.3);
@@ -531,7 +523,7 @@ export class StoryScene {
             this.progress +
               dt /
                 (this.campaign?.duration ??
-                  (this.world.game.level.story?.kind === "city" ? 6 : 4)),
+                  (["city", "bridge"].includes(this.world.game.level.story?.kind ?? "") ? 6 : 4)),
           );
       this.done = this.progress >= 1;
     }
@@ -543,7 +535,8 @@ export class StoryScene {
     const travel = ease((this.progress - 0.35) / 0.6);
     if (this.bridge)
       this.bridge.rotation.z =
-        -(1 - ease(this.progress / 0.35)) * Math.PI * 0.47;
+        -(1 - ease(this.progress / 0.35)) * Math.PI * 0.36;
+    this.bridgeSprites?.update(this.progress,time);
     this.gates.forEach((g, n) => {
       const height = active[n] ? 2.1 : 0;
       g.position.y = this.world.reduced

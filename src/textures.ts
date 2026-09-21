@@ -5,6 +5,20 @@ export type Surface =
 
 /** Small painted surface maps; the framebuffer itself always renders at display resolution. */
 export class SurfaceTextures {
+  private worldMaps = new Map<Surface, T.CanvasTexture>();
+  /** Repeating surface; UVs measure tiles, so one 32px repeat spans one tile. */
+  world(surface: Surface) {
+    let map=this.worldMaps.get(surface);
+    if(!map){
+      map=this.get(surface).clone();
+      map.wrapS=map.wrapT=T.RepeatWrapping;
+      map.minFilter=map.magFilter=T.NearestFilter;
+      map.generateMipmaps=false;
+      map.needsUpdate=true;
+      this.worldMaps.set(surface,map);
+    }
+    return map;
+  }
   private maps = new Map<Surface, T.CanvasTexture>();
 
   get(surface: Surface) {

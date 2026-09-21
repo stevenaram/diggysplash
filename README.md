@@ -76,3 +76,7 @@ npx tsx scripts/solve-levels.ts
 ```
 
 Tests cover minimum routes, all star boundaries, actual one/two/three-star finishes, budget exhaustion, final-dig wins, undo/reset, ravine blocking, oasis filling, and elevated aqueduct flow. Browser QA covers pointer/touch playthroughs, character destinations, the lowered bridge and raised gates, result dialogs, retry/undo, star persistence, post-dig counts, and both orientations. The development-only `window.__diggy` inspection bridge is removed from production builds.
+
+### Art direction for future levels
+
+Important contraptions should be large, immediately recognizable focal points, following the stage-two water wheel. Give them real reserved board space and keep their silhouettes clear of rocks, trees, and characters. Use 32 artwork pixels per gameplay tile for billboards and approximately the same texel density on 3D surfaces. Check idle, activation, and completion compositions in portrait and landscape; actors should cross through the clear center of bridges, away from handrails.

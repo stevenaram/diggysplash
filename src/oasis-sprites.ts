@@ -1,21 +1,19 @@
 import * as T from 'three';
-import { gridWorld, SIZE, TILE_SIZE } from './game';
+import { gridWorld, SIZE } from './game';
 import type { World } from './world';
-import { drawPixel, PIXEL_SIZES, type PixelKind } from './oasis-pixels';
+import { PixelSprites } from './pixel-sprites';
 
 type Walker = { sprite: T.Sprite; kind: 'sheep' | 'shepherd'; start: T.Vector3; end: T.Vector3; phase: number };
 /** Stage-one-only billboard experiment. Shared frame materials keep uploads bounded. */
-export class OasisSprites {
-  root = new T.Group();
-  frames = new Map<string,T.SpriteMaterial>();
+export class OasisSprites extends PixelSprites {
   walkers: Walker[] = [];
   palms: T.Sprite[] = [];
   grass: T.Sprite[] = [];
   hearts: T.Sprite[] = [];
   dust: { sprite: T.Sprite; born: number; x:number; z:number; vx: number; vz: number }[] = [];
   time = 0;
-  constructor(public world: World) {
-    world.root.add(this.root);
+  constructor(world: World) {
+    super(world);
     this.palms.push(this.add('palm',-5,-3.5),this.add('palm',6,-3.5));
     world.game.level.tiles.forEach((t,i)=>{
       const x=gridWorld(i%SIZE), z=gridWorld(Math.floor(i/SIZE));
@@ -34,32 +32,6 @@ export class OasisSprites {
     this.walker('sheep',6.8,.15,6.55,-.85,3);
     for(const [x,z] of [[4.7,2.05],[6.55,-.85]]){const s=this.add('heart',x,z);s.position.y=1.6;this.hearts.push(s);}
     this.update(0,0);
-  }
-  material(kind:PixelKind,frame=0,flip=false) {
-    const key=`${kind}:${frame}:${flip}`;
-    let material=this.frames.get(key);
-    if(!material){
-      const texture=new T.CanvasTexture(drawPixel(kind,frame));
-      texture.colorSpace=T.SRGBColorSpace;
-      texture.magFilter=texture.minFilter=T.NearestFilter;
-      texture.generateMipmaps=false;
-      if(flip){texture.repeat.x=-1;texture.offset.x=1;}
-      material=new T.SpriteMaterial({map:texture,alphaTest:.5,transparent:false,depthWrite:true,toneMapped:false});
-      this.frames.set(key,material);
-    }
-    return material;
-  }
-  add(kind:PixelKind,x:number,z:number) {
-    const sprite=new T.Sprite(this.material(kind));
-    sprite.name=`pixel-${kind}`;
-    sprite.center.set(.5,0);
-    const [width,height]=PIXEL_SIZES[kind];
-    const pixelSize=TILE_SIZE/32;
-    sprite.scale.set(width*pixelSize,height*pixelSize,1);
-    sprite.position.set(x,.04,z);
-    sprite.raycast=()=>{};
-    this.root.add(sprite);
-    return sprite;
   }
   walker(kind:Walker['kind'],x:number,z:number,tx:number,tz:number,phase:number){
     const sprite=this.add(kind,x,z);
@@ -99,5 +71,5 @@ export class OasisSprites {
     this.grass.forEach(s=>{s.visible=progress>.15;s.material=this.material('grass',progress>.6?1:0);});
     this.hearts.forEach(s=>s.visible=progress>.88);
   }
-  dispose(){for(const m of this.frames.values()){m.map?.dispose();m.dispose();}this.frames.clear();}
+
 }

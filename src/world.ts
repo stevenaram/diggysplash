@@ -146,14 +146,15 @@ export class World {
     this.animate(0);
   }
   mat(color: number, surface?: Surface, vertexColors = false) {
-    const key = `${color}:${surface ?? "solid"}:${vertexColors}`;
+    const metric=this.game.level.story?.kind === "bridge" && (surface === "wood" || surface === "stone");
+    const key = `${color}:${surface ?? "solid"}:${vertexColors}:${metric}`;
     if (!this.mats.has(key))
       this.mats.set(
         key,
         new T.MeshBasicMaterial({
           color,
           vertexColors,
-          map: surface ? this.textures.get(surface) : null,
+          map: surface ? (metric ? this.textures.world(surface) : this.textures.get(surface)) : null,
           side: surface === "leaf" ? T.DoubleSide : T.FrontSide,
         }),
       );
@@ -161,6 +162,16 @@ export class World {
   }
   // Painted directional face colors give low-poly meshes volume without scene lights.
   shaded(geometry: T.BufferGeometry, color: number, surface?: Surface) {
+    if(this.game.level.story?.kind === "bridge") {
+      if(geometry instanceof T.CylinderGeometry) {
+        surface="wood";
+        const uv=geometry.getAttribute("uv"), p=geometry.parameters;
+        for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*Math.PI*(p.radiusTop+p.radiusBottom)/TILE_SIZE,uv.getY(i)*p.height/TILE_SIZE);
+      } else if(surface === "stone") {
+        const uv=geometry.getAttribute("uv"), pos=geometry.getAttribute("position");
+        for(let i=0;i<uv.count;i++)uv.setXY(i,pos.getX(i)/TILE_SIZE,pos.getY(i)/TILE_SIZE);
+      }
+    }
     const normals = geometry.getAttribute("normal"),
       colors = [];
     for (let i = 0; i < normals.count; i++) {
@@ -200,6 +211,12 @@ export class World {
       shade.clone().multiplyScalar(0.78),
     ];
     const geometry = new T.BoxGeometry(w, h, d);
+    if(this.game.level.story?.kind === "bridge" && (surface === "wood" || surface === "stone")) {
+      const uv=geometry.getAttribute("uv");
+      // Each box face gets its real dimensions, never a full texture squeezed onto a beam.
+      const spans=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
+      spans.forEach(([u,v],face)=>{for(let j=0;j<4;j++){const i=face*4+j;uv.setXY(i,uv.getX(i)*u/TILE_SIZE,uv.getY(i)*v/TILE_SIZE);}});
+    }
     let material: T.Material | T.Material[];
     if (["battle", "fortress"].includes(this.game.level.story?.kind ?? "")) {
       const vertexColors = colors.flatMap((c) =>
@@ -293,7 +310,7 @@ export class World {
       tile.userData.sandMaterial = tile.material;
       if (t === "building")
         this.box(this.root, x, 0.012, z, 1.94, 0.025, 1.94, 0xcaae83);
-      if (t === "rock" && this.game.level.story?.kind !== "oasis") {
+      if (t === "rock" && !["oasis", "bridge"].includes(this.game.level.story?.kind ?? "")) {
         const rock = this.shaded(
           new T.DodecahedronGeometry(0.52, 0),
           0xc4ad87,
@@ -328,7 +345,7 @@ export class World {
         part.raycast = () => {};
       }),
     );
-    if (this.game.level.story?.kind === "oasis") { this.sync(); return; }
+    if (["oasis", "bridge"].includes(this.game.level.story?.kind ?? "")) { this.sync(); return; }
     // Sparkle-like source landmarks rise above the oasis.
     const source = this.game.level.sources[0];
     const sx = gridWorld(source % SIZE),
@@ -462,7 +479,38 @@ export class World {
     }
     this.cylinder(this.root, x + 0.12, h - 0.12, z, 0.2, 0.28, 0x887049);
   }
+  bridgeMachine(i: number) {
+    // Two reserved cells directly north of the inlet own the full mechanism footprint.
+    const x=gridWorld(i%SIZE)-TILE_SIZE/2, z=gridWorld(Math.floor(i/SIZE))-TILE_SIZE;
+    this.box(this.root,x,.06,z,3.8,.16,1.5,0x9c8d72,"stone");
+    for(const sign of [-1,1])
+      this.box(this.root,x+sign*.76,1.02,z-.24,.24,1.88,.32,0x80533b,"wood");
+    // Physical dimensions are doubled before UV generation: texels stay 1/32 tile.
+    const mount=new T.Group();
+    mount.name="bridge-wheel-mount";
+    mount.position.set(x,2.24,z);
+    mount.rotation.x=-Math.PI/6;
+    this.root.add(mount);
+    const axle=this.cylinder(mount,0,0,-.24,.26,.96,0x82603f);
+    axle.rotation.x=Math.PI/2;
+    const rotor=new T.Group();
+    rotor.name="bridge-wheel-rotor";
+    mount.add(rotor);
+    this.wheels.push(rotor);
+    const rim=this.shaded(new T.TorusGeometry(1.68,.16,6,24),0x976741);
+    rotor.add(rim);
+    for(let k=0;k<8;k++) {
+      const angle=k*Math.PI/4;
+      const spoke=this.box(rotor,0,0,0,.22,3.16,.28,0xb6824d,"wood");
+      spoke.rotation.z=angle;
+      const paddle=this.box(rotor,Math.sin(angle)*1.68,Math.cos(angle)*1.68,0,.6,.4,.6,0xa37145,"wood");
+      paddle.rotation.z=-angle;
+    }
+    const hub=this.cylinder(rotor,0,0,.22,.34,.32,0xf1c679);
+    hub.rotation.x=Math.PI/2;
+  }
   machine(i: number, n: number) {
+    if(this.game.level.story?.kind === "bridge") {this.bridgeMachine(i);return;}
     const firstChild = this.root.children.length;
     const x = gridWorld(i % SIZE),
       z = gridWorld(Math.floor(i / SIZE));
@@ -883,7 +931,7 @@ export class World {
     }
     this.wheels.forEach((w, n) => {
       const active = this.waters.get(this.game.level.targets[n])?.visible;
-      this.markers[n].material = this.mat(active ? 0x67d1bb : 0xe5a64e);
+      if(this.markers[n]) this.markers[n].material = this.mat(active ? 0x67d1bb : 0xe5a64e);
       if (active && !this.reduced) w.rotation.z -= dt * 1.3;
     });
     const active = this.game.level.targets.map(
@@ -929,6 +977,7 @@ export class World {
   };
   disposeRoot() {
     this.story?.oasisSprites?.dispose();
+    this.story?.bridgeSprites?.dispose();
     this.scene.remove(this.root);
     this.root.traverse((o) => {
       if (o instanceof T.Mesh) o.geometry.dispose();
