@@ -133,17 +133,19 @@ const harvest = board(
   "The town has bread again!",
   [
     "________",
-    "......._",
-    "...O..._",
-    "...#.#O_",
-    "~..#..._",
-    "......._",
-    "......._",
+    "________",
+    "..O_..O_",
+    "....##._",
+    ".#..#.._",
+    ".._...._",
+    "~#____#_",
     "________",
   ],
-  [24, 16, 17, 18, 20, 21, 22],
-  7,
-  5,
+  // The eastern approach to the first mill becomes the shared trunk. The
+  // equally short western approach costs two extra digs when feeding both mills.
+  [40,32,24,25,26,27,35,43,44,45,37,38,30],
+  13,
+  2,
 );
 const caravan = board(
   "caravan",

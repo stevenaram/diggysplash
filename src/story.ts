@@ -1,4 +1,5 @@
 import * as T from "three";
+import { HarvestScene } from "./harvest-scene";
 import { CitySprites } from "./city-sprites";
 import { BridgeSprites } from "./bridge-sprites";
 import { OasisSprites } from "./oasis-sprites";
@@ -26,6 +27,7 @@ export class StoryScene {
   oasisSprites?: OasisSprites;
   bridgeSprites?: BridgeSprites;
   citySprites?: CitySprites;
+  harvestScene?: HarvestScene;
   progress = 0;
   done = false;
   actors: Actor[] = [];
@@ -41,7 +43,8 @@ export class StoryScene {
     if (kind === "oasis") this.oasisSprites = new OasisSprites(world);
     if (kind === "bridge") this.crossing();
     if (kind === "city") this.city();
-    if (kind && !["oasis", "bridge", "city"].includes(kind))
+    if (kind === "harvest") this.harvestScene=new HarvestScene(world);
+    if (kind && !["oasis", "bridge", "city", "harvest"].includes(kind))
       this.campaign = new CampaignScene(this);
     this.hearts.visible = false;
   }
@@ -461,6 +464,7 @@ export class StoryScene {
         -(1 - ease(this.progress / 0.35)) * Math.PI * 0.36;
     this.bridgeSprites?.update(this.progress,time);
     this.citySprites?.update(this.progress,time);
+    this.harvestScene?.update(dt,active,this.progress,time);
     this.gates.forEach((g, n) => {
       const height = active[n] ? 2.75 : 0;
       g.position.y = this.world.reduced

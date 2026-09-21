@@ -1,10 +1,10 @@
 /** Original pixel drawings, deliberately rasterized without antialiasing. */
-export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust';
+export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack';
 /** Every source pixel occupies 1/32 of a tile; small props get small drawings. */
 export const PIXEL_SIZES: Record<PixelKind, readonly [number, number]> = {
   villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
   grass: [10, 12], basket: [16, 16], blanket: [22, 12], heart: [12, 12],
-  pebble: [8, 6], dust: [3, 3],
+  pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20],
 };
 export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const [w, h] = PIXEL_SIZES[kind];
@@ -76,6 +76,23 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
       poly([p[0],p[1],[p[2][0],p[2][1]-1],[p[1][0],p[1][1]+2]],'#a0bd66');
     }
     oval(29,28,3,3,tan);oval(35,28,3,3,deep);dot(28,27,gold);dot(34,27,tan);
+  } else if(kind==='wheat') {
+    const stalk=frame===0?'#947957':frame===1?'#639357':'#bd8c42';
+    for(let n=0;n<3;n++) {
+      const x=4+n*6+(frame===3?1:0), top=frame===0?15:frame===1?10:4+n%2;
+      rect(x,top,1,22-top,stalk);
+      poly([[x,20],[x-3,16],[x-2,16],[x,18]],frame===0?'#aa8e63':'#85a55d');
+      if(frame>1)for(let y=top;y<top+9;y+=3){rect(x-2,y,2,2,'#e8bd62');rect(x+1,y+1,2,2,'#f3d58b');}
+      else {dot(x-1,top,stalk);dot(x+1,top+2,stalk);}
+    }
+  } else if(kind==='bread') {
+    oval(9,7,7,3,'#9d6540');oval(8,6,7,3,'#d89e55');
+    rect(4,4,9,1,'#edc57b');
+    for(const x of [4,8,12]){rect(x,5,1,3,'#f8deb0');dot(x+1,5,'#ac753e');}
+  } else if(kind==='sack') {
+    poly([[4,3],[10,3],[9,7],[12,11],[12,18],[2,18],[2,11],[5,7]],'#b4986b');
+    poly([[5,8],[8,8],[10,12],[10,17],[4,17],[3,12]],'#e4cc98');
+    rect(4,6,6,2,'#85684b');rect(6,11,2,4,'#bd9e65');dot(5,12,'#bd9e65');dot(8,13,'#bd9e65');
   } else if(kind==='rock') {
     poly([[4,33],[3,26],[8,17],[17,14],[25,20],[29,31],[23,36],[10,36]],'#8f8581');
     poly([[5,26],[10,18],[18,16],[24,21],[21,27],[12,29]],'#d6c3a1');

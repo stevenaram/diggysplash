@@ -398,6 +398,7 @@ if (import.meta.env.DEV)
       },
       get story() {
         return {
+          harvestPower: world.story?.harvestScene?.power,
           cityFrames: world.story?.citySprites?.people.map(a=>a.sprite.userData.frame),
           wheelRotation: world.wheels[0]?.rotation.z,
           spriteFrames: world.story?.oasisSprites?.walkers.map(a => a.sprite.userData.frame),

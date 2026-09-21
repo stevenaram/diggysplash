@@ -31,9 +31,9 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
-    assert.equal(minimumDigs(l), [4, 5, 11, 7, 9, 10, 11, 12][n]);
+    assert.equal(minimumDigs(l), [4, 5, 11, 13, 9, 10, 11, 12][n]);
     assert.equal(l.starThresholds!.three, minimumDigs(l));
-    assert.ok(l.budget - l.starThresholds!.three >= 4);
+    assert.equal(l.budget - l.starThresholds!.three, n===3?2: n===0||n===1?4:5);
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);
     assert.equal(g.won, true);
@@ -172,7 +172,8 @@ test("the campaign escalates through five distinct consequences and a four-objec
     levels.slice(3).map((l) => l.story!.kind),
     ["harvest", "caravan", "temple", "fortress", "battle"],
   );
-  for (let n = 4; n < 8; n++)
+  // Chapters 5–8 retain their original progression; chapter 4 is rebalanced separately.
+  for (let n = 5; n < 8; n++)
     assert.ok(
       levels[n].starThresholds!.three > levels[n - 1].starThresholds!.three,
     );
@@ -262,4 +263,24 @@ test("thin trim surrounds exactly 64 cells and campaign scenery owns non-diggabl
     }
     for (let z = 0; z < 8; z++) assert.equal(level.tiles[cell(7, z)], "building");
   }
+});
+
+
+test("stage four rewards the shared eastern approach over the equally short western approach", () => {
+  const level=levels[3];
+  const efficient=new Game(level);
+  [40,32,24,25,26].forEach(i=>efficient.dig(i));
+  assert.deepEqual(efficient.active,[true,false]);
+  level.solution.slice(5).forEach(i=>efficient.dig(i));
+  assert.equal(efficient.won,true);
+  assert.equal(efficient.stars,3);
+  const separate=new Game(level);
+  [40,32,24,16,17].forEach(i=>separate.dig(i));
+  assert.deepEqual(separate.active,[true,false]);
+  [25,26,27,35,43,44,45,37,38,30].forEach(i=>separate.dig(i));
+  assert.equal(separate.won,true);
+  assert.equal(separate.remaining,0);
+  assert.equal(separate.stars,1);
+  assert.ok(level.starThresholds!.three>levels[2].starThresholds!.three);
+  assert.ok(level.budget-level.starThresholds!.three<levels[2].budget-levels[2].starThresholds!.three);
 });
