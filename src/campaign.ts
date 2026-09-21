@@ -1,5 +1,6 @@
 import * as T from "three";
 import { BattleScene } from "./battle";
+import { FortressScene } from "./fortress";
 import type { StoryScene } from "./story";
 
 const smooth = (v: number) => {
@@ -12,6 +13,7 @@ const teal = 0x398e98,
 /** Each objective owns an independent, reversible mechanical consequence. */
 export class CampaignScene {
   battleScene?: BattleScene;
+  fortressScene?: FortressScene;
   power: number[];
   effects: ((p: number, time: number) => void)[] = [];
   deliveries: ((p: number, time: number) => void)[] = [];
@@ -25,7 +27,7 @@ export class CampaignScene {
     if (kind === "fortress") this.fortress();
     if (kind === "battle") this.battle();
     // The returning shepherd provides continuity across the campaign.
-    if (kind !== "battle") {
+    if (kind !== "battle" && kind !== "fortress") {
       const shepherd = story.shepherd(2, 13.5);
       shepherd.root.rotation.y = Math.PI;
       const sheep = story.actor(3.1, 13.5, true);
@@ -36,7 +38,11 @@ export class CampaignScene {
     return this.story.world;
   }
   get duration() {
-    return this.w.game.level.story?.kind === "battle" ? 7 : 4.5;
+    return this.w.game.level.story?.kind === "fortress"
+      ? 10
+      : this.w.game.level.story?.kind === "battle"
+        ? 7
+        : 4.5;
   }
   // Sealed delivery pipes follow tile seams, leaving trench centers clear.
   // These are mechanical scenery, not extra diggable channels or puzzle links.
@@ -408,55 +414,7 @@ export class CampaignScene {
     return g;
   }
   fortress() {
-    const s = this.story,
-      w = this.w;
-    for (let x = 2; x <= 13; x++)
-      if (![4, 8, 12].includes(x)) this.wall(x, 2, x % 4 === 1 ? 2.1 : 1.3);
-    for (let n = 0; n < 3; n++) {
-      const x = 4 + n * 4,
-        barrier = s.at(x, 2);
-      for (let k = 0; k < 5; k++)
-        w.box(
-          barrier,
-          (k - 2) * 0.18,
-          0.55,
-          0,
-          0.14,
-          1.1,
-          0.19,
-          0x847057,
-          "wood",
-        );
-      for (const y of [0.2, 0.8])
-        w.box(barrier, 0, y, 0.04, 1, 0.1, 0.22, 0xc1a571);
-      this.delivery(n, x, 2.4);
-      // Side cylinders explain how water lifts the retractable barricade.
-      for (const dx of [-0.42, 0.42]) {
-        w.cylinder(w.root, x - 7.5 + dx, 0.22, 2.4 - 7.5, 0.09, 0.45, 0x987a54);
-        w.cylinder(barrier, dx, 0.35, 0.25, 0.045, 0.7, 0xb8c7ba);
-      }
-      this.effects.push((p) => {
-        barrier.position.y = -1.2 + 1.2 * p;
-      });
-    }
-    for (let n = 0; n < 3; n++) {
-      const wagon = this.wagon(6 + n * 2.7, 14, 0xd3b580);
-      const start = wagon.position.x;
-      const old = this.finale;
-      this.finale = (p, t) => {
-        old(p, t);
-        wagon.position.x = start + smooth(p) * 0.55;
-      };
-      this.soldier(5 + n * 3, 13, teal, false);
-    }
-    // The gatehouse's blue standard rises only after all three defenses engage.
-    const tower = this.wall(14, 6, 2.2),
-      flag = this.flag(tower, 0, 2.3, 0, teal);
-    const old = this.finale;
-    this.finale = (p, t) => {
-      old(p, t);
-      flag.scale.y = 0.15 + 0.85 * smooth(p);
-    };
+    this.fortressScene = new FortressScene(this);
   }
   soldier(x: number, z: number, color: number, enemy: boolean) {
     const a = this.story.actor(x, z, false, color),
@@ -497,5 +455,6 @@ export class CampaignScene {
     });
     this.finale(this.story.progress, this.w.reduced ? 0 : time);
     this.battleScene?.update(dt, active, time);
+    this.fortressScene?.update(dt, active, time);
   }
 }

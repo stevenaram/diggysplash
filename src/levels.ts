@@ -270,6 +270,7 @@ function chapter(
   const targets = coords(targetPoints);
   sources.forEach((i) => (tiles[i] = "source"));
   targets.forEach((i) => (tiles[i] = "target"));
+  if (kind === "fortress") tiles[cell(15, 14)] = "building";
   return {
     tiles,
     sources,
@@ -288,7 +289,7 @@ function chapter(
         [12, 12],
         [5, 2],
       ]),
-      consequenceFocus: [8, 7],
+      consequenceFocus: kind === "fortress" ? [10.5, 10.7] : [8, 7],
     },
   };
 }
@@ -381,8 +382,8 @@ const fortress = () =>
   chapter(
     "fortress",
     "Before the storm",
-    "Raise three barricades. Protect the convoy.",
-    "The convoy is protected!",
+    "Raise the wall. Ready the refuge.",
+    "Safe inside. Sunfall is ready!",
     [
       [3, 3],
       [12, 4],

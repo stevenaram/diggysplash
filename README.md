@@ -21,7 +21,7 @@ Open the URL printed by Vite. For a production build, run `npm run build`, then 
 | Bread for everyone    | Restart two mills; golden wheat grows and bread appears.                                               | 20         | ≤ 12 digs   | 13–16 digs | 17–20 digs |
 | Caravan in the embers | Three pumps extinguish burning wagons independently.                                                   | 25         | ≤ 17 digs   | 18–21 digs | 22–25 digs |
 | The sleeping sun      | Awaken three shrines; a floating sun beacon lights the desert.                                         | 25         | ≤ 18 digs   | 19–22 digs | 23–25 digs |
-| Before the storm      | Raise three barricades to protect the convoy.                                                          | 25         | ≤ 19 digs   | 20–22 digs | 23–25 digs |
+| Before the storm      | Raise the wall, fill the cistern, and open the refuge gate; escort the convoy inside.                  | 25         | ≤ 19 digs   | 20–22 digs | 23–25 digs |
 | The battle of Sunfall | Four water-powered trebuchets break the palisade, scatter the red army, and smash its siege engines.   | 25         | ≤ 20 digs   | 21–23 digs | 24–25 digs |
 
 Objectives have no numbered order. Thin sealed pipes visibly connect the later wheels to their machinery; these are delivery pipes, not extra puzzle channels. Each device reacts to its own water supply, while the final celebration waits for the whole level.
@@ -36,6 +36,10 @@ Three-star thresholds are verified minimum routes. Scores count the trenches cur
 - Undo and restart are free. `Z` undoes; `R` restarts. Focus the board, use arrow keys to select a tile, and Enter or Space to dig.
 - Watch each consequence before the completion card appears. Continue, replay for a better score, or retry/undo a failed attempt. Numbered chapter buttons revisit unlocked levels.
 - Sound preference, chapter unlocks, and best stars are saved locally. In-progress trenches are not.
+
+## Before the storm
+
+Three independent supplies raise a timber curtain wall, fill a visible cistern and drinking trough, and lift a convoy gate. Scouts watch beyond the defenses while sentries, flags, and a waiting supply train idle. Once all three are ready, a donkey pulls the wagons through the gate, the shepherd leads his sheep to water, and the gate closes behind them. Completion waits for everyone to be safely inside. Undo resets the arrival and reverses disconnected machinery; reduced motion shows the final scene immediately. Static scenery and character parts are merged, with separate animated wheels, limbs, flags, winches, and counterweights.
 
 ## Sunfall battle polish
 

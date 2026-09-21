@@ -229,7 +229,7 @@ const objectiveNames: Record<string, string[]> = {
   harvest: ["West mill", "East mill"],
   caravan: ["Ochre wagon pump", "Teal wagon pump", "Cream wagon pump"],
   temple: ["West shrine", "East shrine", "South shrine"],
-  fortress: ["West barricade", "Middle barricade", "East barricade"],
+  fortress: ["Defensive wall", "Refuge cistern", "Convoy gate"],
   battle: [
     "North trebuchet",
     "Upper trebuchet",
@@ -413,6 +413,19 @@ if (import.meta.env.DEV)
                 ),
                 wrecks: world.story.campaign.battleScene.forts.map(
                   (f) => f.wreck.visible,
+                ),
+              }
+            : undefined,
+          fortress: world.story?.campaign?.fortressScene
+            ? {
+                power: [...world.story.campaign.fortressScene.state.power],
+                convoy: world.story.campaign.fortressScene.state.convoy,
+                escort: world.story.campaign.fortressScene.state.escort,
+                gate: world.story.campaign.fortressScene.state.gate,
+                age: world.story.campaign.fortressScene.state.arrivalAge,
+                complete: world.story.campaign.fortressScene.state.complete,
+                wagonX: world.story.campaign.fortressScene.wagons.map(
+                  (w) => w.root.position.x + 7.5,
                 ),
               }
             : undefined,

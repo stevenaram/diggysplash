@@ -198,7 +198,7 @@ export class World {
     ];
     const geometry = new T.BoxGeometry(w, h, d);
     let material: T.Material | T.Material[];
-    if (this.game.level.story?.kind === "battle") {
+    if (["battle", "fortress"].includes(this.game.level.story?.kind ?? "")) {
       const vertexColors = colors.flatMap((c) =>
         Array.from({ length: 4 }, () => [c.r, c.g, c.b]).flat(),
       );

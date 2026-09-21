@@ -565,6 +565,8 @@ export class StoryScene {
       if (kind === "city" && moving) actor.root.rotation.y = Math.PI;
     });
     this.campaign?.update(dt, active, time);
+    if (this.campaign?.fortressScene)
+      this.done = won && this.campaign.fortressScene.state.complete;
     if (this.campaign?.battleScene)
       this.done = won && this.campaign.battleScene.state.complete;
   }
