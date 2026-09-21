@@ -1,12 +1,13 @@
 import * as T from 'three';
 
-type Skin='skin'|'petal'|'palm'|'bark'|'tooth'|'mouth';
+type Skin='skin'|'petal'|'palm'|'bark'|'tooth'|'mouth'|'blossom';
 const palettes:Record<Skin,string[]>={
   skin:['#47764f','#284e40','#729a50','#a1ba68','#422f50'],
   petal:['#964265','#562c51','#c6677b','#e89a91','#763654'],
   palm:['#4c863e','#214f36','#79aa4d','#b3c16b','#356938'],
   bark:['#9f7149','#573f32','#c39159','#e0b578','#78543c'],
   tooth:['#e3d2a0','#927b62','#f8edc7','#fff6db','#c3af81'],
+  blossom:['#c38496','#885368','#e2a6af','#f5cdb8','#a46681'],
   mouth:['#35243b','#171925','#5c304c','#813e5a','#402238'],
 };
 /** One repeating 32px map spans one 2-world-unit tile. No resampled artwork. */

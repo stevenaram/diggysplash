@@ -782,6 +782,13 @@ export class World {
       y: r.top + ((1 - p.y) * r.height) / 2,
     };
   }
+  screenTile(i:number){
+    const r=this.host.getBoundingClientRect(),x=gridWorld(i%SIZE),z=gridWorld(Math.floor(i/SIZE));
+    return [[-.88,-.88],[.88,-.88],[.88,.88],[-.88,.88]].map(([dx,dz])=>{
+      const p=new T.Vector3(x+dx,.035,z+dz).project(this.camera);
+      return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2};
+    });
+  }
   reveal(i: number) {
     const p = this.screen(i),
       r = this.host.getBoundingClientRect();

@@ -1,3 +1,4 @@
+import { showFirstDigHint } from "./tutorial";
 import { creatureSound, stopCreatureSounds, type CreatureCue } from "./creature-sound";
 import "@fontsource/outfit/latin-600.css";
 import "@fontsource/outfit/latin-800.css";
@@ -162,6 +163,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 </main>
 <footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">14</strong><span class="budget">/ <span id="budget">14</span></span><div class="dig-pips" aria-hidden="true"></div></div><span class="divider"></span><div id="targets" aria-label="Water objectives"></div><span class="divider"></span><div class="actions"><button id="undo" class="icon-button" aria-label="Undo last dig" title="Undo · Z">${svg("undo")}</button><button id="restart" class="icon-button" aria-label="Restart stage" title="Restart · R">${svg("restart")}</button></div></div><div class="view-controls" role="group" aria-label="Camera controls"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">${svg("minus")}</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">${svg("plus")}</button><button id="overview" class="icon-button" aria-label="Show whole board" title="Show whole board">${svg("fit")}</button><button class="icon-button sound" aria-label="Mute sound">${svg("sound")}</button><button id="motion" class="icon-button" aria-label="Reduce animations">${svg("motion")}</button></div></footer>
 <dialog id="result" aria-labelledby="result-title" aria-describedby="result-message"><div class="result-chapter" id="result-chapter"></div><h2 id="result-title"></h2><p id="result-message" class="sr-only"></p><div class="result-stars" id="result-stars" aria-label="Stars earned"></div><div class="result-score" id="result-score"></div><div class="result-actions"><button id="result-primary" class="primary"></button><button id="result-secondary" class="secondary"></button></div></dialog>
+<div id="dig-tutorial" hidden role="img" aria-label="Dig the highlighted sand tile next to the water. Press Enter or tap it."><svg class="tutorial-tile" aria-hidden="true"><polygon /></svg><span class="tutorial-shovel" aria-hidden="true">${svg("shovel")}<i></i></span></div>
 <div id="status" class="sr-only" aria-live="polite"></div>`;
 const $ = <T extends HTMLElement>(q: string) => document.querySelector<T>(q)!;
 const host = $(".scene"),
@@ -174,6 +176,16 @@ try {
     '<p class="fallback">This little world needs WebGL. Try a browser with hardware acceleration enabled.</p>';
   throw error;
 }
+function updateTutorial(){
+  const guide=$("#dig-tutorial"),i=game.level.solution[0];
+  guide.hidden=!showFirstDigHint(stage,completed,bestStars[0],game.digs,i,game.won);
+  if(guide.hidden)return;
+  const p=world.screen(i),shovel=guide.querySelector<HTMLElement>(".tutorial-shovel")!;
+  shovel.style.left=`${p.x}px`;shovel.style.top=`${p.y}px`;
+  guide.querySelector(".tutorial-tile")!.setAttribute("viewBox",`0 0 ${innerWidth} ${innerHeight}`);
+  guide.querySelector("polygon")!.setAttribute("points",world.screenTile(i).map(p=>`${p.x},${p.y}`).join(" "));
+}
+world.onViewChanged=updateTutorial;
 function starMarkup(count: number) {
   return [0, 1, 2]
     .map(
@@ -251,6 +263,7 @@ const objectiveNames: Record<string, string[]> = {
   ],
 };
 function update() {
+  updateTutorial();
   $("#motion").setAttribute("aria-label", world.reduced ? "Enable animations" : "Reduce animations");
   $("#motion").setAttribute("aria-pressed", String(!world.reduced));
   $("#remaining").textContent = String(game.remaining);

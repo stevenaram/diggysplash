@@ -1,10 +1,10 @@
 /** Original pixel drawings, deliberately rasterized without antialiasing. */
-export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower';
+export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower' | 'jug' | 'camp-rug';
 /** Every source pixel occupies 1/32 of a tile; small props get small drawings. */
 export const PIXEL_SIZES: Record<PixelKind, readonly [number, number]> = {
   villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
   grass: [10, 12], basket: [16, 16], blanket: [22, 12], heart: [12, 12],
-  pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20], flower:[16,22],
+  pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20], flower:[16,22], jug:[16,24], 'camp-rug':[48,24],
 };
 export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const [w, h] = PIXEL_SIZES[kind];
@@ -14,7 +14,21 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const oval = (x:number,y:number,rx:number,ry:number,c:string) => {for(let j=Math.floor(y-ry);j<=y+ry;j++)for(let i=Math.floor(x-rx);i<=x+rx;i++)if(((i-x)/rx)**2+((j-y)/ry)**2<=1)dot(i,j,c);};
   const poly = (points:number[][],c:string) => {for(let y=0;y<h;y++)for(let x=0;x<w;x++){let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++){const a=points[i],b=points[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;}if(inside)dot(x,y,c);}};
   const ink='#494353', deep='#706052', tan='#aa805b', gold='#d6ac67', light='#f0d294';
-  if(kind==='flower') {
+  if(kind==='camp-rug') {
+    rect(2,2,44,20,'#a6574d');rect(4,4,40,16,'#d3996c');rect(6,6,36,12,'#814e49');
+    for(let x=4;x<45;x+=4){rect(x,0,2,2,'#e8c799');rect(x,22,2,2,'#e8c799');}
+    for(const x of [13,24,35]){
+      poly([[x,7],[x+5,12],[x,17],[x-5,12]],'#edcb95');
+      poly([[x,10],[x+2,12],[x,14],[x-2,12]],'#5e8172');
+    }
+    for(let x=5;x<43;x+=3){dot(x,4,'#f4d9aa');dot(x,19,'#f4d9aa');}
+  } else if(kind==='jug') {
+    oval(8,16,6,6,'#8e5144');oval(7,15,5,5,'#c57f59');
+    oval(6,14,3,4,'#e5ab71');rect(5,5,6,9,'#ba714f');rect(5,6,2,8,'#df9a63');
+    oval(8,5,4,2,'#e4b27a');oval(8,5,2,1,'#594944');
+    oval(12,12,3,4,'#9d6047');oval(12,12,1,2,'#00000000');
+    rect(3,17,10,2,'#ead0a0');rect(5,18,2,1,'#9f6150');rect(9,18,2,1,'#9f6150');
+  } else if(kind==='flower') {
     const fresh=frame>0;
     poly(fresh?[[7,20],[8,7],[10,7],[9,20]]:[[7,20],[8,10],[11,8],[13,11],[11,12],[10,10],[9,20]],fresh?'#47795b':'#8b895c');
     poly([[8,17],[3,13],[2,15],[5,18],[8,18]],fresh?'#83b873':'#a3a16b');

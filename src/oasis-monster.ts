@@ -32,10 +32,12 @@ export class OasisMonster {
   materials:T.Material[]=[];
   private green:T.MeshBasicMaterial;
   private petalMaterial:T.MeshBasicMaterial;
+  private blossomMaterial:T.MeshBasicMaterial;
   constructor(public world:World) {
     world.root.add(this.root);
     this.green=this.art.material('skin');
     const dark=this.art.material('skin'), pink=this.art.material('petal'), mouth=this.art.material('mouth'), ivory=this.art.material('tooth'), bark=this.art.material('bark'), palmLeaf=this.art.material('palm');
+    this.blossomMaterial=this.art.material('blossom');
     dark.color.setHex(0x9ab69b);this.petalMaterial=pink;
     this.root.add(this.plant,this.palm,this.grill);
     this.plant.position.set(PLANT_X,0,PLANT_Z);
@@ -53,9 +55,9 @@ export class OasisMonster {
       this.mesh(flower,new T.TubeGeometry(stalk,6,.065,5,false),dark,0,0,0);
       for(let k=0;k<6;k++){
         const pivot=new T.Group();pivot.position.set(.18,.7,.05);pivot.rotation.y=k*Math.PI/3;flower.add(pivot);this.petals.push(pivot);
-        const petal=this.mesh(pivot,new T.SphereGeometry(1,8,5),pink,.24,0,0);petal.scale.set(.37,.065,.16);
+        const petal=this.mesh(pivot,new T.SphereGeometry(1,8,5),this.blossomMaterial,.24,0,0);petal.scale.set(.37,.065,.16);
       }
-      this.mesh(flower,new T.SphereGeometry(.14,8,5),ivory,.18,.72,.05);
+      this.mesh(flower,new T.SphereGeometry(.19,8,5),ivory,.18,.72,.05);
       for(const sign of [-1,1]){
         const leaf=this.mesh(flower,new T.SphereGeometry(1,7,4),this.green,sign*.22,.25,0);leaf.scale.set(.35,.075,.14);leaf.rotation.z=sign*.4;
       }
@@ -131,6 +133,12 @@ export class OasisMonster {
     for(let n=0;n<18;n++)this.pollen.push(this.mesh(this.root,new T.OctahedronGeometry(.055,0),pollenMat,0,0,0));
     const woolMat=this.mat(0xffefd3);
     for(let n=0;n<30;n++)this.wool.push(this.mesh(this.root,new T.IcosahedronGeometry(.1+(n%3)*.025,0),woolMat,0,0,0));
+    // Enlarge the flowers in geometry before UV generation: +50% size, same texel density.
+    for(const flower of this.flowers)flower.traverse(o=>{
+      if(o===flower)return;
+      o.position.multiplyScalar(1.5);
+      if(o instanceof T.Mesh)o.scale.multiplyScalar(1.5);
+    });
     // Bake static scale before calculating metric UVs; art density survives large leaves/jaws.
     this.root.traverse(o=>{
       if(o instanceof T.Mesh&&!this.vines.some(v=>v.mesh===o)){
@@ -183,6 +191,7 @@ export class OasisMonster {
     this.throat.scale.y=.5+gulp*.5;
     const opening=b.time<5?.35+b.grow*.25:.38+gulp*1.05;
     this.upper.rotation.x=-opening;this.lower.rotation.x=opening;
+    this.blossomMaterial.color.setRGB(1-b.grow*.25,1-b.grow*.55,1-b.grow*.1);
     this.petalMaterial.color.setRGB(1-b.grow*.15,1-b.grow*.4,1-b.grow*.04);
     this.flowers.forEach((flower,n)=>{
       flower.scale.setScalar(.65+b.bloom*.65-b.grow*.3);

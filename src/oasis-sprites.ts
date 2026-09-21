@@ -25,11 +25,15 @@ export class OasisSprites extends PixelSprites {
     });
     // Reserve the north bank for the shrub; keep all oasis approaches clear.
     for(const x of [4.35,5.15,5.8]) {
-      this.add('pebble',x,-2.5);
       this.grass.push(this.add('grass',x+.08,-2.55));
     }
-    this.add('blanket',2.6,4.5);
-    this.add('basket',6.3,4.8);
+    // A readable campsite is grouped on the protected southern bank, not on the route.
+    const rugMaterial=new T.MeshBasicMaterial({map:this.material('camp-rug').map,transparent:true,alphaTest:.5,side:T.DoubleSide});
+    const rug=new T.Mesh(new T.PlaneGeometry(3,1.5),rugMaterial);
+    rug.rotation.x=-Math.PI/2;rug.position.set(4,.035,3.1);rug.raycast=()=>{};
+    rug.userData.ownedMaterial=rugMaterial;world.root.add(rug);
+    this.add('jug',5.15,2.85);
+    this.add('blanket',5.45,3.65);
     this.walker('shepherd',3.2,3.8,3.2,2.85,0);
     this.walker('sheep',5.0,4.65,4.7,2.05,1);
     this.walker('sheep',6.8,2.9,6.55,1.2,2);
