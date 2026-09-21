@@ -1,4 +1,5 @@
 import * as T from "three";
+import { OasisSprites } from "./oasis-sprites";
 import { SIZE, gridWorld } from "./game";
 import { CampaignScene } from "./campaign";
 import type { World } from "./world";
@@ -20,6 +21,7 @@ const ease = (t: number) => {
 /** Story props have real moving geometry; the result waits for their consequence to finish. */
 export class StoryScene {
   campaign?: CampaignScene;
+  oasisSprites?: OasisSprites;
   progress = 0;
   done = false;
   actors: Actor[] = [];
@@ -32,7 +34,7 @@ export class StoryScene {
   constructor(public world: World) {
     world.root.add(this.greenery, this.hearts);
     const kind = world.game.level.story?.kind;
-    if (kind === "oasis") this.oasis();
+    if (kind === "oasis") this.oasisSprites = new OasisSprites(world);
     if (kind === "bridge") this.crossing();
     if (kind === "city") this.city();
     if (kind && !["oasis", "bridge", "city"].includes(kind))
@@ -532,6 +534,10 @@ export class StoryScene {
                   (this.world.game.level.story?.kind === "city" ? 6 : 4)),
           );
       this.done = this.progress >= 1;
+    }
+    if (this.oasisSprites) {
+      this.oasisSprites.update(this.progress, time);
+      return;
     }
     const kind = this.world.game.level.story?.kind;
     const travel = ease((this.progress - 0.35) / 0.6);

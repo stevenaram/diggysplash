@@ -390,6 +390,7 @@ if (import.meta.env.DEV)
         return {
           ...world.renderer.info.render,
           geometries: world.renderer.info.memory.geometries,
+          textures: world.renderer.info.memory.textures,
         };
       },
       get stage() {
@@ -397,6 +398,7 @@ if (import.meta.env.DEV)
       },
       get story() {
         return {
+          spriteFrames: world.story?.oasisSprites?.walkers.map(a => a.sprite.userData.frame),
           battle: world.story?.campaign?.battleScene
             ? {
                 ages: [...world.story.campaign.battleScene.state.ages],

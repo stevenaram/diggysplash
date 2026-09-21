@@ -293,7 +293,7 @@ export class World {
       tile.userData.sandMaterial = tile.material;
       if (t === "building")
         this.box(this.root, x, 0.012, z, 1.94, 0.025, 1.94, 0xcaae83);
-      if (t === "rock") {
+      if (t === "rock" && this.game.level.story?.kind !== "oasis") {
         const rock = this.shaded(
           new T.DodecahedronGeometry(0.52, 0),
           0xc4ad87,
@@ -328,6 +328,7 @@ export class World {
         part.raycast = () => {};
       }),
     );
+    if (this.game.level.story?.kind === "oasis") { this.sync(); return; }
     // Sparkle-like source landmarks rise above the oasis.
     const source = this.game.level.sources[0];
     const sx = gridWorld(source % SIZE),
@@ -650,6 +651,7 @@ export class World {
   }
   burst(i: number, celebrate = false) {
     if (this.reduced) return;
+    if (this.story?.oasisSprites) { this.story.oasisSprites.burst(i); return; }
     for (let k = 0; k < (celebrate ? 45 : 8); k++) {
       const m = this.box(
         this.root,
@@ -926,6 +928,7 @@ export class World {
     this.frame = requestAnimationFrame(this.animate);
   };
   disposeRoot() {
+    this.story?.oasisSprites?.dispose();
     this.scene.remove(this.root);
     this.root.traverse((o) => {
       if (o instanceof T.Mesh) o.geometry.dispose();
