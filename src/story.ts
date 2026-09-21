@@ -3,6 +3,7 @@ import { HarvestScene } from "./harvest-scene";
 import { CitySprites } from "./city-sprites";
 import { BridgeSprites } from "./bridge-sprites";
 import { OasisSprites } from "./oasis-sprites";
+import { OASIS_DURATION } from "./oasis-timeline";
 import { SIZE, gridWorld } from "./game";
 import { CampaignScene } from "./campaign";
 import type { World } from "./world";
@@ -452,7 +453,7 @@ export class StoryScene {
             this.progress +
               dt /
                 (this.campaign?.duration ??
-                  (this.world.game.level.story?.kind === "city" ? 9 : this.world.game.level.story?.kind === "bridge" ? 6 : 4)),
+                  (this.oasisSprites ? OASIS_DURATION : this.world.game.level.story?.kind === "city" ? 9 : this.world.game.level.story?.kind === "bridge" ? 6 : 4)),
           );
       this.done = this.progress >= 1;
     }

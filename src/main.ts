@@ -398,6 +398,14 @@ if (import.meta.env.DEV)
       },
       get story() {
         return {
+          oasis: world.story?.oasisSprites ? {
+            plant:world.story.oasisSprites.monster.plant.visible,
+            palm:world.story.oasisSprites.monster.palm.visible,
+            actors:world.story.oasisSprites.walkers.map(a=>a.sprite.visible),
+            roasts:world.story.oasisSprites.monster.roasts.map(r=>r.visible),
+            fire:world.story.oasisSprites.monster.flames.some(f=>f.visible),
+            angles:{...world.viewAngles},
+          }:undefined,
           harvestPower: world.story?.harvestScene?.power,
           cityFrames: world.story?.citySprites?.people.map(a=>a.sprite.userData.frame),
           wheelRotation: world.wheels[0]?.rotation.z,

@@ -218,7 +218,7 @@ export class World {
       spans.forEach(([u,v],face)=>{for(let j=0;j<4;j++){const i=face*4+j;uv.setXY(i,uv.getX(i)*u/(surface === "plaster" ? TILE_SIZE*2 : TILE_SIZE),uv.getY(i)*v/(surface === "plaster" ? TILE_SIZE*2 : TILE_SIZE));}});
     }
     let material: T.Material | T.Material[];
-    if (["battle", "fortress"].includes(this.game.level.story?.kind ?? "")) {
+    if (["battle", "fortress", "oasis"].includes(this.game.level.story?.kind ?? "")) {
       const vertexColors = colors.flatMap((c) =>
         Array.from({ length: 4 }, () => [c.r, c.g, c.b]).flat(),
       );

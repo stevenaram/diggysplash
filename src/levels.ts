@@ -71,9 +71,9 @@ function board(
 // every open square is a real, reachable dig, never a decorative sub-grid.
 const oasis = board(
   "oasis",
-  "A drink for the flock",
+  "Something in the water",
   "Bring water to the dry oasis.",
-  "The flock can drink!",
+  "You watered WHAT?!",
   [
     "........",
     "........",

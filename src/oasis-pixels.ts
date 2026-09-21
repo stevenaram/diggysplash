@@ -1,10 +1,10 @@
 /** Original pixel drawings, deliberately rasterized without antialiasing. */
-export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack';
+export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower';
 /** Every source pixel occupies 1/32 of a tile; small props get small drawings. */
 export const PIXEL_SIZES: Record<PixelKind, readonly [number, number]> = {
   villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
   grass: [10, 12], basket: [16, 16], blanket: [22, 12], heart: [12, 12],
-  pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20],
+  pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20], flower:[16,22],
 };
 export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const [w, h] = PIXEL_SIZES[kind];
@@ -14,7 +14,15 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const oval = (x:number,y:number,rx:number,ry:number,c:string) => {for(let j=Math.floor(y-ry);j<=y+ry;j++)for(let i=Math.floor(x-rx);i<=x+rx;i++)if(((i-x)/rx)**2+((j-y)/ry)**2<=1)dot(i,j,c);};
   const poly = (points:number[][],c:string) => {for(let y=0;y<h;y++)for(let x=0;x<w;x++){let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++){const a=points[i],b=points[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;}if(inside)dot(x,y,c);}};
   const ink='#494353', deep='#706052', tan='#aa805b', gold='#d6ac67', light='#f0d294';
-  if(kind==='shepherd'||kind==='villager') {
+  if(kind==='flower') {
+    const fresh=frame>0;
+    poly(fresh?[[7,20],[8,7],[10,7],[9,20]]:[[7,20],[8,10],[11,8],[13,11],[11,12],[10,10],[9,20]],fresh?'#47795b':'#8b895c');
+    poly([[8,17],[3,13],[2,15],[5,18],[8,18]],fresh?'#83b873':'#a3a16b');
+    poly([[9,15],[13,12],[15,13],[12,17],[9,17]],fresh?'#619b69':'#8b895c');
+    const x=fresh?9:12,y=fresh?6:12;
+    for(const [dx,dy] of [[-3,0],[3,0],[0,-3],[0,3]])oval(x+dx,y+dy,2,2,fresh?'#f2a2b5':'#c3949e');
+    oval(x,y,2,2,'#f6ce7a');dot(x,y-1,'#fff0b2');
+  } else if(kind==='shepherd'||kind==='villager') {
     // Human frames 6/7/8 are rear idle / left step / right step.
     const rear=frame>=6, pose=rear?frame-6:frame;
     const walking=pose===1||pose===2, step=pose===2?1:0;
