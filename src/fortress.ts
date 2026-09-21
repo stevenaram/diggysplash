@@ -59,7 +59,7 @@ export class FortressScene {
     }
     compact(this.garden, w.mat(0xffffff, undefined, true));
     // Dusty ruts and paving establish a continuous road through the gate.
-    const road = s.at(8, 14.1);
+    const road = s.at(8, 14.8);
     for (const dz of [-0.32, 0.32])
       w.box(road, -0.3, 0.031, dz, 12.6, 0.012, 0.055, 0xa58b67);
     for (let k = 0; k < 13; k++)
@@ -70,7 +70,7 @@ export class FortressScene {
       [7.5, 12.5, 0xc99f68],
       [5.1, 10.5, 0x739e99],
     ]) {
-      const root = campaign.wagon(x, 14.1, color);
+      const root = campaign.wagon(x, 14.8, color);
       const wheels = root.children.filter(
         (p) => p instanceof T.Group && p.position.y === 0.29,
       ) as T.Group[];
@@ -88,29 +88,29 @@ export class FortressScene {
       this.wagons.push({ root, wheels, start: x - 7.5, end: end - 7.5 });
     }
     this.buildDonkey(this.wagons[0].root);
-    const shepherd = s.shepherd(2.5, 13.55),
-      sheep = s.actor(3.6, 13.55, true);
+    const shepherd = s.shepherd(2.5, 14.2),
+      sheep = s.actor(3.6, 14.2, true);
     this.walkers.push(
       this.walker(shepherd, [
-        [2.5, 13.55],
-        [10.9, 13.55],
+        [2.5, 14.2],
+        [10.9, 14.2],
         [13.75, 12.5],
         [13.8, 10.65],
       ]),
     );
     this.walkers.push(
       this.walker(sheep, [
-        [3.6, 13.5],
-        [11.4, 13.5],
+        [3.6, 14.2],
+        [11.4, 14.2],
         [14, 12.5],
         [14, 10.1],
       ]),
     );
-    const guide = s.actor(8.8, 13.6, false, 0xb99156);
+    const guide = s.actor(8.8, 14.25, false, 0xb99156);
     this.walkers.push(
       this.walker(guide, [
-        [8.8, 13.6],
-        [10.8, 13.6],
+        [8.8, 14.25],
+        [10.8, 14.25],
         [12.1, 13.4],
       ]),
     );
@@ -323,7 +323,7 @@ export class FortressScene {
   buildRefuge() {
     const s = this.s,
       w = this.w,
-      frame = s.at(9.6, 14.05);
+      frame = s.at(9.6, 14.75);
     for (const dz of [-0.97, 0.97]) {
       w.box(frame, 0, 0.83, dz, 0.48, 1.66, 0.43, 0xdac097, "stone");
       w.box(frame, 0, 1.69, dz, 0.6, 0.16, 0.53, 0xf0d7ad);
@@ -333,7 +333,9 @@ export class FortressScene {
     w.box(frame, 0, 1.87, 0, 0.36, 0.23, 1.94, 0xe3cba1, "stone");
     w.box(frame, 0.19, 1.88, 0, 0.025, 0.14, 0.39, 0x408f96);
     compact(frame, w.mat(0xffffff, "stone", true));
-    const gate = s.at(9.6, 14.05);
+    frame.scale.z = 0.65;
+    const gate = s.at(9.6, 14.75);
+    gate.scale.z = 0.65;
     for (let n = 0; n < 9; n++)
       w.box(gate, 0, 0.8, (n - 4) * 0.195, 0.105, 1.5, 0.075, 0x8b7150, "wood");
     for (const y of [0.24, 0.88, 1.42])
@@ -343,7 +345,8 @@ export class FortressScene {
     winch.rotation.y = Math.PI / 2;
     compact(winch, w.mat(0xffffff, "wood", true));
     this.winches.push(winch);
-    const shelter = s.at(12.6, 13.08);
+    const shelter = s.at(14.65, 11.5);
+    shelter.rotation.y = Math.PI / 2;
     for (const dx of [-1.1, 1.1])
       w.cylinder(shelter, dx, 0.69, 0, 0.035, 1.38, 0x96724b);
     for (let k = 0; k < 10; k++) {
@@ -374,7 +377,7 @@ export class FortressScene {
     compact(shelter, w.mat(0xffffff, undefined, true));
     this.flag(14.7, 12.5, 0x418f97, 1.9);
     for (const x of [10.4, 12.7, 14.65]) {
-      const lamp = s.at(x, 13.03);
+      const lamp = s.at(x, 15.35);
       w.cylinder(lamp, 0, 0.7, 0, 0.025, 1.4, 0x8b7453);
       w.box(lamp, 0, 1.33, 0, 0.19, 0.23, 0.16, 0x9b7b4d);
       const glow = w.box(lamp, 0, 1.34, 0.085, 0.13, 0.15, 0.015, 0xf2c76d);

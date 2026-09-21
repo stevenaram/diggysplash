@@ -1,5 +1,5 @@
 import * as T from "three";
-import { Game } from "./game";
+import { Game, SIZE, CELL_COUNT, TILE_SIZE, gridWorld } from "./game";
 import { SurfaceTextures, type Surface } from "./textures";
 import { StoryScene } from "./story";
 const palette = {
@@ -24,7 +24,7 @@ export class World {
   palms: T.Group[] = [];
   markers: T.Mesh[] = [];
   hover = new T.Mesh(
-    new T.BoxGeometry(0.95, 0.045, 0.95),
+    new T.BoxGeometry(1.9, 0.045, 1.9),
     new T.MeshBasicMaterial({
       color: 0xfff5c7,
       transparent: true,
@@ -43,7 +43,7 @@ export class World {
   mats = new Map<string, T.MeshBasicMaterial>();
   textures = new SurfaceTextures();
   viewTarget = new T.Vector3();
-  viewDirection = new T.Vector3(23, 30, 29).normalize();
+  viewDirection = new T.Vector3(23, 40, 29).normalize();
   zoom = 1;
   fitDistance = 40;
   cameraTransition?: {
@@ -256,12 +256,12 @@ export class World {
       this.box(this.root, 0, -0.82, 0, 16.15, 0.9, 16.15, 0xb97e55);
       this.box(this.root, 0, -0.35, 0, 16.2, 0.12, 16.2, 0xd5a36b);
     }
-    for (let i = 0; i < 256; i++) {
-      const x = (i % 16) - 7.5,
-        z = Math.floor(i / 16) - 7.5,
+    for (let i = 0; i < CELL_COUNT; i++) {
+      const x = gridWorld(i % SIZE),
+        z = gridWorld(Math.floor(i / SIZE)),
         t = this.game.level.tiles[i];
       const color = [0xe7c58d, 0xeac992, 0xe4c087, 0xedcd95][
-        (i * 13 + Math.floor(i / 16) * 7) % 4
+        (i * 13 + Math.floor(i / SIZE) * 7) % 4
       ];
       const tile: T.Mesh = this.box(
         this.root,
@@ -274,14 +274,20 @@ export class World {
         color,
         "sand",
       );
+      tile.scale.set(TILE_SIZE, 1, TILE_SIZE);
       this.tiles.push(tile);
       tile.userData.cell = i;
       tile.userData.sandMaterial = tile.material;
       if (t === "building")
-        this.box(this.root, x, 0.012, z, 0.94, 0.025, 0.94, 0xcaae83);
+        this.box(this.root, x, 0.012, z, 1.94, 0.025, 1.94, 0xcaae83);
       if (t === "rock") {
-        if (i % 16 === 0 || i % 16 === 15 || i < 16 || i >= 240) {
-          this.box(this.root, x, 0.01, z, 0.86, 0.14, 0.86, 0xcbae84);
+        if (
+          i % SIZE === 0 ||
+          i % SIZE === SIZE - 1 ||
+          i < SIZE ||
+          i >= CELL_COUNT - SIZE
+        ) {
+          this.box(this.root, x, 0.01, z, 1.86, 0.14, 1.86, 0xcbae84);
           if (i % 3 === 0)
             this.box(this.root, x, 0.12, z, 0.55, 0.12, 0.6, 0xd4b88e);
         } else {
@@ -290,7 +296,7 @@ export class World {
             0xc4ad87,
             "sand",
           );
-          rock.scale.set(0.88, 0.67, 0.86);
+          rock.scale.set(1.55, 1.1, 1.5);
           rock.position.set(x, 0.26, z);
           rock.rotation.y = i * 0.71;
           this.root.add(rock);
@@ -319,8 +325,8 @@ export class World {
     this.story = new StoryScene(this);
     // Sparkle-like source landmarks rise above the oasis.
     const source = this.game.level.sources[0];
-    const sx = (source % 16) - 7.5,
-      sz = Math.floor(source / 16) - 7.5;
+    const sx = gridWorld(source % SIZE),
+      sz = gridWorld(Math.floor(source / SIZE));
     const drop = new T.Mesh(new T.OctahedronGeometry(0.18), this.mat(0x79e2dc));
     drop.position.set(sx, 0.72, sz);
     this.root.add(drop);
@@ -452,8 +458,8 @@ export class World {
   }
   machine(i: number, n: number) {
     const firstChild = this.root.children.length;
-    const x = (i % 16) - 7.5,
-      z = Math.floor(i / 16) - 7.5;
+    const x = gridWorld(i % SIZE),
+      z = gridWorld(Math.floor(i / SIZE));
     // Machine stays inside its blocked target cell; neighboring sand remains visible.
     this.box(this.root, x, 0.05, z, 0.9, 0.14, 0.9, 0x9c8d72);
     for (const s of [-1, 1])
@@ -521,8 +527,8 @@ export class World {
   }
   addWater(i: number) {
     if (this.waters.has(i)) return;
-    const x = (i % 16) - 7.5,
-      z = Math.floor(i / 16) - 7.5;
+    const x = gridWorld(i % SIZE),
+      z = gridWorld(Math.floor(i / SIZE));
     const terrain = this.game.level.tiles[i],
       elevated = terrain === "aqueduct",
       pool =
@@ -539,6 +545,7 @@ export class World {
       palette.water,
       "water",
     );
+    mesh.scale.set(TILE_SIZE, 1, TILE_SIZE);
     mesh.visible = false;
     mesh.userData.cell = i;
     this.waters.set(i, mesh);
@@ -560,7 +567,7 @@ export class World {
           palette.water,
           "water",
         );
-        arm.userData.neighbor = i + dx + dz * 16;
+        arm.userData.neighbor = i + dx + dz * SIZE;
       }
     for (let k = 0; k < 2; k++)
       this.box(
@@ -576,7 +583,7 @@ export class World {
   }
   sync() {
     this.settled = false;
-    for (let i = 0; i < 256; i++) {
+    for (let i = 0; i < CELL_COUNT; i++) {
       const dug = this.game.digs.includes(i),
         t = this.game.level.tiles[i];
       if (dug) {
@@ -593,16 +600,16 @@ export class World {
           ]) {
             const bank = this.box(
               this.root,
-              (i % 16) - 7.5 + dx * 0.44,
+              gridWorld(i % SIZE) + dx * 0.88,
               -0.085,
-              Math.floor(i / 16) - 7.5 + dz * 0.44,
-              dx ? 0.12 : 0.985,
+              gridWorld(Math.floor(i / SIZE)) + dz * 0.88,
+              dx ? 0.24 : 1.97,
               0.17,
-              dz ? 0.12 : 0.985,
+              dz ? 0.24 : 1.97,
               0x815334,
               "soil",
             );
-            bank.userData.neighbor = i + dx + dz * 16;
+            bank.userData.neighbor = i + dx + dz * SIZE;
             edges.push(bank);
           }
           this.banks.set(i, edges);
@@ -641,9 +648,9 @@ export class World {
     for (let k = 0; k < (celebrate ? 45 : 8); k++) {
       const m = this.box(
         this.root,
-        (i % 16) - 7.5,
+        gridWorld(i % SIZE),
         0.12,
-        Math.floor(i / 16) - 7.5,
+        gridWorld(Math.floor(i / SIZE)),
         0.08,
         0.08,
         0.08,
@@ -699,13 +706,17 @@ export class World {
     this.onHover(valid ? i : null);
     this.host.style.cursor = valid ? "pointer" : "default";
     if (valid)
-      this.hover.position.set((i % 16) - 7.5, 0.035, Math.floor(i / 16) - 7.5);
+      this.hover.position.set(
+        gridWorld(i % SIZE),
+        0.035,
+        gridWorld(Math.floor(i / SIZE)),
+      );
   }
   screen(i: number) {
     const p = new T.Vector3(
-        (i % 16) - 7.5,
+        gridWorld(i % SIZE),
         0,
-        Math.floor(i / 16) - 7.5,
+        gridWorld(Math.floor(i / SIZE)),
       ).project(this.camera),
       r = this.host.getBoundingClientRect();
     return {
@@ -723,7 +734,11 @@ export class World {
       p.y > r.bottom - 35
     ) {
       this.viewChanged = true;
-      this.viewTarget.set((i % 16) - 7.5, 0, Math.floor(i / 16) - 7.5);
+      this.viewTarget.set(
+        gridWorld(i % SIZE),
+        0,
+        gridWorld(Math.floor(i / SIZE)),
+      );
       this.updateCamera();
     }
   }
@@ -786,8 +801,8 @@ export class World {
         ...this.game.level.targets,
       ]),
     ];
-    const xs = cells.map((i) => (i % 16) - 7.5),
-      zs = cells.map((i) => Math.floor(i / 16) - 7.5);
+    const xs = cells.map((i) => gridWorld(i % SIZE)),
+      zs = cells.map((i) => gridWorld(Math.floor(i / SIZE)));
     this.viewTarget.set(
       (Math.min(...xs) + Math.max(...xs)) / 2,
       0,
@@ -796,20 +811,20 @@ export class World {
     const { width: w, height: h } = this.host.getBoundingClientRect();
     // A full-board overview on a phone makes individual cells too small to tap.
     // Start near the puzzle, then let pinch/drag and the overview button reveal the perimeter.
-    const estimatedCell = Math.min(w / 24, h / 19);
+    const estimatedCell = Math.min(w / 12, h / 9.5);
     const preferred = T.MathUtils.clamp(34 / estimatedCell, 1.12, 3.2);
     this.zoom = 1;
     this.updateCamera();
     let maxX = 0,
       maxY = 0;
     for (const i of cells)
-      for (const dx of [-0.6, 0.6])
-        for (const dz of [-0.6, 0.6])
+      for (const dx of [-1.05, 1.05])
+        for (const dz of [-1.05, 1.05])
           for (const y of [0, 1.2]) {
             const p = new T.Vector3(
-              (i % 16) - 7.5 + dx,
+              gridWorld(i % SIZE) + dx,
               y,
-              Math.floor(i / 16) - 7.5 + dz,
+              gridWorld(Math.floor(i / SIZE)) + dz,
             ).project(this.camera);
             maxX = Math.max(maxX, Math.abs(p.x));
             maxY = Math.max(maxY, Math.abs(p.y));

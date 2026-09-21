@@ -1,4 +1,5 @@
 import * as T from "three";
+import { SIZE, gridWorld } from "./game";
 import { CampaignScene } from "./campaign";
 import type { World } from "./world";
 
@@ -198,28 +199,36 @@ export class StoryScene {
     const w = this.world;
     w.palm(-5.5, -3.5, 2.5);
     w.palm(-4.5, -3.5, 2.05);
-    w.palm(5.5, -1.5, 2.2);
+    w.palm(6.9, -1.7, 2.2);
     // An irregular limestone rim makes the destination read as a dry watering hole.
     const basin = w.game.level.tiles
       .map((t, i) => (t === "basin" || t === "target" ? i : -1))
       .filter((i) => i >= 0);
     for (const i of basin) {
-      const x = i % 16,
-        z = Math.floor(i / 16);
+      const x = i % SIZE,
+        z = Math.floor(i / SIZE);
       for (const [dx, dz] of [
         [1, 0],
         [-1, 0],
         [0, 1],
         [0, -1],
       ]) {
-        const j = (z + dz) * 16 + x + dx;
+        const j = (z + dz) * SIZE + x + dx;
         if (basin.includes(j)) continue;
         const rock = w.shaded(new T.DodecahedronGeometry(0.19, 0), 0xcfb48c);
-        rock.position.set(x - 7.5 + dx * 0.45, 0.035, z - 7.5 + dz * 0.45);
+        rock.position.set(
+          gridWorld(x) + dx * 0.93,
+          0.035,
+          gridWorld(z) + dz * 0.93,
+        );
         rock.scale.set(dx ? 0.6 : 1.4, 0.45, dz ? 0.6 : 1.4);
         w.root.add(rock);
         const grass = new T.Group();
-        grass.position.set(x - 7.5 + dx * 0.6, 0.04, z - 7.5 + dz * 0.6);
+        grass.position.set(
+          gridWorld(x) + dx * 1.05,
+          0.04,
+          gridWorld(z) + dz * 1.05,
+        );
         this.greenery.add(grass);
         for (let k = 0; k < 3; k++) {
           const blade = w.box(
@@ -239,14 +248,14 @@ export class StoryScene {
     this.greenery.visible = false;
     const shepherd = this.shepherd(13.1, 10.4);
     shepherd.destination.add(new T.Vector3(-0.3, 0, -0.5));
-    const a = this.actor(13.3, 8.2, true);
-    a.destination.set(12.75 - 7.5, 0, 8.1 - 7.5);
+    const a = this.actor(14.1, 8.2, true);
+    a.destination.set(13.85 - 7.5, 0, 8.2 - 7.5);
     a.root.rotation.y = -Math.PI / 2;
-    const b = this.actor(11.4, 9.4, true);
-    b.destination.set(11.4 - 7.5, 0, 8.8 - 7.5);
+    const b = this.actor(12.2, 10.4, true);
+    b.destination.set(12.2 - 7.5, 0, 9.85 - 7.5);
     b.root.rotation.y = Math.PI;
-    const c = this.actor(13.3, 6.8, true);
-    c.destination.set(12.6 - 7.5, 0, 7.05 - 7.5);
+    const c = this.actor(14.2, 6.8, true);
+    c.destination.set(13.85 - 7.5, 0, 6.8 - 7.5);
     c.root.rotation.y = -Math.PI / 2;
     this.heart(12.8, 1.35, 8.2);
     this.heart(11.5, 1.15, 8.8);
@@ -340,7 +349,7 @@ export class StoryScene {
     w.house(5.1, -5.9, 1.7, 1.5, 1.7, 0xe8c594);
     w.house(1, -5.9, 1.7, 1.5, 1.8, 0xe5c292);
     w.palm(-6.5, -0.5, 2.2);
-    w.palm(-3.5, 4.5, 1.8);
+    w.palm(-6.8, 4.5, 1.8);
     // The opening and twin portcullises are visible from the approach.
     for (let x = 5; x <= 14; x++) {
       if (x === 9 || x === 10) continue;
@@ -393,8 +402,8 @@ export class StoryScene {
           0x8f8164,
         );
     }
-    for (let x = 7; x <= 12; x++) this.aqueductArch(x, 5);
-    for (const x of [7, 12]) {
+    for (let x = 6; x <= 13; x++) this.aqueductArch(x, 4.5);
+    for (const x of [6.5, 12.5]) {
       const feeder = this.at(x, 5.5);
       w.box(feeder, 0, 1.63, 0, 0.62, 0.14, 1.5, 0xe7c58e, "stone");
       w.box(feeder, -0.26, 1.75, 0, 0.1, 0.18, 1.5, 0xeed6a6);

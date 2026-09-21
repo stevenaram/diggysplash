@@ -1,4 +1,9 @@
-export const SIZE = 16;
+export const SIZE = 8;
+export const CELL_COUNT = SIZE * SIZE;
+// Two world units per tile keep the diorama large while making every dig legible.
+export const TILE_SIZE = 2;
+export const gridWorld = (coordinate: number) =>
+  (coordinate - (SIZE - 1) / 2) * TILE_SIZE;
 export type Terrain =
   | "sand"
   | "rock"
@@ -124,7 +129,7 @@ export class Game {
         }
   }
 }
-// Exact node-weighted Steiner tree DP. At most five terminals on 256 cells.
+// Exact node-weighted Steiner tree DP. At most five terminals on 64 cells.
 export function minimumDigs(level: Level): number {
   const terminals = [level.sources[0], ...level.targets],
     count = 1 << terminals.length;
@@ -136,22 +141,22 @@ export function minimumDigs(level: Level): number {
         : 0,
   );
   const dp = Array.from({ length: count }, () =>
-    new Float64Array(256).fill(Infinity),
+    new Float64Array(CELL_COUNT).fill(Infinity),
   );
   for (let mask = 1; mask < count; mask++) {
     if ((mask & (mask - 1)) === 0) dp[mask][terminals[Math.log2(mask)]] = 0;
     for (let sub = (mask - 1) & mask; sub; sub = (sub - 1) & mask)
-      for (let v = 0; v < 256; v++)
+      for (let v = 0; v < CELL_COUNT; v++)
         if (Number.isFinite(cost[v]))
           dp[mask][v] = Math.min(
             dp[mask][v],
             dp[sub][v] + dp[mask ^ sub][v] - cost[v],
           );
     const seen = new Set<number>();
-    for (let k = 0; k < 256; k++) {
+    for (let k = 0; k < CELL_COUNT; k++) {
       let v = -1,
         best = Infinity;
-      for (let j = 0; j < 256; j++)
+      for (let j = 0; j < CELL_COUNT; j++)
         if (!seen.has(j) && dp[mask][j] < best) {
           best = dp[mask][j];
           v = j;

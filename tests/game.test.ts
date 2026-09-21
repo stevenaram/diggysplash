@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   Game,
+  SIZE,
+  CELL_COUNT,
   cell,
   minimumDigs,
   ratingForDigs,
@@ -11,7 +13,7 @@ import {
 } from "../src/game";
 import { levels } from "../src/levels";
 function fixture(): Level {
-  const tiles: Terrain[] = Array(256).fill("sand");
+  const tiles: Terrain[] = Array(CELL_COUNT).fill("sand");
   tiles[cell(1, 1)] = "source";
   tiles[cell(4, 1)] = "target";
   tiles[cell(2, 2)] = "rock";
@@ -25,10 +27,10 @@ function fixture(): Level {
 }
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
-    assert.equal(l.tiles.length, 256);
-    assert.equal(minimumDigs(l), [6, 7, 6, 12, 17, 18, 19, 20][n]);
+    assert.equal(l.tiles.length, CELL_COUNT);
+    assert.equal(minimumDigs(l), [3, 4, 5, 6, 8, 9, 10, 13][n]);
     assert.equal(l.starThresholds!.three, minimumDigs(l));
-    assert.ok(l.budget - l.starThresholds!.three >= 5);
+    assert.ok(l.budget - l.starThresholds!.three >= 4);
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);
     assert.equal(g.won, true);
@@ -48,7 +50,7 @@ test("orthogonal flow connects dry trenches and never crosses a diagonal", () =>
 });
 test("blocked, source, target, out of range, and duplicate digs spend nothing", () => {
   const g = new Game(fixture());
-  for (const i of [cell(2, 2), cell(1, 1), cell(4, 1), -1, 256])
+  for (const i of [cell(2, 2), cell(1, 1), cell(4, 1), -1, CELL_COUNT])
     assert.equal(g.dig(i), false);
   assert.equal(g.remaining, 3);
   g.dig(cell(2, 1));
@@ -107,18 +109,18 @@ test("actual wins earn three, two, or one star from net digs after undo", () => 
   const level = levels[0];
   for (const [extra, stars] of [
     [0, 3],
-    [3, 2],
+    [2, 2],
+    [3, 1],
     [4, 1],
-    [8, 1],
   ]) {
     const game = new Game(level);
-    for (let x = 1; x <= extra; x++) game.dig(cell(x, 13));
+    for (let x = 1; x <= extra; x++) game.dig(cell(x, 1));
     level.solution.forEach((i) => game.dig(i));
     assert.equal(game.won, true);
     assert.equal(game.stars, stars);
   }
   const game = new Game(level);
-  game.dig(cell(1, 13));
+  game.dig(cell(1, 1));
   game.undo();
   level.solution.forEach((i) => game.dig(i));
   assert.equal(game.stars, 3);
@@ -126,8 +128,8 @@ test("actual wins earn three, two, or one star from net digs after undo", () => 
 test("the aqueduct carries water between both gears, and cannot be entered through the ground underneath", () => {
   const level = levels[2],
     game = new Game(level);
-  assert.equal(game.dig(cell(8, 5)), false);
-  assert.equal(connections(level, cell(8, 6)).includes(cell(8, 5)), false);
+  assert.equal(game.dig(cell(4, 2)), false);
+  assert.equal(connections(level, cell(4, 3)).includes(cell(4, 2)), false);
   level.solution.forEach((i) => game.dig(i));
   assert.deepEqual(game.active, [true, true]);
   assert.ok(game.wet.get(level.targets[1])! > game.wet.get(level.targets[0])!);
@@ -136,17 +138,18 @@ test("the aqueduct carries water between both gears, and cannot be entered throu
 });
 test("ravine blocks flow and cannot be dug; dry oasis fills without any gears", () => {
   const bridge = new Game(levels[1]);
-  assert.equal(bridge.dig(cell(10, 8)), false);
+  assert.equal(bridge.dig(cell(5, 4)), false);
   const oasis = new Game(levels[0]);
   levels[0].solution.forEach((i) => oasis.dig(i));
   assert.equal(oasis.won, true);
-  assert.equal(oasis.wet.has(cell(12, 8)), true);
+  assert.equal(oasis.wet.has(cell(6, 4)), true);
 });
 test("failure is reported only when the budget is exhausted without reaching the objective", () => {
   const game = new Game(levels[0]);
   assert.equal(game.failed, false);
   assert.equal(game.stars, 0);
-  for (let x = 1; x <= 14; x++) game.dig(cell(x, 13));
+  for (let i = 0; i < CELL_COUNT && game.remaining > 0; i++)
+    if (!game.level.solution.includes(i)) game.dig(i);
   assert.equal(game.failed, true);
   assert.equal(game.stars, 0);
   game.undo();
@@ -210,4 +213,23 @@ test("every objective is reachable without a scripted activation sequence", () =
         `${level.story!.kind}: target ${target} is independently reachable`,
       );
     }
+});
+
+test("8 × 8 boundaries never wrap, and every authored coordinate stays on the board", () => {
+  assert.equal(SIZE, 8);
+  for (const level of levels) {
+    for (const i of [
+      ...level.sources,
+      ...level.targets,
+      ...level.solution,
+      ...(level.story?.focus ?? []),
+      ...(level.links ?? []).flat(),
+    ]) {
+      assert.ok(Number.isInteger(i) && i >= 0 && i < CELL_COUNT);
+    }
+    for (let z = 0; z < SIZE; z++) {
+      assert.ok(!connections(level, cell(7, z)).includes(cell(0, z + 1)));
+    }
+    assert.equal(new Set(level.solution).size, level.solution.length);
+  }
 });

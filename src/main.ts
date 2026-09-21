@@ -2,7 +2,7 @@ import "@fontsource/outfit/latin-600.css";
 import "@fontsource/outfit/latin-800.css";
 import "@fontsource/dm-sans/latin-500.css";
 import "./style.css";
-import { Game, ratingForDigs } from "./game";
+import { SIZE, Game, ratingForDigs } from "./game";
 import { levels } from "./levels";
 import { World } from "./world";
 const icons = {
@@ -54,7 +54,7 @@ let lastPowered = 0;
 let focused = game.level.solution[0];
 let bestStars: number[] = levels.map(() => 0);
 try {
-  const saved = JSON.parse(read("diggy-story-stars", "[]"));
+  const saved = JSON.parse(read("diggy-story-stars-8x8", "[]"));
   if (Array.isArray(saved))
     bestStars = bestStars.map((_, i) =>
       Number.isInteger(saved[i]) ? Math.max(0, Math.min(3, saved[i])) : 0,
@@ -295,7 +295,7 @@ world.onSettled = () => {
     completed = Math.max(completed, stage + 1);
     bestStars[stage] = Math.max(bestStars[stage], game.stars);
     save("diggy-completed", String(completed));
-    save("diggy-story-stars", JSON.stringify(bestStars));
+    save("diggy-story-stars-8x8", JSON.stringify(bestStars));
     sound("win");
   }
   update();
@@ -353,12 +353,28 @@ host.addEventListener("keydown", (e) => {
   const moves: Record<string, number> = {
     ArrowLeft: -1,
     ArrowRight: 1,
-    ArrowUp: -16,
-    ArrowDown: 16,
+    ArrowUp: -SIZE,
+    ArrowDown: SIZE,
   };
   if (e.key in moves) {
     e.preventDefault();
-    focused = Math.max(0, Math.min(255, focused + moves[e.key]));
+    const x = focused % SIZE,
+      z = Math.floor(focused / SIZE);
+    const nx = Math.max(
+      0,
+      Math.min(
+        SIZE - 1,
+        x + (e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : 0),
+      ),
+    );
+    const nz = Math.max(
+      0,
+      Math.min(
+        SIZE - 1,
+        z + (e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : 0),
+      ),
+    );
+    focused = nz * SIZE + nx;
     world.reveal(focused);
     world.highlight(focused);
   }

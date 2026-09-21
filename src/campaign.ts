@@ -1,4 +1,5 @@
 import * as T from "three";
+import { SIZE, gridWorld } from "./game";
 import { BattleScene } from "./battle";
 import { FortressScene } from "./fortress";
 import type { StoryScene } from "./story";
@@ -48,9 +49,9 @@ export class CampaignScene {
   // These are mechanical scenery, not extra diggable channels or puzzle links.
   delivery(n: number, x: number, z: number) {
     const i = this.w.game.level.targets[n],
-      sx = i % 16,
-      sz = Math.floor(i / 16);
-    const seam = 0.44 - n * 0.035;
+      sx = gridWorld(i % SIZE) + 7.5,
+      sz = gridWorld(Math.floor(i / SIZE)) + 7.5;
+    const seam = 0.94 - n * 0.035;
     const points = [
       [sx + 0.28, sz + 0.28],
       [sx + seam, sz + seam],
