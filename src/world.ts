@@ -17,6 +17,7 @@ export class World {
   banks = new Map<number, T.Mesh[]>();
   onHover: (i: number | null) => void = () => {};
   onViewChanged = () => {};
+  onBattleSound: (kind: "wind" | "launch" | "impact") => void = () => {};
   tiles: T.Mesh[] = [];
   waters = new Map<number, T.Mesh>();
   wheels: T.Group[] = [];
@@ -195,10 +196,20 @@ export class World {
       shade.clone().multiplyScalar(0.9),
       shade.clone().multiplyScalar(0.78),
     ];
-    const m = new T.Mesh(
-      new T.BoxGeometry(w, h, d),
-      colors.map((c) => this.mat(c.getHex(), surface)),
-    );
+    const geometry = new T.BoxGeometry(w, h, d);
+    let material: T.Material | T.Material[];
+    if (this.game.level.story?.kind === "battle") {
+      const vertexColors = colors.flatMap((c) =>
+        Array.from({ length: 4 }, () => [c.r, c.g, c.b]).flat(),
+      );
+      geometry.setAttribute(
+        "color",
+        new T.Float32BufferAttribute(vertexColors, 3),
+      );
+      geometry.clearGroups();
+      material = this.mat(0xffffff, surface, true);
+    } else material = colors.map((c) => this.mat(c.getHex(), surface));
+    const m = new T.Mesh(geometry, material);
     m.position.set(x, y, z);
     parent.add(m);
     return m;
@@ -828,10 +839,15 @@ export class World {
         : kind === "bridge"
           ? [10.6, 10]
           : [9.7, 5.2]);
-    const target = new T.Vector3(x - 7.5, 0, z - 7.5),
-      zoom = this.game.level.story?.consequenceFocus
-        ? this.zoom
-        : Math.max(this.zoom, 1.45);
+    const target = new T.Vector3(x - 7.5, 0, z - 7.5);
+    const zoom = this.game.level.story?.consequenceFocus
+      ? this.zoom
+      : Math.max(this.zoom, 1.45);
+    if (kind === "battle") {
+      // Follow the action toward the enemy line without shrinking the models.
+      // Empty island corners need not dictate the cinematic framing.
+      target.set(1.2, 0, -2);
+    }
     if (this.reduced) {
       this.viewTarget.copy(target);
       this.zoom = zoom;
@@ -917,6 +933,7 @@ export class World {
     this.scene.remove(this.root);
     this.root.traverse((o) => {
       if (o instanceof T.Mesh) o.geometry.dispose();
+      if (o instanceof T.InstancedMesh) o.dispose();
       o.userData.ownedTexture?.dispose();
       o.userData.ownedMaterial?.dispose();
     });

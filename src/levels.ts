@@ -418,8 +418,8 @@ const battle = () =>
   chapter(
     "battle",
     "The battle of Sunfall",
-    "Power four defenses. Turn the tide.",
-    "Sunfall stands. The raiders retreat!",
+    "Feed the trebuchets. Break the siege.",
+    "Siege broken. Sunfall stands!",
     [
       [4, 4],
       [12, 4],

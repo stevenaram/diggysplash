@@ -22,7 +22,7 @@ Open the URL printed by Vite. For a production build, run `npm run build`, then 
 | Caravan in the embers | Three pumps extinguish burning wagons independently.                                                   | 25         | ≤ 17 digs   | 18–21 digs | 22–25 digs |
 | The sleeping sun      | Awaken three shrines; a floating sun beacon lights the desert.                                         | 25         | ≤ 18 digs   | 19–22 digs | 23–25 digs |
 | Before the storm      | Raise three barricades to protect the convoy.                                                          | 25         | ≤ 19 digs   | 20–22 digs | 23–25 digs |
-| The battle of Sunfall | Four water defenses repel the red army and its siege engines.                                          | 25         | ≤ 20 digs   | 21–23 digs | 24–25 digs |
+| The battle of Sunfall | Four water-powered trebuchets break the palisade, scatter the red army, and smash its siege engines.   | 25         | ≤ 20 digs   | 21–23 digs | 24–25 digs |
 
 Objectives have no numbered order. Thin sealed pipes visibly connect the later wheels to their machinery; these are delivery pipes, not extra puzzle channels. Each device reacts to its own water supply, while the final celebration waits for the whole level.
 
@@ -37,10 +37,17 @@ Three-star thresholds are verified minimum routes. Scores count the trenches cur
 - Watch each consequence before the completion card appears. Continue, replay for a better score, or retry/undo a failed attempt. Numbered chapter buttons revisit unlocked levels.
 - Sound preference, chapter unlocks, and best stars are saved locally. In-progress trenches are not.
 
+## Sunfall battle polish
+
+Each supplied trebuchet independently winds, releases, and reloads for three volleys. Articulated counterweights, moving winches, sling motion, ballistic boulders, ground shadows, trails, expanding impact rings, bouncing debris, and dust make the attack readable. Hits leave fallen troops, broken palisades, craters, and wrecked ballistas. Banners and formations move while idle; the allied army celebrates after the final impact. Mechanical creaks, launch sounds, and low impact thuds honor mute.
+
+The sixty-four soldiers use instanced body/head/leg geometry. Painted box faces use a single draw on this level; static machinery is merged. Debris and dust have fixed pools, and trails reuse instance buffers. The inspected idle scene dropped from 7,204 to roughly 600 draw calls; this is a renderer workload comparison, not a universal frame-rate guarantee. Repeated stage switching is checked for stable geometry counts. Reduced motion shows the final tableau immediately, and undo restores only the disconnected battery's sector.
+
 ## Implementation
 
 - `src/game.ts` and `src/levels.ts`: pure puzzle state, flood fill, aqueduct connections, star ratings, fixed 16 × 16 layouts, and exact node-weighted Steiner-tree verification.
 - `src/world.ts`, `src/story.ts`, and `src/campaign.ts`: full-resolution antialiased perspective rendering, generated characters and architecture, dark trench geometry, water flow, bridge/gate animation, character paths, and smooth camera framing.
+- `src/battle-state.ts`, `src/battle.ts`, `src/battle-army.ts`, `src/battle-effects.ts`, and `src/battle-mesh.ts`: deterministic artillery timelines, instanced formations, pooled impact effects, and reusable painted geometry.
 - `src/main.ts`: objectives, hover feedback, accessible result dialogs, local progress, keyboard controls, and synthesized audio.
 
 Materials are unlit. Small generated textures provide painted plaster, masonry, wood grain, leaf veins, sand, soil, and water. Nearest-neighbor magnification applies only to textures; the canvas renders at display resolution up to 2× device pixel ratio. ResizeObserver tracks the game container. Fonts ship with the app. Reduced-motion users see the final story poses without motion. Animation pauses while the page is hidden, and old scene geometries are disposed on level changes.

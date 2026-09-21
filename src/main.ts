@@ -48,6 +48,7 @@ let stage = 0;
 let game = new Game(levels[stage]);
 let muted = read("diggy-muted", "false") === "true";
 let audio: AudioContext | undefined;
+let battleNoise: AudioBuffer | undefined;
 let celebrated = false;
 let lastPowered = 0;
 let focused = game.level.solution[0];
@@ -61,11 +62,64 @@ try {
 } catch {
   /* Older or unavailable storage is harmless. */
 }
-function sound(kind: "dig" | "water" | "win" | "undo" | "machine") {
+function sound(
+  kind:
+    "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact",
+) {
   if (muted) return;
   try {
     audio ??= new AudioContext();
     void audio.resume();
+    if (["wind", "launch", "impact"].includes(kind)) {
+      const t = audio.currentTime,
+        impact = kind === "impact",
+        duration = impact ? 0.65 : kind === "launch" ? 0.35 : 0.28;
+      if (!battleNoise) {
+        battleNoise = audio.createBuffer(1, audio.sampleRate, audio.sampleRate);
+        const data = battleNoise.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      }
+      const source = audio.createBufferSource(),
+        filter = audio.createBiquadFilter(),
+        gain = audio.createGain();
+      source.buffer = battleNoise;
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(
+        impact ? 700 : kind === "launch" ? 1800 : 250,
+        t,
+      );
+      filter.frequency.exponentialRampToValueAtTime(100, t + duration);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(impact ? 0.13 : 0.05, t + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audio.destination);
+      source.start(t);
+      source.stop(t + duration);
+      source.onended = () => {
+        source.disconnect();
+        filter.disconnect();
+        gain.disconnect();
+      };
+      if (impact) {
+        const bass = audio.createOscillator(),
+          envelope = audio.createGain();
+        bass.frequency.setValueAtTime(95, t);
+        bass.frequency.exponentialRampToValueAtTime(28, t + 0.4);
+        envelope.gain.setValueAtTime(0.095, t);
+        envelope.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+        bass.connect(envelope);
+        envelope.connect(audio.destination);
+        bass.start(t);
+        bass.stop(t + 0.5);
+        bass.onended = () => {
+          bass.disconnect();
+          envelope.disconnect();
+        };
+      }
+      return;
+    }
     const notes =
       kind === "win"
         ? [523, 659, 784, 1047]
@@ -176,7 +230,12 @@ const objectiveNames: Record<string, string[]> = {
   caravan: ["Ochre wagon pump", "Teal wagon pump", "Cream wagon pump"],
   temple: ["West shrine", "East shrine", "South shrine"],
   fortress: ["West barricade", "Middle barricade", "East barricade"],
-  battle: ["North cannon", "Upper cannon", "Lower cannon", "South cannon"],
+  battle: [
+    "North trebuchet",
+    "Upper trebuchet",
+    "Lower trebuchet",
+    "South trebuchet",
+  ],
 };
 function update() {
   $("#remaining").textContent = String(game.remaining);
@@ -319,6 +378,7 @@ function positionGesture() {
   $(".intro-gesture").style.left = `${p.x - r.left - 14}px`;
   $(".intro-gesture").style.top = `${p.y - r.top - 25}px`;
 }
+world.onBattleSound = sound;
 world.onViewChanged = positionGesture;
 positionGesture();
 window.addEventListener("resize", positionGesture);
@@ -329,11 +389,33 @@ if (import.meta.env.DEV)
       get game() {
         return game;
       },
+      get renderStats() {
+        return {
+          ...world.renderer.info.render,
+          geometries: world.renderer.info.memory.geometries,
+        };
+      },
       get stage() {
         return stage;
       },
       get story() {
         return {
+          battle: world.story?.campaign?.battleScene
+            ? {
+                ages: [...world.story.campaign.battleScene.state.ages],
+                hits: [...world.story.campaign.battleScene.state.hits],
+                complete: world.story.campaign.battleScene.state.complete,
+                flying: world.story.campaign.battleScene.engines.map(
+                  (e) => e.stone.visible,
+                ),
+                arms: world.story.campaign.battleScene.engines.map(
+                  (e) => e.arm.rotation.x,
+                ),
+                wrecks: world.story.campaign.battleScene.forts.map(
+                  (f) => f.wreck.visible,
+                ),
+              }
+            : undefined,
           power: world.story?.campaign?.power,
           progress: world.story?.progress,
           done: world.story?.done,

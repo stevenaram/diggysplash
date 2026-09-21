@@ -1,4 +1,5 @@
 import * as T from "three";
+import { BattleScene } from "./battle";
 import type { StoryScene } from "./story";
 
 const smooth = (v: number) => {
@@ -10,6 +11,7 @@ const teal = 0x398e98,
   gold = 0xe8b951;
 /** Each objective owns an independent, reversible mechanical consequence. */
 export class CampaignScene {
+  battleScene?: BattleScene;
   power: number[];
   effects: ((p: number, time: number) => void)[] = [];
   deliveries: ((p: number, time: number) => void)[] = [];
@@ -483,103 +485,7 @@ export class CampaignScene {
     return a;
   }
   battle() {
-    const s = this.story,
-      w = this.w;
-    // A wide opposing formation, siege engines, and a defended southern line.
-    const enemies: ReturnType<StoryScene["actor"]>[] = [],
-      allies: typeof enemies = [];
-    for (let row = 0; row < 2; row++)
-      for (let col = 0; col < 9; col++) {
-        enemies.push(this.soldier(3 + col * 1.15, 1 + row * 0.9, red, true));
-        allies.push(
-          this.soldier(3 + col * 1.15, 13.8 + row * 0.9, teal, false),
-        );
-      }
-    for (const x of [1.5, 13.7]) {
-      this.flag(s.at(x, 1.5), 0, 0, 0, red);
-      this.flag(s.at(x, 13.5), 0, 0, 0, teal);
-    }
-    const engines: T.Group[] = [];
-    for (const x of [5.5, 10.5]) {
-      const g = s.at(x, 0.25);
-      engines.push(g);
-      w.box(g, 0, 0.3, 0, 1.1, 0.16, 0.75, 0x816247, "wood");
-      for (const dx of [-0.45, 0.45])
-        for (const dz of [-0.42, 0.42]) this.wheel(g, dx, 0.25, dz, 0.22);
-      for (const dx of [-0.3, 0.3]) {
-        const beam = w.box(g, dx, 0.75, 0, 0.12, 1, 0.12, 0x9f7952, "wood");
-        beam.rotation.x = 0.3;
-      }
-      const arm = w.box(g, 0, 1.1, 0, 0.12, 0.13, 1.65, 0xba905a, "wood");
-      arm.rotation.x = -0.45;
-      s.blob(g, 0, 1.45, -0.6, 0.2, 0x8d8170);
-      this.flag(g, 0.45, 0.7, 0, red);
-    }
-    const jets: T.Group[] = [];
-    for (let n = 0; n < 4; n++) {
-      const x = 14,
-        z = 4 + n * 2.6,
-        g = s.at(x, z);
-      w.box(g, 0, 0.25, 0, 0.75, 0.4, 0.48, 0xc3a97f, "stone");
-      const barrel = w.cylinder(g, 0, 0.65, 0, 0.15, 0.75, 0x8fa59c);
-      barrel.rotation.x = Math.PI / 2 - 0.35;
-      this.wheel(g, -0.25, 0.4, 0.2, 0.21);
-      const aim = new T.Vector3(-2.5 - n * 2.3, 0.8, 2.5 - z).normalize();
-      barrel.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), aim);
-      const jet = this.spray(x, z, -2.5 - n * 2.3, 2.5 - z);
-      jets.push(jet);
-      this.delivery(n, x, z);
-      this.effects.push((p) => {
-        jet.visible = p > 0.05;
-      });
-    }
-    // Broad turquoise surge along the enemy front, clear of the playable grid.
-    const flood = s.at(8, 2.6);
-    w.box(flood, 0, 0.09, 0, 12, 0.08, 0.42, 0x3cbec4, "water");
-    for (let n = 0; n < 20; n++)
-      w.box(
-        flood,
-        -5.7 + n * 0.6,
-        0.145,
-        (n % 2) * 0.08,
-        0.28,
-        0.02,
-        0.035,
-        0xadf0df,
-      );
-    const victory = s.at(8, 14.3);
-    const banner = this.flag(victory, 0, 1.2, 0, teal);
-    this.finale = (p, t) => {
-      flood.visible = p > 0.05;
-      flood.scale.x = smooth(p / 0.4);
-      banner.scale.y = 0.1 + 0.9 * smooth((p - 0.65) / 0.3);
-      enemies.forEach((a, n) => {
-        const retreat = smooth((p - 0.23 - (n % 4) * 0.025) / 0.65);
-        a.root.position.copy(a.start);
-        a.root.position.z -= retreat * 0.95;
-        a.root.rotation.y = retreat > 0 ? Math.PI : 0;
-        a.root.scale.setScalar(1 - retreat * 0.22);
-        if (!w.reduced)
-          a.legs.forEach(
-            (l, j) =>
-              (l.rotation.x =
-                retreat > 0 && retreat < 1
-                  ? Math.sin(t * 12 + j * Math.PI) * 0.35
-                  : 0),
-          );
-      });
-      allies.forEach((a) => {
-        a.root.position.copy(a.start);
-        a.root.position.z -= smooth((p - 0.55) / 0.45) * 0.35;
-      });
-      engines.forEach((g) => {
-        g.position.z = -7.25 - smooth((p - 0.2) / 0.7) * 0.75;
-        g.rotation.x = -smooth(p) * 0.12;
-      });
-      jets.forEach(
-        (j) => (j.scale.y = 1 + (w.reduced ? 0 : Math.sin(t * 9) * 0.025)),
-      );
-    };
+    this.battleScene = new BattleScene(this);
   }
   update(dt: number, active: boolean[], time: number) {
     active.forEach((on, n) => {
@@ -590,5 +496,6 @@ export class CampaignScene {
       this.deliveries[n]?.(this.power[n], this.w.reduced ? 0 : time);
     });
     this.finale(this.story.progress, this.w.reduced ? 0 : time);
+    this.battleScene?.update(dt, active, time);
   }
 }
