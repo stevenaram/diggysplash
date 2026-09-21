@@ -1,6 +1,6 @@
 # Diggy Splash
 
-A low-poly 3D desert puzzle told in eight chapters, each on a full 8 × 8 action grid inside a separate decorative ring (10 × 10 overall). Guide water through freshly dug trenches, from giving a flock a drink to defending Sunfall in a battle between two armies.
+A low-poly 3D desert puzzle told in eight chapters, each on an 8 × 8 map edged by a stone lip one-eighth of a tile wide (8.25 × 8.25 tiles overall). Guide water through freshly dug trenches, from giving a flock a drink to defending Sunfall in a battle between two armies.
 
 ## Run
 
@@ -26,15 +26,15 @@ The workflow builds with the `/diggysplash/` asset base required by the project 
 | A drink for the flock | Fill a dry oasis; sheep approach and drink. No gears.                                                  | 8          | ≤ 4 digs    | 5–6 digs   | 7–8 digs   |
 | The way across        | Power one wheel; the drawbridge lowers and the shepherd crosses to the lost sheep.                     | 9          | ≤ 5 digs    | 6–7 digs   | 8–9 digs   |
 | Welcome home          | Feed one wheel; a raised aqueduct supplies the second. Both portcullises rise and the villagers enter. | 11         | ≤ 6 digs    | 7–9 digs   | 10–11 digs |
-| Bread for everyone    | Restart two mills; golden wheat grows and bread appears.                                               | 13         | ≤ 8 digs    | 9–11 digs  | 12–13 digs |
-| Caravan in the embers | Three pumps extinguish burning wagons independently.                                                   | 15         | ≤ 10 digs   | 11–13 digs | 14–15 digs |
-| The sleeping sun      | Awaken three shrines; a floating sun beacon lights the desert.                                         | 16         | ≤ 11 digs   | 12–14 digs | 15–16 digs |
-| Before the storm      | Raise the wall, fill the cistern, and open the refuge gate; escort the convoy inside.                  | 17         | ≤ 12 digs   | 13–15 digs | 16–17 digs |
-| The battle of Sunfall | Four water-powered trebuchets break the palisade, scatter the red army, and smash its siege engines.   | 19         | ≤ 14 digs   | 15–17 digs | 18–19 digs |
+| Bread for everyone    | Restart two mills; golden wheat grows and bread appears.                                               | 12 | ≤ 7 digs | 8–10 digs | 11–12 digs |
+| Caravan in the embers | Three pumps extinguish burning wagons independently.                                                   | 14 | ≤ 9 digs | 10–12 digs | 13–14 digs |
+| The sleeping sun      | Awaken three shrines; a floating sun beacon lights the desert.                                         | 15 | ≤ 10 digs | 11–13 digs | 14–15 digs |
+| Before the storm      | Raise the wall, fill the cistern, and open the refuge gate; escort the convoy inside.                  | 16 | ≤ 11 digs | 12–14 digs | 15–16 digs |
+| The battle of Sunfall | Four water-powered trebuchets break the palisade, scatter the red army, and smash its siege engines.   | 17 | ≤ 12 digs | 13–15 digs | 16–17 digs |
 
 Objectives have no numbered order. Thin sealed pipes visibly connect the later wheels to their machinery; these are delivery pipes, not extra puzzle channels. Each device reacts to its own water supply, while the final celebration waits for the whole level.
 
-Tiles span two world units. All eight rows and columns belong to the puzzle, including the corners and former boundary. A separate 36-tile stone ring surrounds the 64 action cells; it never receives water or consumes digs. Perimeter campaign scenery sits on this ring, and decorative silhouettes do not intercept tile input. All routes and star thresholds were redesigned for the compact boards. Existing chapter unlocks and mute preferences persist; medals use a new save key so old 16 × 16 scores do not count toward the new puzzles.
+Tiles span two world units. The map contains exactly 64 cells, and its surrounding lip is only 0.25 world units wide. Scenery no longer occupies an extra ring of tiles: paved, non-diggable cells inside the map provide mills and shrine terraces, caravan assembly areas, the refuge road, artillery positions, and opposing army formations. Chapters seven and eight reserve two northern rows for defenses; later stages also have a southern story lane and eastern machinery strip. The puzzle routes avoid these areas, and their minimum costs were recomputed with the offline solver. Chapter unlocks and mute preferences persist; medals have a new save key because the later puzzles changed.
 
 Three-star thresholds are verified minimum routes. Scores count the trenches currently dug: undo refunds the dig. The best star rating for each chapter persists and cannot be lowered by a worse replay. Winning on the final dig still succeeds. A failure result appears only after the last water animation settles.
 

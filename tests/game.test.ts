@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import {
   Game,
   SIZE,
+  BORDER_WIDTH,
+  TILE_SIZE,
+  BOARD_EXTENT,
   CELL_COUNT,
   cell,
   minimumDigs,
@@ -28,7 +31,7 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
-    assert.equal(minimumDigs(l), [4, 5, 6, 8, 10, 11, 12, 14][n]);
+    assert.equal(minimumDigs(l), [4, 5, 6, 7, 9, 10, 11, 12][n]);
     assert.equal(l.starThresholds!.three, minimumDigs(l));
     assert.ok(l.budget - l.starThresholds!.three >= 4);
     const g = new Game(l);
@@ -234,22 +237,23 @@ test("8 × 8 boundaries never wrap, and every authored coordinate stays on the b
   }
 });
 
-test("all eight action rows and columns include diggable edge tiles, separate from decoration", () => {
+test("thin trim surrounds exactly 64 cells and campaign scenery owns non-diggable map tiles", () => {
+  assert.equal(BORDER_WIDTH, TILE_SIZE / 8);
+  assert.equal(BOARD_EXTENT, 16.5);
   for (const level of levels) {
-    for (const edge of [
-      Array.from({ length: 8 }, (_, x) => cell(x, 0)),
-      Array.from({ length: 8 }, (_, x) => cell(x, 7)),
-      Array.from({ length: 8 }, (_, z) => cell(0, z)),
-      Array.from({ length: 8 }, (_, z) => cell(7, z)),
-    ]) {
-      assert.ok(edge.filter((i) => level.tiles[i] === "sand").length >= 5);
-      const game = new Game(level);
-      assert.ok(game.dig(edge.find((i) => level.tiles[i] === "sand")!));
+    assert.equal(level.tiles.length, 64);
+    for (const i of level.solution) assert.equal(level.tiles[i], "sand");
+    const game = new Game(level);
+    level.tiles.forEach((t, i) => {
+      if (t === "building") assert.equal(game.dig(i), false);
+    });
+    assert.equal(game.remaining, level.budget);
+  }
+  for (const level of levels.slice(3)) {
+    for (let x = 0; x < 8; x++) {
+      assert.equal(level.tiles[cell(x, 0)], "building");
+      assert.equal(level.tiles[cell(x, 7)], "building");
     }
-    assert.ok(
-      [...level.sources, ...level.targets, ...level.solution].some(
-        (i) => i % 8 === 0 || i % 8 === 7 || i < 8 || i >= 56,
-      ),
-    );
+    for (let z = 0; z < 8; z++) assert.equal(level.tiles[cell(7, z)], "building");
   }
 });

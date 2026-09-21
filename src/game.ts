@@ -2,6 +2,8 @@ export const SIZE = 8;
 export const CELL_COUNT = SIZE * SIZE;
 // Two world units per tile keep the diorama large while making every dig legible.
 export const TILE_SIZE = 2;
+export const BORDER_WIDTH = TILE_SIZE / 8;
+export const BOARD_EXTENT = SIZE * TILE_SIZE + BORDER_WIDTH * 2;
 export const gridWorld = (coordinate: number) =>
   (coordinate - (SIZE - 1) / 2) * TILE_SIZE;
 export type Terrain =

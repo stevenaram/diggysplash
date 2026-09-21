@@ -45,9 +45,13 @@ export class StoryScene {
         this.world.game.level.story?.kind ?? "",
       )
     ) {
-      if (z <= 3) z = -1.3 + (z - 1.8) * 0.4;
-      else if (z >= 12.5) z = 16.4 + (z - 14) * 0.5;
-      if (x >= 13.5) x = 16.5 + (x - 14.3) * 0.5;
+      const kind = this.world.game.level.story?.kind;
+      // Two northern rows hold the military scenes. Other chapters use a
+      // compact northern terrace. Southern roads and eastern works are on-grid.
+      if (z <= 3 && kind !== "battle" && kind !== "fortress")
+        z = 0.7 + (z - 1.8) * 0.4;
+      if (z >= 12.5) z = 14 + (z - 14) * 0.4;
+      if (x >= 13.5) x = 14.1 + (x - 14.3) * 0.35;
     }
     return new T.Vector3(x - 7.5, 0, z - 7.5);
   }

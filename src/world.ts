@@ -1,6 +1,6 @@
 import * as T from "three";
 import { reducedMotion } from "./motion";
-import { Game, SIZE, CELL_COUNT, TILE_SIZE, gridWorld } from "./game";
+import { Game, SIZE, CELL_COUNT, TILE_SIZE, BORDER_WIDTH, BOARD_EXTENT, gridWorld } from "./game";
 import { SurfaceTextures, type Surface } from "./textures";
 import { StoryScene } from "./story";
 const palette = {
@@ -249,33 +249,26 @@ export class World {
     this.markers = [];
     this.wetAt.clear();
     this.particles = [];
-    if (this.game.level.story?.kind === "bridge") {
-      this.box(this.root, -4, -1.08, 0, 12, 1.5, 20.15, 0xb17b51, "stone");
-      this.box(this.root, 7, -1.08, 0, 6, 1.5, 20.15, 0xb17b51, "stone");
-      this.box(this.root, 3, -1.8, 0, 2, 0.15, 20.15, 0x553f33);
-      this.box(this.root, -4, -0.39, 0, 12, 0.2, 20.15, 0xd5a36b);
-      this.box(this.root, 7, -0.39, 0, 6, 0.2, 20.15, 0xd5a36b);
+    const bridge = this.game.level.story?.kind === "bridge";
+    const half = BOARD_EXTENT / 2;
+    if (bridge) {
+      // The ravine stays aligned to column five, including the narrow rim.
+      this.box(this.root, (-half + 2) / 2, -1.08, 0, half + 2, 1.5, BOARD_EXTENT, 0xb17b51, "stone");
+      this.box(this.root, (half + 4) / 2, -1.08, 0, half - 4, 1.5, BOARD_EXTENT, 0xb17b51, "stone");
+      this.box(this.root, 3, -1.8, 0, 2, 0.15, BOARD_EXTENT, 0x553f33);
     } else {
-      this.box(this.root, 0, -0.82, 0, 20.15, 0.9, 20.15, 0xb97e55);
-      this.box(this.root, 0, -0.35, 0, 20.2, 0.12, 20.2, 0xd5a36b);
+      this.box(this.root, 0, -0.82, 0, BOARD_EXTENT, 0.9, BOARD_EXTENT, 0xb97e55);
     }
-    // Decorative ring is outside the 64-cell game state and has no cell IDs.
-    for (let z = -1; z <= SIZE; z++)
-      for (let x = -1; x <= SIZE; x++) {
-        if (x >= 0 && x < SIZE && z >= 0 && z < SIZE) continue;
-        const ravine = this.game.level.story?.kind === "bridge" && x === 5;
-        this.box(
-          this.root,
-          gridWorld(x),
-          ravine ? -1.8 : -0.09,
-          gridWorld(z),
-          1.97,
-          0.2,
-          1.97,
-          ravine ? 0x573c2f : 0xcaae83,
-          ravine ? "soil" : "stone",
-        );
+    // A quarter-world-unit lip: exactly one eighth of a two-unit tile.
+    const edge = SIZE * TILE_SIZE / 2 + BORDER_WIDTH / 2;
+    for (const sign of [-1, 1]) {
+      this.box(this.root, sign * edge, -0.09, 0, BORDER_WIDTH, 0.2, BOARD_EXTENT, 0xcaae83, "stone");
+      for (let x = 0; x < SIZE; x++) {
+        const ravine = bridge && x === 5;
+        this.box(this.root, gridWorld(x), ravine ? -1.8 : -0.09, sign * edge,
+          TILE_SIZE, 0.2, BORDER_WIDTH, ravine ? 0x573c2f : 0xcaae83, ravine ? "soil" : "stone");
       }
+    }
     for (let i = 0; i < CELL_COUNT; i++) {
       const x = gridWorld(i % SIZE),
         z = gridWorld(Math.floor(i / SIZE)),
@@ -810,7 +803,7 @@ export class World {
     this.updateCamera();
     // Fit the complete island, including its decorative ring, into the actual
     // scene area. UI rails are outside this area in either orientation.
-    const half = ((SIZE + 2) * TILE_SIZE) / 2;
+    const half = BOARD_EXTENT / 2;
     const corners: T.Vector3[] = [];
     for (const x of [-half, half])
       for (const z of [-half, half])

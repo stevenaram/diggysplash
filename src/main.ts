@@ -56,7 +56,7 @@ let lastPowered = 0;
 let focused = game.level.solution[0];
 let bestStars: number[] = levels.map(() => 0);
 try {
-  const saved = JSON.parse(read("diggy-story-stars-8x8", "[]"));
+  const saved = JSON.parse(read("diggy-story-stars-thin-rim", "[]"));
   if (Array.isArray(saved))
     bestStars = bestStars.map((_, i) =>
       Number.isInteger(saved[i]) ? Math.max(0, Math.min(3, saved[i])) : 0,
@@ -293,7 +293,7 @@ world.onSettled = () => {
     completed = Math.max(completed, stage + 1);
     bestStars[stage] = Math.max(bestStars[stage], game.stars);
     save("diggy-completed", String(completed));
-    save("diggy-story-stars-8x8", JSON.stringify(bestStars));
+    save("diggy-story-stars-thin-rim", JSON.stringify(bestStars));
     sound("win");
   }
   update();
