@@ -1,4 +1,5 @@
 import * as T from "three";
+import { reducedMotion } from "./motion";
 import { Game, SIZE, CELL_COUNT, TILE_SIZE, gridWorld } from "./game";
 import { SurfaceTextures, type Surface } from "./textures";
 import { StoryScene } from "./story";
@@ -32,7 +33,7 @@ export class World {
     }),
   );
   ray = new T.Raycaster();
-  reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  get reduced() { return reducedMotion(); }
   frame = 0;
   last = 0;
   wetAt = new Map<number, number>();
@@ -44,6 +45,8 @@ export class World {
   textures = new SurfaceTextures();
   viewTarget = new T.Vector3();
   viewDirection = new T.Vector3(23, 40, 29).normalize();
+  // Approved view: X tilt 60°, Y orbit 0°, Z roll 0.5° (YXZ).
+  readonly viewAngles = { x: 60, y: 0, z: 0.5 };
   zoom = 1;
   fitDistance = 40;
   cameraTransition?: {
@@ -752,6 +755,14 @@ export class World {
     }
   }
   updateCamera() {
+    const orientation = new T.Quaternion().setFromEuler(new T.Euler(
+      -T.MathUtils.degToRad(this.viewAngles.x),
+      T.MathUtils.degToRad(this.viewAngles.y),
+      T.MathUtils.degToRad(this.viewAngles.z),
+      "YXZ",
+    ));
+    this.viewDirection.set(0, 0, 1).applyQuaternion(orientation);
+    this.camera.up.set(0, 1, 0).applyQuaternion(orientation);
     this.camera.zoom = this.zoom;
     this.camera.updateProjectionMatrix();
     this.camera.position
@@ -778,67 +789,47 @@ export class World {
         (this.fitDistance / this.zoom) *
         Math.tan(T.MathUtils.degToRad(this.camera.fov / 2))) /
       this.host.clientHeight;
-    const right = new T.Vector3()
-      .crossVectors(new T.Vector3(0, 1, 0), this.viewDirection)
-      .normalize();
-    const forward = new T.Vector3(
-      this.viewDirection.x,
-      0,
-      this.viewDirection.z,
-    ).normalize();
+    const right = new T.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
+    const up = new T.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
     this.viewTarget
       .addScaledVector(right, -dx * scale)
-      .addScaledVector(forward, (-dy * scale) / this.viewDirection.y);
+      .addScaledVector(up, dy * scale);
     this.viewTarget.x = T.MathUtils.clamp(this.viewTarget.x, -8, 8);
     this.viewTarget.z = T.MathUtils.clamp(this.viewTarget.z, -8, 8);
+    this.viewTarget.y = T.MathUtils.clamp(this.viewTarget.y, -8, 8);
     this.updateCamera();
   }
   overview() {
-    this.cameraTransition = undefined;
-    this.viewChanged = true;
-    this.zoom = 1;
-    this.viewTarget.set(0, 0, 0);
-    this.updateCamera();
+    this.framePuzzle();
   }
   framePuzzle() {
     this.cameraTransition = undefined;
     this.viewChanged = false;
-    const cells = [
-      ...new Set([
-        ...(this.game.level.story?.focus ?? []),
-        ...this.game.level.sources,
-        ...this.game.level.targets,
-      ]),
-    ];
-    const xs = cells.map((i) => gridWorld(i % SIZE)),
-      zs = cells.map((i) => gridWorld(Math.floor(i / SIZE)));
-    this.viewTarget.set(
-      (Math.min(...xs) + Math.max(...xs)) / 2,
-      0,
-      (Math.min(...zs) + Math.max(...zs)) / 2,
-    );
-    const { width: w, height: h } = this.host.getBoundingClientRect();
-    // A full-board overview on a phone makes individual cells too small to tap.
-    // Start near the puzzle, then let pinch/drag and the overview button reveal the perimeter.
-    const estimatedCell = Math.min(w / 12, h / 9.5);
-    const preferred = T.MathUtils.clamp(34 / estimatedCell, 1.12, 3.2);
+    this.viewTarget.set(0, 0, 0);
     this.zoom = 1;
     this.updateCamera();
-    let maxX = 0,
-      maxY = 0;
-    for (const i of cells)
-      for (const dx of [-1.05, 1.05])
-        for (const dz of [-1.05, 1.05])
-          for (const y of [0, 1.2]) {
-            const p = new T.Vector3(
-              gridWorld(i % SIZE) + dx,
-              y,
-              gridWorld(Math.floor(i / SIZE)) + dz,
-            ).project(this.camera);
-            maxX = Math.max(maxX, Math.abs(p.x));
-            maxY = Math.max(maxY, Math.abs(p.y));
-          }
-    this.zoom = Math.max(0.8, Math.min(preferred, 0.89 / maxX, 0.84 / maxY));
+    // Fit the complete island, including its decorative ring, into the actual
+    // scene area. UI rails are outside this area in either orientation.
+    const half = ((SIZE + 2) * TILE_SIZE) / 2;
+    const corners: T.Vector3[] = [];
+    for (const x of [-half, half])
+      for (const z of [-half, half])
+        for (const y of [-1.9, 0]) corners.push(new T.Vector3(x, y, z));
+    // Headroom for rear banners, city walls, and artillery during their animations.
+    for (const x of [-half, half]) corners.push(new T.Vector3(x, 3.5, -half));
+    // Center the projected footprint, compensating for perspective foreshortening.
+    for (let pass = 0; pass < 3; pass++) {
+      const points = corners.map(p => p.clone().project(this.camera));
+      const midX = (Math.min(...points.map(p => p.x)) + Math.max(...points.map(p => p.x))) / 2;
+      const midY = (Math.min(...points.map(p => p.y)) + Math.max(...points.map(p => p.y))) / 2;
+      const depth = this.viewTarget.clone().project(this.camera).z;
+      this.viewTarget.copy(new T.Vector3(midX, midY, depth).unproject(this.camera));
+      this.updateCamera();
+    }
+    const points = corners.map(p => p.clone().project(this.camera));
+    const maxX = Math.max(...points.map(p => Math.abs(p.x)));
+    const maxY = Math.max(...points.map(p => Math.abs(p.y)));
+    this.zoom = Math.min(0.96 / maxX, 0.96 / maxY);
     this.updateCamera();
   }
   resize() {
@@ -851,39 +842,27 @@ export class World {
       Math.tan(T.MathUtils.degToRad(this.camera.fov / 2));
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.setSize(Math.round(w), Math.round(h), false);
-    if (!this.viewChanged) this.framePuzzle();
-    else this.updateCamera();
+    this.framePuzzle();
   }
   focusConsequence() {
-    const kind = this.game.level.story?.kind;
-    const [x, z] =
-      this.game.level.story?.consequenceFocus ??
-      (kind === "oasis"
-        ? [11.6, 8.4]
-        : kind === "bridge"
-          ? [10.6, 10]
-          : [9.7, 5.2]);
-    const target = new T.Vector3(x - 7.5, 0, z - 7.5);
-    const zoom = this.game.level.story?.consequenceFocus
-      ? this.zoom
-      : Math.max(this.zoom, 1.45);
-    if (kind === "battle") {
-      // Follow the action toward the enemy line without shrinking the models.
-      // Empty island corners need not dictate the cinematic framing.
-      target.set(1.2, 0, -2);
-    }
-    if (this.reduced) {
-      this.viewTarget.copy(target);
-      this.zoom = zoom;
-      this.updateCamera();
-    } else
-      this.cameraTransition = {
-        from: this.viewTarget.clone(),
-        to: target,
-        start: this.elapsed,
-        fromZoom: this.zoom,
-        toZoom: zoom,
-      };
+    if (this.reduced) return;
+    // Restore the victory camera beat without abandoning the chosen angle or
+    // tightly cropping the larger campaign scenes.
+    const focus = this.game.level.story?.consequenceFocus;
+    const target = focus
+      ? new T.Vector3(focus[0] - 7.5, 0, focus[1] - 7.5)
+      : new T.Vector3(
+          gridWorld(this.game.level.targets[0] % SIZE),
+          0,
+          gridWorld(Math.floor(this.game.level.targets[0] / SIZE)),
+        );
+    this.cameraTransition = {
+      from: this.viewTarget.clone(),
+      to: this.viewTarget.clone().lerp(target, 0.14),
+      start: this.elapsed,
+      fromZoom: this.zoom,
+      toZoom: this.zoom * 1.045,
+    };
     this.viewChanged = true;
   }
 
@@ -918,7 +897,7 @@ export class World {
     this.story?.update(dt, active, this.elapsed);
     if (this.cameraTransition) {
       const t = this.cameraTransition,
-        p = Math.min(1, (this.elapsed - t.start) / 0.8),
+        p = Math.min(1, (this.elapsed - t.start) / 1.6),
         e = p * p * (3 - 2 * p);
       this.viewTarget.lerpVectors(t.from, t.to, e);
       this.zoom = T.MathUtils.lerp(t.fromZoom, t.toZoom, e);

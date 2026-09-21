@@ -2,16 +2,18 @@ import "@fontsource/outfit/latin-600.css";
 import "@fontsource/outfit/latin-800.css";
 import "@fontsource/dm-sans/latin-500.css";
 import "./style.css";
-import { SIZE, Game, ratingForDigs } from "./game";
+import { SIZE, Game } from "./game";
 import { levels } from "./levels";
 import { World } from "./world";
+import { toggleMotion } from "./motion";
 const icons = {
+  motion: '<path d="m9 5 11 7-11 7Z"/><path d="M3 6h2M2 12h3M3 18h2"/>',
   star: '<path d="m12 2 3 6.5 7 1-5 5 1.2 7-6.2-3.3-6.2 3.3 1.2-7-5-5 7-1Z"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   minus: '<path d="M5 12h14"/>',
   fit: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
   shovel:
-    '<path d="m14 4 6 6m-4-8 6 6-3 3-6-6zM14 10l-5 5M8 12l4 4-4 5H3v-5z"/>',
+    '<g transform="rotate(32 12 12)"><path d="M8 2h8v3a4 4 0 0 1-8 0Z" fill="#d7ac68"/><path d="M12 9v7" stroke="#a67542" stroke-width="3"/><path d="M7 15h10v4c0 2-3 4-5 5-2-1-5-3-5-5Z" fill="#8fa9a1"/><path d="M12 17v4" stroke="#e9f1db"/></g>',
   undo: '<path d="M8 5 3 10l5 5M3 10h10a6 6 0 0 1 0 12" transform="translate(0 -2)"/>',
   restart: '<path d="M20 8a9 9 0 1 0 1 7M20 3v6h-6"/>',
   sound:
@@ -149,18 +151,13 @@ function sound(
   }
 }
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
-<header><a class="brand" href="./" aria-label="Diggy Splash home"><span class="brand-mark">${svg("drop")}</span><span>DIGGY<span class="brand-bottom">SPLASH<span class="brand-dot">.</span></span></span></a>
-<nav aria-label="Stages">${levels.map((_, n) => `<button class="stage" data-stage="${n}" aria-label="Stage ${n + 1}"><span>${n + 1}</span><small class="stage-stars" aria-hidden="true"></small></button>`).join("")}</nav>
-<button class="icon-button sound" aria-label="Mute sound">${svg("sound")}</button></header>
+<header><nav aria-label="Stages">${levels.map((_, n) => `<button class="stage" data-stage="${n}" aria-label="Stage ${n + 1}"><span>${n + 1}</span><small class="stage-stars" aria-hidden="true"></small></button>`).join("")}</nav>
+</header>
 <main><div class="sun-disc" aria-hidden="true"></div>
 <div class="scene" tabindex="0" role="application" aria-label="Desert puzzle board. Click sand to dig. Drag to pan; scroll or pinch to zoom. Arrow keys select a tile, Enter digs, Z undoes."></div>
-<section class="story-heading" aria-label="Level objective"><div class="chapter" id="chapter">01 / ${String(levels.length).padStart(2, "0")}</div><h1 id="story-title"></h1><p id="story-goal"></p><div class="score-guide"><span id="rating-preview" aria-label="Potential stars"></span><span id="thresholds"></span></div></section>
-<div class="view-controls" role="group" aria-label="Camera controls"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">${svg("minus")}</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">${svg("plus")}</button><button id="overview" class="icon-button" aria-label="Show whole board" title="Show whole board">${svg("fit")}</button></div>
-<div class="intro-gesture" aria-hidden="true">${svg("shovel")}</div>
-<div class="dig-tooltip" aria-hidden="true" hidden>${svg("shovel")}<strong id="hover-remaining"></strong></div>
 </main>
-<footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">14</strong><span class="budget">/ <span id="budget">14</span></span><div class="dig-pips" aria-hidden="true"></div></div><span class="divider"></span><div id="targets" aria-label="Water objectives"></div><span class="divider"></span><div class="actions"><button id="undo" class="icon-button" aria-label="Undo last dig" title="Undo · Z">${svg("undo")}</button><button id="restart" class="icon-button" aria-label="Restart stage" title="Restart · R">${svg("restart")}</button></div></div></footer>
-<dialog id="result" aria-labelledby="result-title" aria-describedby="result-message"><div class="result-chapter" id="result-chapter"></div><h2 id="result-title"></h2><p id="result-message"></p><div class="result-stars" id="result-stars" aria-label="Stars earned"></div><div class="result-score" id="result-score"></div><div class="result-actions"><button id="result-primary" class="primary"></button><button id="result-secondary" class="secondary"></button></div></dialog>
+<footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">14</strong><span class="budget">/ <span id="budget">14</span></span><div class="dig-pips" aria-hidden="true"></div></div><span class="divider"></span><div id="targets" aria-label="Water objectives"></div><span class="divider"></span><div class="actions"><button id="undo" class="icon-button" aria-label="Undo last dig" title="Undo · Z">${svg("undo")}</button><button id="restart" class="icon-button" aria-label="Restart stage" title="Restart · R">${svg("restart")}</button></div></div><div class="view-controls" role="group" aria-label="Camera controls"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">${svg("minus")}</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">${svg("plus")}</button><button id="overview" class="icon-button" aria-label="Show whole board" title="Show whole board">${svg("fit")}</button><button class="icon-button sound" aria-label="Mute sound">${svg("sound")}</button><button id="motion" class="icon-button" aria-label="Reduce animations">${svg("motion")}</button></div></footer>
+<dialog id="result" aria-labelledby="result-title" aria-describedby="result-message"><div class="result-chapter" id="result-chapter"></div><h2 id="result-title"></h2><p id="result-message" class="sr-only"></p><div class="result-stars" id="result-stars" aria-label="Stars earned"></div><div class="result-score" id="result-score"></div><div class="result-actions"><button id="result-primary" class="primary"></button><button id="result-secondary" class="secondary"></button></div></dialog>
 <div id="status" class="sr-only" aria-live="polite"></div>`;
 const $ = <T extends HTMLElement>(q: string) => document.querySelector<T>(q)!;
 const host = $(".scene"),
@@ -181,10 +178,23 @@ function starMarkup(count: number) {
     )
     .join("");
 }
+function showDigDrop(i: number) {
+  const p = world.screen(i);
+  const drop = document.createElement("div");
+  drop.className = "dig-drop";
+  drop.setAttribute("aria-hidden", "true");
+  drop.innerHTML = `${svg("shovel")}<strong>${game.remaining}</strong>`;
+  drop.style.left = `${Math.max(44, Math.min(innerWidth - 44, p.x))}px`;
+  drop.style.top = `${Math.max(90, Math.min(innerHeight - 35, p.y - 12))}px`;
+  document.body.append(drop);
+  // Separate elements let quick consecutive digs each show their own count.
+  drop.addEventListener("animationend", () => drop.remove(), { once: true });
+  window.setTimeout(() => drop.remove(), 2400);
+}
 function dig(i: number) {
   const before = game.wet.size;
   if (!game.dig(i)) return;
-  $(".intro-gesture").hidden = true;
+  showDigDrop(i);
   world.burst(i);
   world.sync();
   sound(game.wet.size > before ? "water" : "dig");
@@ -218,8 +228,7 @@ function showResult() {
     : "Undo last dig";
   result.classList.toggle("failed", !success);
   if (!result.open) {
-    $(".dig-tooltip").hidden = true;
-    result.showModal();
+      result.showModal();
   }
 }
 const objectiveNames: Record<string, string[]> = {
@@ -238,6 +247,8 @@ const objectiveNames: Record<string, string[]> = {
   ],
 };
 function update() {
+  $("#motion").setAttribute("aria-label", world.reduced ? "Enable animations" : "Reduce animations");
+  $("#motion").setAttribute("aria-pressed", String(!world.reduced));
   $("#remaining").textContent = String(game.remaining);
   $("#budget").textContent = String(game.level.budget);
   $(".dig-pips").innerHTML = Array.from(
@@ -252,19 +263,6 @@ function update() {
     .join("");
   $<HTMLButtonElement>("#undo").disabled = !game.digs.length;
   $(".toolbar").classList.toggle("empty", game.failed && world.settled);
-  $("#story-title").textContent = game.level.story!.title;
-  $("#story-goal").textContent = game.level.story!.goal;
-  $("#chapter").textContent =
-    `${String(stage + 1).padStart(2, "0")} / ${String(levels.length).padStart(2, "0")}`;
-  $("#rating-preview").innerHTML = starMarkup(
-    ratingForDigs(game.level, game.digs.length),
-  );
-  $("#rating-preview").setAttribute(
-    "aria-label",
-    `${ratingForDigs(game.level, game.digs.length)} stars at this dig count`,
-  );
-  $("#thresholds").textContent =
-    `★★★ ≤ ${game.level.starThresholds!.three} · ★★ ≤ ${game.level.starThresholds!.two}`;
   document.querySelectorAll<HTMLButtonElement>(".stage").forEach((b, n) => {
     b.disabled = n > completed;
     b.classList.toggle("selected", n === stage);
@@ -300,17 +298,9 @@ world.onSettled = () => {
   }
   update();
 };
-world.onHover = (i) => {
-  const tooltip = $(".dig-tooltip");
-  tooltip.hidden = i === null || result.open;
-  if (i === null) return;
-  const p = world.screen(i);
-  tooltip.style.left = `${Math.max(8, Math.min(innerWidth - 100, p.x + 18))}px`;
-  tooltip.style.top = `${Math.max(70, Math.min(innerHeight - 70, p.y - 48))}px`;
-  $("#hover-remaining").textContent = String(game.remaining);
-};
 function load(n: number) {
   closeResult();
+  document.querySelectorAll(".dig-drop").forEach(drop => drop.remove());
   stage = n;
   lastPowered = 0;
   game = new Game(levels[n]);
@@ -319,8 +309,6 @@ function load(n: number) {
   focused = game.level.solution[0];
   world.build();
   world.framePuzzle();
-  $(".intro-gesture").hidden = true;
-  $(".dig-tooltip").hidden = true;
   update();
 }
 function undo() {
@@ -331,6 +319,8 @@ function undo() {
   sound("undo");
   update();
 }
+$("#motion").onclick = () => { toggleMotion(); update(); };
+matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", update);
 $("#undo").onclick = undo;
 $("#restart").onclick = () => load(stage);
 $("#result-primary").onclick = () =>
@@ -388,16 +378,7 @@ window.addEventListener("keydown", (e) => {
   if (e.key.toLowerCase() === "z") undo();
   if (e.key.toLowerCase() === "r") load(stage);
 });
-function positionGesture() {
-  const p = world.screen(game.level.solution[0]),
-    r = document.querySelector("main")!.getBoundingClientRect();
-  $(".intro-gesture").style.left = `${p.x - r.left - 14}px`;
-  $(".intro-gesture").style.top = `${p.y - r.top - 25}px`;
-}
 world.onBattleSound = sound;
-world.onViewChanged = positionGesture;
-positionGesture();
-window.addEventListener("resize", positionGesture);
 update();
 if (import.meta.env.DEV)
   Object.assign(window, {

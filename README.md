@@ -40,9 +40,9 @@ Three-star thresholds are verified minimum routes. Scores count the trenches cur
 
 ## Controls
 
-- Click or tap sand to dig; hover shows a shovel and remaining digs. Dark soil beds and cut banks distinguish trenches from untouched sand, even when water is flowing.
+- Click or tap sand to dig; a shovel and the updated remaining count rise from each successfully dug tile. Hover only highlights valid sand. Dark soil beds and cut banks distinguish trenches from untouched sand, even when water is flowing.
 - Water travels through orthogonal ground connections. Elevated aqueduct sections use explicit links and cannot receive water from a trench underneath them.
-- Drag to pan, scroll or pinch to zoom; the corner-frame button shows the board. Default framing keeps the objectives and characters visible in portrait, landscape, and narrow desktop panels.
+- Drag to pan, scroll or pinch to zoom; the corner-frame button shows the board. The fixed camera uses 60° tilt, 0° orbit, and 0.5° roll. The whole island fits the available width in portrait or height in landscape, with headroom for scenery. Stage buttons and toolbars move to side rails in landscape. Resizing and the frame button restore this fit.
 - Undo and restart are free. `Z` undoes; `R` restarts. Focus the board, use arrow keys to select a tile, and Enter or Space to dig.
 - Watch each consequence before the completion card appears. Continue, replay for a better score, or retry/undo a failed attempt. Numbered chapter buttons revisit unlocked levels.
 - Sound preference, chapter unlocks, and best stars are saved locally. In-progress trenches are not.
@@ -62,9 +62,9 @@ The sixty-four soldiers use instanced body/head/leg geometry. Painted box faces 
 - `src/game.ts` and `src/levels.ts`: pure puzzle state, flood fill, aqueduct connections, star ratings, fixed 8 × 8 layouts, and exact node-weighted Steiner-tree verification.
 - `src/world.ts`, `src/story.ts`, and `src/campaign.ts`: full-resolution antialiased perspective rendering, generated characters and architecture, dark trench geometry, water flow, bridge/gate animation, character paths, and smooth camera framing.
 - `src/battle-state.ts`, `src/battle.ts`, `src/battle-army.ts`, `src/battle-effects.ts`, and `src/battle-mesh.ts`: deterministic artillery timelines, instanced formations, pooled impact effects, and reusable painted geometry.
-- `src/main.ts`: objectives, hover feedback, accessible result dialogs, local progress, keyboard controls, and synthesized audio.
+- `src/main.ts`: objectives, post-dig feedback, accessible result dialogs, local progress, keyboard controls, and synthesized audio.
 
-Materials are unlit. Small generated textures provide painted plaster, masonry, wood grain, leaf veins, sand, soil, and water. Nearest-neighbor magnification applies only to textures; the canvas renders at display resolution up to 2× device pixel ratio. ResizeObserver tracks the game container. Fonts ship with the app. Reduced-motion users see the final story poses without motion. Animation pauses while the page is hidden, and old scene geometries are disposed on level changes.
+Materials are unlit. Small generated textures provide painted plaster, masonry, wood grain, leaf veins, sand, soil, and water. Nearest-neighbor magnification applies only to textures; the canvas renders at display resolution up to 2× device pixel ratio. ResizeObserver tracks the game container. Fonts ship with the app. The motion button switches between full animation and reduced motion and saves the choice locally. Without a saved choice, the game follows the system preference. Scene and interface motion share this setting. Reduced motion shows final story poses and uses a gentle opacity-only dig counter; full motion restores water, idle movement, story timelines, a subtle completion camera move, and staggered result stars. Dig counters fade in, drift upward, and fade out over 2.2 seconds. Animation pauses while the page is hidden, and old scene geometries are disposed on level changes.
 
 ## Verify
 
@@ -75,4 +75,4 @@ npm run build
 npx tsx scripts/solve-levels.ts
 ```
 
-Tests cover minimum routes, all star boundaries, actual one/two/three-star finishes, budget exhaustion, final-dig wins, undo/reset, ravine blocking, oasis filling, and elevated aqueduct flow. Browser QA covers pointer/touch playthroughs, character destinations, the lowered bridge and raised gates, result dialogs, retry/undo, star persistence, hover counts, and both orientations. The development-only `window.__diggy` inspection bridge is removed from production builds.
+Tests cover minimum routes, all star boundaries, actual one/two/three-star finishes, budget exhaustion, final-dig wins, undo/reset, ravine blocking, oasis filling, and elevated aqueduct flow. Browser QA covers pointer/touch playthroughs, character destinations, the lowered bridge and raised gates, result dialogs, retry/undo, star persistence, post-dig counts, and both orientations. The development-only `window.__diggy` inspection bridge is removed from production builds.
