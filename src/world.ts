@@ -45,8 +45,8 @@ export class World {
   textures = new SurfaceTextures();
   viewTarget = new T.Vector3();
   viewDirection = new T.Vector3(23, 40, 29).normalize();
-  // Approved view: X tilt 60°, Y orbit 0°, Z roll 0.5° (YXZ).
-  readonly viewAngles = { x: 60, y: 0, z: 0.5 };
+  // Approved view: X tilt 60°, Y orbit 0°, Z roll 0° (YXZ).
+  readonly viewAngles = { x: 60, y: 0, z: 0 } as const;
   zoom = 1;
   fitDistance = 40;
   cameraTransition?: {
