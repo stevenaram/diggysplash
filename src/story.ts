@@ -512,7 +512,12 @@ export class StoryScene {
     if (this.bridge)
       this.bridge.rotation.z =
         -(1 - ease(this.progress / 0.35)) * Math.PI * 0.47;
-    this.gates.forEach((g) => (g.position.y = ease(this.progress / 0.3) * 2.1));
+    this.gates.forEach((g, n) => {
+      const height = active[n] ? 2.1 : 0;
+      g.position.y = this.world.reduced
+        ? height
+        : T.MathUtils.damp(g.position.y, height, 7, dt);
+    });
     this.greenery.visible = won;
     this.greenery.scale.setScalar(0.2 + 0.8 * ease(this.progress / 0.45));
     this.hearts.visible = this.progress > 0.85;

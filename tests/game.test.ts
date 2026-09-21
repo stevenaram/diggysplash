@@ -180,3 +180,34 @@ test("the campaign escalates through five distinct consequences and a four-objec
     assert.equal(exact.remaining, 0);
   }
 });
+
+test("every objective is reachable without a scripted activation sequence", () => {
+  for (const level of levels)
+    for (const target of level.targets) {
+      const queue = [...level.sources],
+        previous = new Map<number, number>();
+      const visited = new Set(queue);
+      for (let n = 0; n < queue.length && !visited.has(target); n++) {
+        for (const next of connections(level, queue[n])) {
+          if (
+            visited.has(next) ||
+            ["rock", "building", "ravine"].includes(level.tiles[next])
+          )
+            continue;
+          visited.add(next);
+          previous.set(next, queue[n]);
+          queue.push(next);
+        }
+      }
+      assert.ok(visited.has(target));
+      const route: number[] = [];
+      for (let at = target; previous.has(at); at = previous.get(at)!)
+        if (level.tiles[at] === "sand") route.push(at);
+      const game = new Game(level);
+      for (const i of route.reverse()) game.dig(i);
+      assert.ok(
+        game.wet.has(target),
+        `${level.story!.kind}: target ${target} is independently reachable`,
+      );
+    }
+});

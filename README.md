@@ -24,6 +24,8 @@ Open the URL printed by Vite. For a production build, run `npm run build`, then 
 | Before the storm      | Raise three barricades to protect the convoy.                                                          | 25         | ≤ 19 digs   | 20–22 digs | 23–25 digs |
 | The battle of Sunfall | Four water defenses repel the red army and its siege engines.                                          | 25         | ≤ 20 digs   | 21–23 digs | 24–25 digs |
 
+Objectives have no numbered order. Thin sealed pipes visibly connect the later wheels to their machinery; these are delivery pipes, not extra puzzle channels. Each device reacts to its own water supply, while the final celebration waits for the whole level.
+
 Three-star thresholds are verified minimum routes. Scores count the trenches currently dug: undo refunds the dig. The best star rating for each chapter persists and cannot be lowered by a worse replay. Winning on the final dig still succeeds. A failure result appears only after the last water animation settles.
 
 ## Controls

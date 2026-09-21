@@ -12,6 +12,7 @@ const teal = 0x398e98,
 export class CampaignScene {
   power: number[];
   effects: ((p: number, time: number) => void)[] = [];
+  deliveries: ((p: number, time: number) => void)[] = [];
   finale: (p: number, time: number) => void = () => {};
   constructor(public story: StoryScene) {
     this.power = story.world.game.level.targets.map(() => 0);
@@ -21,9 +22,6 @@ export class CampaignScene {
     if (kind === "temple") this.temple();
     if (kind === "fortress") this.fortress();
     if (kind === "battle") this.battle();
-    story.world.game.level.targets.forEach((i, n) =>
-      this.badge(i % 16, Math.floor(i / 16), n + 1, 1.7),
-    );
     // The returning shepherd provides continuity across the campaign.
     if (kind !== "battle") {
       const shepherd = story.shepherd(2, 13.5);
@@ -38,33 +36,68 @@ export class CampaignScene {
   get duration() {
     return this.w.game.level.story?.kind === "battle" ? 7 : 4.5;
   }
-  badge(x: number, z: number, n: number, y = 1.5) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
-    const c = canvas.getContext("2d")!;
-    c.fillStyle = "#fff0cd";
-    c.beginPath();
-    c.arc(32, 32, 26, 0, Math.PI * 2);
-    c.fill();
-    c.strokeStyle = "#92704d";
-    c.lineWidth = 3;
-    c.stroke();
-    c.fillStyle = "#544733";
-    c.font = "bold 36px sans-serif";
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-    c.fillText(String(n), 32, 33);
-    const texture = new T.CanvasTexture(canvas);
-    const material = new T.SpriteMaterial({ map: texture, depthTest: true });
-    const sprite = new T.Sprite(material);
-    sprite.position.set(x - 7.5, y, z - 7.5);
-    sprite.scale.set(0.43, 0.43, 1);
-    // World disposes per-scene textures explicitly alongside geometry.
-    sprite.raycast = () => {};
-    sprite.userData.ownedTexture = texture;
-    sprite.userData.ownedMaterial = material;
-    this.w.root.add(sprite);
+  // Sealed delivery pipes follow tile seams, leaving trench centers clear.
+  // These are mechanical scenery, not extra diggable channels or puzzle links.
+  delivery(n: number, x: number, z: number) {
+    const i = this.w.game.level.targets[n],
+      sx = i % 16,
+      sz = Math.floor(i / 16);
+    const seam = 0.44 - n * 0.035;
+    const points = [
+      [sx + 0.28, sz + 0.28],
+      [sx + seam, sz + seam],
+      [x > 13 ? x : sx + seam, z > 3 ? sz + seam : 2.5 + n * 0.04],
+      [x, z],
+    ].map(([a, b]) => new T.Vector3(a - 7.5, 0.065, b - 7.5));
+    const path = new T.CurvePath<T.Vector3>();
+    for (let j = 1; j < points.length; j++)
+      if (points[j].distanceTo(points[j - 1]) > 0.001)
+        path.add(new T.LineCurve3(points[j - 1], points[j]));
+    const pipe = new T.Mesh(
+      new T.TubeGeometry(
+        path,
+        Math.ceil(path.getLength() * 4),
+        0.042,
+        6,
+        false,
+      ),
+      this.w.mat(0xb89562),
+    );
+    pipe.raycast = () => {};
+    this.w.root.add(pipe);
+    const flow = new T.Mesh(
+      new T.TubeGeometry(
+        path,
+        Math.ceil(path.getLength() * 4),
+        0.021,
+        5,
+        false,
+      ),
+      this.w.mat(0x54c9c6),
+    );
+    flow.position.y = 0.035;
+    flow.raycast = () => {};
+    this.w.root.add(flow);
+    const bead = this.story.blob(this.w.root, 0, 0, 0, 0.065, 0xc3f7e3);
+    bead.raycast = () => {};
+    for (const point of [points[0], points[points.length - 1]]) {
+      const cuff = this.w.cylinder(
+        this.w.root,
+        point.x,
+        0.12,
+        point.z,
+        0.09,
+        0.2,
+        0x95744f,
+      );
+      cuff.raycast = () => {};
+    }
+    this.deliveries[n] = (p, time) => {
+      flow.visible = p > 0.04;
+      bead.visible = p > 0.1 && !this.w.reduced;
+      bead.position.copy(path.getPointAt((time * 0.22 + n * 0.23) % 1));
+      bead.position.y += 0.045;
+    };
   }
   flag(parent: T.Object3D, x: number, y: number, z: number, color: number) {
     this.w.cylinder(parent, x, y + 0.6, z, 0.027, 1.2, 0x806243);
@@ -220,7 +253,6 @@ export class CampaignScene {
             ear.rotation.z = sign * 0.25;
           }
         }
-      this.badge(x, 1.8, n + 1, 2.2);
       const bread = new T.Group();
       g.add(bread);
       for (let k = 0; k < 4; k++)
@@ -233,6 +265,7 @@ export class CampaignScene {
           0xd99d4b,
           [1, 0.65, 1.5],
         );
+      this.delivery(n, x - 1, 2.3);
       this.effects.push((p, t) => {
         wheel.rotation.z = t * p;
         crops.scale.y = 0.2 + 0.8 * p;
@@ -276,7 +309,7 @@ export class CampaignScene {
       w.cylinder(pump, 0, 0.42, 0, 0.15, 0.8, 0x99754c);
       w.box(pump, 0.18, 0.8, 0, 0.5, 0.09, 0.12, 0xd7b478);
       const spray = this.spray(x - 1.25, 2.2, 1.25, -0.4);
-      this.badge(x, 1.8, n + 1, 2.9);
+      this.delivery(n, x - 1.25, 2.2);
       this.effects.push((p, t) => {
         flames.visible = p < 0.98;
         flames.scale.y =
@@ -338,7 +371,7 @@ export class CampaignScene {
       );
       ring.position.y = 1.4;
       shrine.add(ring);
-      this.badge(x, z, n + 1, 2.1);
+      this.delivery(n, x, z);
       this.effects.push((p, t) => {
         orb.scale.setScalar(0.2 + 0.8 * p);
         ring.rotation.y = t * p * 0.5;
@@ -394,7 +427,12 @@ export class CampaignScene {
         );
       for (const y of [0.2, 0.8])
         w.box(barrier, 0, y, 0.04, 1, 0.1, 0.22, 0xc1a571);
-      this.badge(x, 2, n + 1, 2);
+      this.delivery(n, x, 2.4);
+      // Side cylinders explain how water lifts the retractable barricade.
+      for (const dx of [-0.42, 0.42]) {
+        w.cylinder(w.root, x - 7.5 + dx, 0.22, 2.4 - 7.5, 0.09, 0.45, 0x987a54);
+        w.cylinder(barrier, dx, 0.35, 0.25, 0.045, 0.7, 0xb8c7ba);
+      }
       this.effects.push((p) => {
         barrier.position.y = -1.2 + 1.2 * p;
       });
@@ -486,13 +524,13 @@ export class CampaignScene {
       const barrel = w.cylinder(g, 0, 0.65, 0, 0.15, 0.75, 0x8fa59c);
       barrel.rotation.x = Math.PI / 2 - 0.35;
       this.wheel(g, -0.25, 0.4, 0.2, 0.21);
-      g.rotation.y = -0.65;
+      const aim = new T.Vector3(-2.5 - n * 2.3, 0.8, 2.5 - z).normalize();
+      barrel.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), aim);
       const jet = this.spray(x, z, -2.5 - n * 2.3, 2.5 - z);
       jets.push(jet);
-      this.badge(x, z, n + 1, 1.8);
+      this.delivery(n, x, z);
       this.effects.push((p) => {
         jet.visible = p > 0.05;
-        barrel.rotation.x = Math.PI / 2 - 0.35 - p * 0.2;
       });
     }
     // Broad turquoise surge along the enemy front, clear of the playable grid.
@@ -549,6 +587,7 @@ export class CampaignScene {
         ? Number(on)
         : T.MathUtils.clamp(this.power[n] + dt * (on ? 1.1 : -2), 0, 1);
       this.effects[n]?.(this.power[n], this.w.reduced ? 0 : time);
+      this.deliveries[n]?.(this.power[n], this.w.reduced ? 0 : time);
     });
     this.finale(this.story.progress, this.w.reduced ? 0 : time);
   }

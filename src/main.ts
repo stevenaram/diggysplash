@@ -168,6 +168,16 @@ function showResult() {
     result.showModal();
   }
 }
+const objectiveNames: Record<string, string[]> = {
+  oasis: ["Watering hole"],
+  bridge: ["Drawbridge"],
+  city: ["West gate", "East gate"],
+  harvest: ["West mill", "East mill"],
+  caravan: ["Ochre wagon pump", "Teal wagon pump", "Cream wagon pump"],
+  temple: ["West shrine", "East shrine", "South shrine"],
+  fortress: ["West barricade", "Middle barricade", "East barricade"],
+  battle: ["North cannon", "Upper cannon", "Lower cannon", "South cannon"],
+};
 function update() {
   $("#remaining").textContent = String(game.remaining);
   $("#budget").textContent = String(game.level.budget);
@@ -178,7 +188,7 @@ function update() {
   $("#targets").innerHTML = game.active
     .map(
       (active, n) =>
-        `<span class="target ${active ? "active" : ""}" aria-label="${stage === 0 ? "Oasis" : `Gear ${n + 1}`}: ${active ? "filled" : "dry"}">${svg(active ? "check" : stage === 0 ? "drop" : "wheel")}</span>`,
+        `<span class="target ${active ? "active" : ""}" role="img" title="${objectiveNames[game.level.story!.kind][n]}" aria-label="${objectiveNames[game.level.story!.kind][n]}: ${active ? "active" : "dry"}">${svg(active ? "check" : stage === 0 ? "drop" : "wheel")}</span>`,
     )
     .join("");
   $<HTMLButtonElement>("#undo").disabled = !game.digs.length;
