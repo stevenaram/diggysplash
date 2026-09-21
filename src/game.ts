@@ -1,12 +1,29 @@
 export const SIZE = 16;
 export type Terrain =
-  "sand" | "rock" | "source" | "channel" | "target" | "building";
+  | "sand"
+  | "rock"
+  | "source"
+  | "channel"
+  | "target"
+  | "building"
+  | "basin"
+  | "ravine"
+  | "aqueduct";
 export interface Level {
   tiles: Terrain[];
   targets: number[];
   sources: number[];
   budget: number;
   solution: number[];
+  links?: [number, number][];
+  starThresholds?: { three: number; two: number };
+  story?: {
+    kind: "oasis" | "bridge" | "city";
+    title: string;
+    goal: string;
+    success: string;
+    focus: number[];
+  };
 }
 export const cell = (x: number, z: number) => z * SIZE + x;
 export function neighbors(i: number): number[] {
@@ -20,6 +37,24 @@ export function neighbors(i: number): number[] {
   ]
     .filter(([a, b]) => a >= 0 && b >= 0 && a < SIZE && b < SIZE)
     .map(([a, b]) => cell(a, b));
+}
+export function connections(level: Level, i: number): number[] {
+  const ground =
+    level.tiles[i] === "aqueduct"
+      ? []
+      : neighbors(i).filter((j) => level.tiles[j] !== "aqueduct");
+  for (const [a, b] of level.links ?? []) {
+    if (a === i) ground.push(b);
+    if (b === i) ground.push(a);
+  }
+  return ground;
+}
+export function ratingForDigs(level: Level, used: number): number {
+  const thresholds = level.starThresholds ?? {
+    three: level.solution.length,
+    two: level.budget - 1,
+  };
+  return used <= thresholds.three ? 3 : used <= thresholds.two ? 2 : 1;
 }
 export class Game {
   digs: number[] = [];
@@ -35,6 +70,12 @@ export class Game {
   }
   get won() {
     return this.active.every(Boolean);
+  }
+  get stars() {
+    return this.won ? ratingForDigs(this.level, this.digs.length) : 0;
+  }
+  get failed() {
+    return this.remaining === 0 && !this.won;
   }
   dig(i: number) {
     if (
@@ -61,11 +102,13 @@ export class Game {
     const q = [...this.level.sources];
     const dug = new Set(this.digs);
     for (let n = 0; n < q.length; n++)
-      for (const j of neighbors(q[n]))
+      for (const j of connections(this.level, q[n]))
         if (
           !this.wet.has(j) &&
           (dug.has(j) ||
-            ["source", "channel", "target"].includes(this.level.tiles[j]))
+            ["source", "channel", "target", "basin", "aqueduct"].includes(
+              this.level.tiles[j],
+            ))
         ) {
           this.wet.set(j, this.wet.get(q[n])! + 1);
           q.push(j);
@@ -77,7 +120,11 @@ export function minimumDigs(level: Level): number {
   const terminals = [level.sources[0], ...level.targets],
     count = 1 << terminals.length;
   const cost = level.tiles.map((t) =>
-    t === "sand" ? 1 : ["rock", "building"].includes(t) ? Infinity : 0,
+    t === "sand"
+      ? 1
+      : ["rock", "building", "ravine"].includes(t)
+        ? Infinity
+        : 0,
   );
   const dp = Array.from({ length: count }, () =>
     new Float64Array(256).fill(Infinity),
@@ -102,7 +149,7 @@ export function minimumDigs(level: Level): number {
         }
       if (v < 0) break;
       seen.add(v);
-      for (const j of neighbors(v))
+      for (const j of connections(level, v))
         dp[mask][j] = Math.min(dp[mask][j], best + cost[j]);
     }
   }

@@ -1,6 +1,7 @@
 import * as T from "three";
 
-export type Surface = "sand" | "plaster" | "stone" | "wood" | "leaf" | "water";
+export type Surface =
+  "soil" | "sand" | "plaster" | "stone" | "wood" | "leaf" | "water";
 
 /** Small painted surface maps; the framebuffer itself always renders at display resolution. */
 export class SurfaceTextures {
@@ -24,7 +25,18 @@ export class SurfaceTextures {
       ctx.fillRect(x, y, w, h);
     };
     rect(250, 0, 0, size, size);
-    if (surface === "sand") {
+    if (surface === "soil") {
+      rect(236, 0, 0, 32, 32);
+      for (let n = 0; n < 45; n++)
+        rect(
+          n % 3 ? 211 : 178,
+          (n * 13) % 32,
+          (n * 19) % 32,
+          2 + (n % 3),
+          1 + (n % 2),
+        );
+      for (let y = 3; y < 32; y += 7) rect(223, 0, y, 32, 1);
+    } else if (surface === "sand") {
       for (let n = 0; n < 20; n++)
         rect(n % 3 ? 240 : 221, (n * 13) % 32, (n * 19) % 32, 1 + (n % 2), 1);
       for (let y = 8; y < 32; y += 12)

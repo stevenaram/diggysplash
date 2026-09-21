@@ -1,6 +1,7 @@
 import * as T from "three";
 import { Game } from "./game";
 import { SurfaceTextures, type Surface } from "./textures";
+import { StoryScene } from "./story";
 const palette = {
   sand: 0xe8c58c,
   edge: 0xc28e60,
@@ -12,10 +13,13 @@ export class World {
   camera = new T.PerspectiveCamera(34, 1, 0.1, 500);
   renderer = new T.WebGLRenderer({ antialias: true, alpha: true });
   root = new T.Group();
+  story?: StoryScene;
+  banks = new Map<number, T.Mesh[]>();
+  onHover: (i: number | null) => void = () => {};
+  onViewChanged = () => {};
   tiles: T.Mesh[] = [];
   waters = new Map<number, T.Mesh>();
   wheels: T.Group[] = [];
-  greens: T.Group[] = [];
   palms: T.Group[] = [];
   markers: T.Mesh[] = [];
   hover = new T.Mesh(
@@ -41,12 +45,18 @@ export class World {
   viewDirection = new T.Vector3(23, 30, 29).normalize();
   zoom = 1;
   fitDistance = 40;
+  cameraTransition?: {
+    from: T.Vector3;
+    to: T.Vector3;
+    start: number;
+    fromZoom: number;
+    toZoom: number;
+  };
   viewChanged = false;
   pointers = new Map<number, T.Vector2>();
   gesture = false;
   pointerStart = new T.Vector2();
   resizeObserver: ResizeObserver;
-  banners: T.Group[] = [];
   constructor(
     public host: HTMLElement,
     public game: Game,
@@ -65,6 +75,7 @@ export class World {
       if (this.pointers.size === 0) {
         this.gesture = false;
         this.pointerStart.set(e.clientX, e.clientY);
+        this.highlight(this.pick(e.clientX, e.clientY));
       }
       this.pointers.set(e.pointerId, new T.Vector2(e.clientX, e.clientY));
       if (this.pointers.size > 1) this.gesture = true;
@@ -105,7 +116,10 @@ export class World {
       this.pointers.delete(e.pointerId);
       this.gesture = true;
     });
-    host.addEventListener("pointerleave", () => (this.hover.visible = false));
+    host.addEventListener("pointerleave", () => {
+      this.hover.visible = false;
+      this.onHover(null);
+    });
     host.addEventListener(
       "wheel",
       (e) => {
@@ -213,16 +227,24 @@ export class World {
     this.root = new T.Group();
     this.scene.add(this.root);
     this.tiles = [];
+    this.banks.clear();
+    this.story = undefined;
     this.waters.clear();
     this.wheels = [];
-    this.greens = [];
     this.palms = [];
     this.markers = [];
-    this.banners = [];
     this.wetAt.clear();
     this.particles = [];
-    this.box(this.root, 0, -0.72, 0, 16.15, 1.05, 16.15, 0xb97e55);
-    this.box(this.root, 0, -0.32, 0, 16.2, 0.25, 16.2, 0xd5a36b);
+    if (this.game.level.story?.kind === "bridge") {
+      this.box(this.root, -3, -1.08, 0, 10, 1.5, 16.15, 0xb17b51, "stone");
+      this.box(this.root, 6, -1.08, 0, 4, 1.5, 16.15, 0xb17b51, "stone");
+      this.box(this.root, 3, -1.8, 0, 2, 0.15, 16.15, 0x553f33);
+      this.box(this.root, -3, -0.39, 0, 10, 0.2, 16.15, 0xd5a36b);
+      this.box(this.root, 6, -0.39, 0, 4, 0.2, 16.15, 0xd5a36b);
+    } else {
+      this.box(this.root, 0, -0.82, 0, 16.15, 0.9, 16.15, 0xb97e55);
+      this.box(this.root, 0, -0.35, 0, 16.2, 0.12, 16.2, 0xd5a36b);
+    }
     for (let i = 0; i < 256; i++) {
       const x = (i % 16) - 7.5,
         z = Math.floor(i / 16) - 7.5,
@@ -230,7 +252,7 @@ export class World {
       const color = [0xe7c58d, 0xeac992, 0xe4c087, 0xedcd95][
         (i * 13 + Math.floor(i / 16) * 7) % 4
       ];
-      const tile = this.box(
+      const tile: T.Mesh = this.box(
         this.root,
         x,
         -0.09,
@@ -243,6 +265,7 @@ export class World {
       );
       this.tiles.push(tile);
       tile.userData.cell = i;
+      tile.userData.sandMaterial = tile.material;
       if (t === "building")
         this.box(this.root, x, 0.012, z, 0.94, 0.025, 0.94, 0xcaae83);
       if (t === "rock") {
@@ -269,95 +292,20 @@ export class World {
           this.root.add(chip);
         }
       }
-      if (t === "sand" && (i * 17) % 9 === 0) {
-        for (let k = 0; k < 3; k++)
-          this.box(
-            this.root,
-            x - 0.25 + k * 0.19,
-            0.015,
-            z + 0.18 * (k % 2),
-            0.08,
-            0.012,
-            0.035,
-            0xd3ac78,
-          );
+      if (t === "ravine") {
+        tile.position.y = -1.8;
+        tile.material = this.mat(0x573c2f, "soil");
       }
-      if (["source", "channel", "target"].includes(t)) tile.position.y = -0.26;
-      if (t === "source" || t === "channel" || t === "target") this.addWater(i);
+      if (["source", "channel", "target", "basin"].includes(t))
+        tile.position.y = -0.3;
+      if (["channel", "target", "basin"].includes(t))
+        tile.material = this.mat(t === "basin" ? 0x94603b : 0x6a452d, "soil");
+      if (["source", "channel", "target", "basin", "aqueduct"].includes(t))
+        this.addWater(i);
     }
-    this.house(1.5, -5.5, 2.6, 2.1, 2.5, 0xe9c58e);
-    this.house(5.4, -4.2, 1.8, 2, 2.1, 0xd7b580);
-    this.house(-5, -6, 1.6, 1.3, 1.6, 0xe9cfa0);
-    this.palm(-6, -2.9, 2.2);
-    this.palm(-4.2, -3.4, 2.6);
-    this.palm(-6.4, 3.7, 1.8);
-    this.palm(5.7, 5.8, 1.9);
-    for (const [x, z] of [
-      [-2, -5],
-      [4, -5.8],
-      [6, -1.5],
-      [-5.5, 5.7],
-    ]) {
-      this.cylinder(this.root, x, 0.25, z, 0.22, 0.48, 0xb97250, 0.16);
-      this.cylinder(this.root, x, 0.5, z, 0.13, 0.07, 0x754f3b);
-    }
-    // Small perimeter details: steps, market awning, woven mats, succulents.
-    for (let j = 0; j < 3; j++)
-      this.box(
-        this.root,
-        1.5,
-        -0.01 + j * 0.1,
-        -4.25 - j * 0.18,
-        1.2,
-        0.15,
-        0.3,
-        0xd5ad77,
-      );
-    this.box(this.root, 3.1, 0.02, -5.1, 1.1, 0.035, 1.4, 0x9b6650);
-    for (let k = 0; k < 5; k++)
-      this.box(
-        this.root,
-        2.65 + k * 0.22,
-        0.045,
-        -5.1,
-        0.08,
-        0.02,
-        1.4,
-        0xe0ac72,
-      );
-    for (let k = 0; k < 5; k++) {
-      this.box(
-        this.root,
-        4.65 + k * 0.32,
-        1.55,
-        -2.8,
-        0.33,
-        0.08,
-        1.1,
-        k % 2 ? 0xf3d9a2 : 0xc97854,
-      );
-    }
-    for (const x of [4.65, 5.95])
-      this.box(this.root, x, 0.75, -2.4, 0.08, 1.5, 0.08, 0x80533b);
-    this.game.level.targets.forEach((i, n) => this.machine(i, n));
-    for (let n = 0; n < 3; n++) {
-      const flag = new T.Group();
-      flag.position.set(0.4 + n * 0.9, 2.6, -5.5);
-      this.root.add(flag);
-      this.box(flag, 0, 0.35, 0, 0.035, 0.8, 0.035, 0x80533b);
-      this.box(
-        flag,
-        0.19,
-        0.55,
-        0,
-        0.36,
-        0.27,
-        0.025,
-        n % 2 ? 0xd5805c : 0x649782,
-      );
-      flag.visible = false;
-      this.banners.push(flag);
-    }
+    if (this.game.level.story?.kind !== "oasis")
+      this.game.level.targets.forEach((i, n) => this.machine(i, n));
+    this.story = new StoryScene(this);
     // Sparkle-like source landmarks rise above the oasis.
     const source = this.game.level.sources[0];
     const sx = (source % 16) - 7.5,
@@ -544,62 +492,50 @@ export class World {
     this.root.add(marker);
     this.markers.push(marker);
     this.box(this.root, x, 0.13, z + 0.42, 0.45, 0.06, 0.16, 0xe9b965);
-    const green = new T.Group();
-    green.position.set(
-      n === 1 ? -1 : 3.5 + n * 0.75,
-      0.05,
-      n === 1 ? 5.5 : -5.4,
-    );
-    this.root.add(green);
-    this.greens.push(green);
-    if (n === 1) {
-      for (let a = 0; a < 8; a++) {
-        this.box(
-          green,
-          (a % 4) * 0.27,
-          0,
-          Math.floor(a / 4) * 0.4,
-          0.2,
-          0.08,
-          0.28,
-          0x8b704d,
-        );
-        this.box(
-          green,
-          (a % 4) * 0.27,
-          0.17,
-          Math.floor(a / 4) * 0.4,
-          0.15,
-          0.25,
-          0.2,
-          0x739464,
-        );
-      }
-    } else {
-      this.cylinder(green, 0, 0, 0, 0.39, 0.2, 0xeed3a3);
-      this.cylinder(green, 0, 0.14, 0, 0.3, 0.08, 0x37bfc4);
-      this.cylinder(green, 0, 0.45, 0, 0.035, 0.58, 0x80e4d4);
-    }
-    green.visible = false;
   }
   addWater(i: number) {
     if (this.waters.has(i)) return;
     const x = (i % 16) - 7.5,
       z = Math.floor(i / 16) - 7.5;
+    const terrain = this.game.level.tiles[i],
+      elevated = terrain === "aqueduct",
+      pool =
+        ["source", "basin"].includes(terrain) ||
+        (terrain === "target" && this.game.level.story?.kind === "oasis");
     const mesh = this.box(
       this.root,
       x,
-      -0.14,
+      elevated ? 1.74 : -0.14,
       z,
-      0.985,
-      0.045,
-      0.985,
+      elevated || pool ? 0.985 : 0.72,
+      0.035,
+      elevated ? 0.38 : pool ? 0.985 : 0.72,
       palette.water,
       "water",
     );
     mesh.visible = false;
     mesh.userData.cell = i;
     this.waters.set(i, mesh);
+    if (!elevated && !pool)
+      for (const [dx, dz] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
+        const arm = this.box(
+          mesh,
+          dx * 0.425,
+          0,
+          dz * 0.425,
+          dx ? 0.29 : 0.72,
+          0.035,
+          dz ? 0.29 : 0.72,
+          palette.water,
+          "water",
+        );
+        arm.userData.neighbor = i + dx + dz * 16;
+      }
     for (let k = 0; k < 2; k++)
       this.box(
         mesh,
@@ -617,9 +553,47 @@ export class World {
     for (let i = 0; i < 256; i++) {
       const dug = this.game.digs.includes(i),
         t = this.game.level.tiles[i];
-      this.tiles[i].position.y =
-        dug || ["source", "channel", "target"].includes(t) ? -0.26 : -0.09;
-      if (dug) this.addWater(i);
+      if (dug) {
+        this.tiles[i].position.y = -0.32;
+        this.tiles[i].material = this.mat(0x64402b, "soil");
+        this.addWater(i);
+        if (!this.banks.has(i)) {
+          const edges: T.Mesh[] = [];
+          for (const [dx, dz] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ]) {
+            const bank = this.box(
+              this.root,
+              (i % 16) - 7.5 + dx * 0.44,
+              -0.085,
+              Math.floor(i / 16) - 7.5 + dz * 0.44,
+              dx ? 0.12 : 0.985,
+              0.17,
+              dz ? 0.12 : 0.985,
+              0x815334,
+              "soil",
+            );
+            bank.userData.neighbor = i + dx + dz * 16;
+            edges.push(bank);
+          }
+          this.banks.set(i, edges);
+        }
+      } else if (t === "sand") {
+        this.tiles[i].position.y = -0.09;
+        this.tiles[i].material = this.tiles[i].userData.sandMaterial;
+      }
+      this.banks.get(i)?.forEach((bank) => {
+        const j = bank.userData.neighbor;
+        bank.visible =
+          dug &&
+          !this.game.digs.includes(j) &&
+          !["source", "channel", "target", "basin"].includes(
+            this.game.level.tiles[j],
+          );
+      });
     }
     let delay = 0;
     const ordered = [...this.game.wet].sort((a, b) => a[1] - b[1]);
@@ -634,6 +608,7 @@ export class World {
         this.wetAt.delete(i);
       }
     this.hover.visible = false;
+    this.onHover(null);
   }
   burst(i: number, celebrate = false) {
     if (this.reduced) return;
@@ -646,7 +621,7 @@ export class World {
         0.08,
         0.08,
         0.08,
-        celebrate ? [0x63c7be, 0xf2c66c, 0xe99176][k % 3] : 0xce9e64,
+        celebrate ? [0x63c7be, 0xf2c66c, 0xe99176][k % 3] : 0x805334,
       );
       m.raycast = () => {};
       this.particles.push({
@@ -661,6 +636,8 @@ export class World {
     }
   }
   pick(clientX: number, clientY: number) {
+    // A retry can receive pointer input before the next rendered frame.
+    this.root.updateMatrixWorld(true);
     const r = this.host.getBoundingClientRect();
     this.ray.setFromCamera(
       new T.Vector2(
@@ -693,6 +670,7 @@ export class World {
       this.game.remaining > 0 &&
       !this.game.won;
     this.hover.visible = valid;
+    this.onHover(valid ? i : null);
     this.host.style.cursor = valid ? "pointer" : "default";
     if (valid)
       this.hover.position.set((i % 16) - 7.5, 0.035, Math.floor(i / 16) - 7.5);
@@ -733,13 +711,17 @@ export class World {
     this.camera.lookAt(this.viewTarget);
     this.camera.updateMatrixWorld(true);
     this.hover.visible = false;
+    this.onHover(null);
+    this.onViewChanged();
   }
   zoomBy(factor: number) {
+    this.cameraTransition = undefined;
     this.viewChanged = true;
     this.zoom = T.MathUtils.clamp(this.zoom * factor, 0.75, 4);
     this.updateCamera();
   }
   panPixels(dx: number, dy: number) {
+    this.cameraTransition = undefined;
     this.viewChanged = true;
     const scale =
       (2 *
@@ -762,14 +744,22 @@ export class World {
     this.updateCamera();
   }
   overview() {
+    this.cameraTransition = undefined;
     this.viewChanged = true;
     this.zoom = 1;
     this.viewTarget.set(0, 0, 0);
     this.updateCamera();
   }
   framePuzzle() {
+    this.cameraTransition = undefined;
     this.viewChanged = false;
-    const cells = [...this.game.level.sources, ...this.game.level.targets];
+    const cells = [
+      ...new Set([
+        ...(this.game.level.story?.focus ?? []),
+        ...this.game.level.sources,
+        ...this.game.level.targets,
+      ]),
+    ];
     const xs = cells.map((i) => (i % 16) - 7.5),
       zs = cells.map((i) => Math.floor(i / 16) - 7.5);
     this.viewTarget.set(
@@ -781,7 +771,24 @@ export class World {
     // A full-board overview on a phone makes individual cells too small to tap.
     // Start near the puzzle, then let pinch/drag and the overview button reveal the perimeter.
     const estimatedCell = Math.min(w / 24, h / 19);
-    this.zoom = T.MathUtils.clamp(34 / estimatedCell, 1.12, 3.2);
+    const preferred = T.MathUtils.clamp(34 / estimatedCell, 1.12, 3.2);
+    this.zoom = 1;
+    this.updateCamera();
+    let maxX = 0,
+      maxY = 0;
+    for (const i of cells)
+      for (const dx of [-0.6, 0.6])
+        for (const dz of [-0.6, 0.6])
+          for (const y of [0, 1.2]) {
+            const p = new T.Vector3(
+              (i % 16) - 7.5 + dx,
+              y,
+              Math.floor(i / 16) - 7.5 + dz,
+            ).project(this.camera);
+            maxX = Math.max(maxX, Math.abs(p.x));
+            maxY = Math.max(maxY, Math.abs(p.y));
+          }
+    this.zoom = Math.max(0.8, Math.min(preferred, 0.89 / maxX, 0.84 / maxY));
     this.updateCamera();
   }
   resize() {
@@ -797,6 +804,31 @@ export class World {
     if (!this.viewChanged) this.framePuzzle();
     else this.updateCamera();
   }
+  focusConsequence() {
+    const kind = this.game.level.story?.kind;
+    const [x, z] =
+      kind === "oasis"
+        ? [11.6, 8.4]
+        : kind === "bridge"
+          ? [10.6, 10]
+          : [9.7, 5.2];
+    const target = new T.Vector3(x - 7.5, 0, z - 7.5),
+      zoom = Math.max(this.zoom, 1.45);
+    if (this.reduced) {
+      this.viewTarget.copy(target);
+      this.zoom = zoom;
+      this.updateCamera();
+    } else
+      this.cameraTransition = {
+        from: this.viewTarget.clone(),
+        to: target,
+        start: this.elapsed,
+        fromZoom: this.zoom,
+        toZoom: zoom,
+      };
+    this.viewChanged = true;
+  }
+
   animate = (time: number) => {
     if (document.hidden) return;
     const dt = this.last ? Math.min((time - this.last) / 1000, 0.05) : 0;
@@ -808,15 +840,34 @@ export class World {
       m.visible = at !== undefined && this.elapsed >= at;
       if (at !== undefined && !m.visible) pending = true;
       if (m.visible && !this.reduced)
-        m.position.y = -0.13 + Math.sin(this.elapsed * 2 + i) * 0.008;
+        m.position.y =
+          (this.game.level.tiles[i] === "aqueduct" ? 1.74 : -0.14) +
+          Math.sin(this.elapsed * 2 + i) * 0.006;
+      for (const arm of m.children)
+        if (typeof arm.userData.neighbor === "number")
+          arm.visible =
+            this.wetAt.has(arm.userData.neighbor) &&
+            this.elapsed >= this.wetAt.get(arm.userData.neighbor)!;
     }
     this.wheels.forEach((w, n) => {
       const active = this.waters.get(this.game.level.targets[n])?.visible;
-      this.greens[n].visible = !!active;
       this.markers[n].material = this.mat(active ? 0x67d1bb : 0xe5a64e);
-      this.banners[n].visible = !!active;
       if (active && !this.reduced) w.rotation.z -= dt * 1.3;
     });
+    const active = this.game.level.targets.map(
+      (i) => !!this.waters.get(i)?.visible,
+    );
+    this.story?.update(dt, active, this.elapsed);
+    if (this.cameraTransition) {
+      const t = this.cameraTransition,
+        p = Math.min(1, (this.elapsed - t.start) / 0.8),
+        e = p * p * (3 - 2 * p);
+      this.viewTarget.lerpVectors(t.from, t.to, e);
+      this.zoom = T.MathUtils.lerp(t.fromZoom, t.toZoom, e);
+      this.updateCamera();
+      if (p === 1) this.cameraTransition = undefined;
+    }
+    if (this.game.won && !this.story?.done) pending = true;
     if (!this.reduced) {
       this.palms.forEach(
         (p, n) => (p.rotation.z = Math.sin(this.elapsed * 1.4 + n) * 0.025),

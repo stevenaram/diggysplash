@@ -3,7 +3,15 @@ import { defineConfig } from "vite";
 export default defineConfig({
   build: {
     rollupOptions: {
-      output: { manualChunks: { three: ["three"] } },
+      output: {
+        manualChunks(id) {
+          if (id.includes("/node_modules/three/")) {
+            return id.endsWith("three.core.js")
+              ? "three-core"
+              : "three-renderer";
+          }
+        },
+      },
     },
   },
 });
