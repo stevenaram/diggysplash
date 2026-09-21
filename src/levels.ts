@@ -110,29 +110,22 @@ const bridge = board(
 const city = board(
   "city",
   "Welcome home",
-  "Feed the aqueduct. Open the gates.",
+  "Bring water to both wheels. Open both gates.",
   "Everyone is home!",
   [
     "........",
     ".._____.",
-    "...aaaa.",
-    ".#.O..O.",
+    "...____.",
+    ".#.O_.O_",
     "..#.__..",
     "~.#.__..",
     "........",
     "........",
   ],
-  [32, 24, 16, 17, 18, 26],
-  6,
+  [48,49,50,51,43,35,52,53,54,46,38],
+  11,
   5,
 );
-city.links = [
-  [cell(3, 3), cell(3, 2)],
-  [cell(3, 2), cell(4, 2)],
-  [cell(4, 2), cell(5, 2)],
-  [cell(5, 2), cell(6, 2)],
-  [cell(6, 2), cell(6, 3)],
-];
 const harvest = board(
   "harvest",
   "Bread for everyone",

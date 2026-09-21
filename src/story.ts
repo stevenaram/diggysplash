@@ -1,4 +1,5 @@
 import * as T from "three";
+import { CitySprites } from "./city-sprites";
 import { BridgeSprites } from "./bridge-sprites";
 import { OasisSprites } from "./oasis-sprites";
 import { SIZE, gridWorld } from "./game";
@@ -24,6 +25,7 @@ export class StoryScene {
   campaign?: CampaignScene;
   oasisSprites?: OasisSprites;
   bridgeSprites?: BridgeSprites;
+  citySprites?: CitySprites;
   progress = 0;
   done = false;
   actors: Actor[] = [];
@@ -355,109 +357,30 @@ export class StoryScene {
     }
   }
   city() {
-    const w = this.world;
-    w.house(-1.7, -5.9, 1.6, 1.5, 1.4, 0xe3bc86);
-    w.house(5.1, -5.9, 1.7, 1.5, 1.7, 0xe8c594);
-    w.house(1, -5.9, 1.7, 1.5, 1.8, 0xe5c292);
-    w.palm(-6.5, -0.5, 2.2);
-    w.palm(-6.8, 4.5, 1.8);
-    // The opening and twin portcullises are visible from the approach.
-    for (let x = 5; x <= 14; x++) {
-      if (x === 9 || x === 10) continue;
-      const wall = this.at(x, 4),
-        tower = x === 8 || x === 11,
-        h = tower ? 2.45 : 1.7;
-      w.box(wall, 0, h / 2, 0, 0.98, h, 0.75, 0xe4c394, "plaster");
-      w.box(wall, 0, h + 0.05, 0, 1.06, 0.16, 0.86, 0xf3d9aa);
-      for (const dx of [-0.33, 0.33])
-        w.box(wall, dx, h + 0.23, 0, 0.25, 0.35, 0.8, 0xe9cd9f);
-      w.box(wall, 0, 0.25, 0.4, 1, 0.3, 0.07, 0xc4a077, "stone");
-      if (tower) {
-        w.box(wall, 0, 1.6, 0.385, 0.12, 0.5, 0.035, 0x77694f);
-        w.box(
-          wall,
-          0.3,
-          1.9,
-          0.41,
-          0.25,
-          0.6,
-          0.025,
-          x === 8 ? 0x579b96 : 0xc9815a,
-        );
-      }
+    const w=this.world;
+    this.citySprites=new CitySprites(w);
+    // Two broad wheel silhouettes flank a deliberately clear central entrance.
+    w.house(-1.9,-6.4,1.9,1.3,1.25,0xe3bc86);
+    w.house(6.35,-6.4,1.7,1.2,1.4,0xe8c594);
+    for(const x of [-2.5,-1.5,-.5,.5,1,5,6,7]) {
+      const tower=x===1||x===5, h=tower?3:2.15;
+      w.box(w.root,x,h/2,-4.5,tower?.8:.98,h,.65,0xe4c394,"stone");
+      w.box(w.root,x,h+.06,-4.5,tower?1:.98,.16,.78,0xf3d9aa,"stone");
+      for(const dx of [-.28,.28])w.box(w.root,x+dx,h+.22,-4.5,.22,.3,.7,0xe9cd9f,"stone");
+      if(tower)w.box(w.root,x,2,-4.14,.3,.8,.04,x===1?0x579b96:0xc9815a);
     }
-    w.box(w.root, 2, 2.46, -3.5, 2.14, 0.28, 0.8, 0xeccf9f, "stone");
-    for (const x of [9, 10]) {
-      const gate = this.at(x, 4);
-      this.gates.push(gate);
-      for (let j = 0; j < 5; j++)
-        w.box(
-          gate,
-          -0.4 + j * 0.2,
-          1.04,
-          0,
-          0.085,
-          1.96,
-          0.12,
-          0x826c51,
-          "wood",
-        );
-      for (const y of [0.32, 0.96, 1.65])
-        w.box(gate, 0, y, 0, 0.96, 0.105, 0.17, 0x92754f);
-      for (const dx of [-0.38, 0.38])
-        this.pole(
-          w.root,
-          new T.Vector3(x - 7.5 + dx, 2.55, -3.5),
-          new T.Vector3(x - 7.5 + dx, 2.55, -1.5),
-          0.018,
-          0x8f8164,
-        );
+    // Twin lifting panels have a wide opening for full-size billboard people.
+    for(const x of [2.2,3.8]) {
+      const gate=new T.Group();gate.position.set(x,0,-4.5);w.root.add(gate);this.gates.push(gate);
+      for(let j=0;j<6;j++)w.box(gate,-.65+j*.26,1.25,0,.09,2.5,.14,0x826c51,"wood");
+      for(const y of [.3,1.2,2.25])w.box(gate,0,y,0,1.5,.13,.18,0x92754f,"wood");
     }
-    for (let x = 6; x <= 13; x++) this.aqueductArch(x, 4.5);
-    for (const x of [6.5, 12.5]) {
-      const feeder = this.at(x, 5.5);
-      w.box(feeder, 0, 1.63, 0, 0.62, 0.14, 1.5, 0xe7c58e, "stone");
-      w.box(feeder, -0.26, 1.75, 0, 0.1, 0.18, 1.5, 0xeed6a6);
-      w.box(feeder, 0.26, 1.75, 0, 0.1, 0.18, 1.5, 0xeed6a6);
-      const water = w.box(
-        feeder,
-        0,
-        1.71,
-        0,
-        0.4,
-        0.03,
-        1.5,
-        0x36bfc4,
-        "water",
-      );
-      water.visible = false;
-      this.wetDetails.push(water);
+    w.box(w.root,3,3,-4.5,3.3,.25,.78,0xeccf9f,"stone");
+    // Dry drive shafts stay behind each wheel. Water reaches the two ground inlets independently.
+    for(const x of [0,6]) {
+      this.pole(w.root,new T.Vector3(x,2.24,-1.45),new T.Vector3(x,2.24,-3.85),.055,0x8d7657);
+      w.box(w.root,x,2.24,-3.85,.35,.35,.3,0x80533b,"wood");
     }
-    // A water-lifting scoop on the first gear feeds the elevated channel.
-    w.box(w.root, -0.5, 0.72, -1.65, 0.17, 1.4, 0.16, 0x916749, "wood");
-    for (const [n, x, z, coat] of [
-      [0, 9, 8.6, 0xc58259],
-      [1, 10.1, 9.4, 0x699aa4],
-      [2, 11.2, 9.5, 0xc3a26b],
-      [3, 9, 10.2, 0x71976f],
-    ]) {
-      const actor =
-        n === 3 ? this.shepherd(x, z) : this.actor(x, z, false, coat);
-      actor.root.rotation.y = Math.PI;
-      actor.destination.set(x - 7.5, 0, 2.5 + (n % 2) * 0.35 - 7.5);
-    }
-    this.actor(10.6, 10.7, true).destination.set(10.6 - 7.5, 0, 3 - 7.5);
-    this.actors.forEach((actor, n) => {
-      const lane = n % 2 ? 10 : 9;
-      actor.waypoints = [
-        actor.start.clone(),
-        new T.Vector3(lane - 7.5, 0, 5.15 - 7.5),
-        new T.Vector3(lane - 7.5, 0, 3.3 - 7.5),
-        actor.destination.clone(),
-      ];
-    });
-    this.heart(9.6, 1.4, 2.8);
-    this.heart(11, 1.6, 3.1);
   }
   aqueductArch(x: number, z: number) {
     const w = this.world,
@@ -523,7 +446,7 @@ export class StoryScene {
             this.progress +
               dt /
                 (this.campaign?.duration ??
-                  (["city", "bridge"].includes(this.world.game.level.story?.kind ?? "") ? 6 : 4)),
+                  (this.world.game.level.story?.kind === "city" ? 9 : this.world.game.level.story?.kind === "bridge" ? 6 : 4)),
           );
       this.done = this.progress >= 1;
     }
@@ -537,11 +460,14 @@ export class StoryScene {
       this.bridge.rotation.z =
         -(1 - ease(this.progress / 0.35)) * Math.PI * 0.36;
     this.bridgeSprites?.update(this.progress,time);
+    this.citySprites?.update(this.progress,time);
     this.gates.forEach((g, n) => {
-      const height = active[n] ? 2.1 : 0;
+      const height = active[n] ? 2.75 : 0;
       g.position.y = this.world.reduced
         ? height
         : T.MathUtils.damp(g.position.y, height, 7, dt);
+      // Gate slats retract into the lintel instead of projecting above the town.
+      if(kind === "city") g.scale.y=1-.88*Math.min(1,g.position.y/2.75);
     });
     this.greenery.visible = won;
     this.greenery.scale.setScalar(0.2 + 0.8 * ease(this.progress / 0.45));

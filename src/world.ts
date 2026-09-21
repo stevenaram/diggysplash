@@ -146,7 +146,7 @@ export class World {
     this.animate(0);
   }
   mat(color: number, surface?: Surface, vertexColors = false) {
-    const metric=this.game.level.story?.kind === "bridge" && (surface === "wood" || surface === "stone");
+    const metric=["bridge","city"].includes(this.game.level.story?.kind ?? "") && (surface === "wood" || surface === "stone" || surface === "plaster");
     const key = `${color}:${surface ?? "solid"}:${vertexColors}:${metric}`;
     if (!this.mats.has(key))
       this.mats.set(
@@ -162,7 +162,7 @@ export class World {
   }
   // Painted directional face colors give low-poly meshes volume without scene lights.
   shaded(geometry: T.BufferGeometry, color: number, surface?: Surface) {
-    if(this.game.level.story?.kind === "bridge") {
+    if(["bridge","city"].includes(this.game.level.story?.kind ?? "")) {
       if(geometry instanceof T.CylinderGeometry) {
         surface="wood";
         const uv=geometry.getAttribute("uv"), p=geometry.parameters;
@@ -211,11 +211,11 @@ export class World {
       shade.clone().multiplyScalar(0.78),
     ];
     const geometry = new T.BoxGeometry(w, h, d);
-    if(this.game.level.story?.kind === "bridge" && (surface === "wood" || surface === "stone")) {
+    if(["bridge","city"].includes(this.game.level.story?.kind ?? "") && (surface === "wood" || surface === "stone" || surface === "plaster")) {
       const uv=geometry.getAttribute("uv");
       // Each box face gets its real dimensions, never a full texture squeezed onto a beam.
       const spans=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
-      spans.forEach(([u,v],face)=>{for(let j=0;j<4;j++){const i=face*4+j;uv.setXY(i,uv.getX(i)*u/TILE_SIZE,uv.getY(i)*v/TILE_SIZE);}});
+      spans.forEach(([u,v],face)=>{for(let j=0;j<4;j++){const i=face*4+j;uv.setXY(i,uv.getX(i)*u/(surface === "plaster" ? TILE_SIZE*2 : TILE_SIZE),uv.getY(i)*v/(surface === "plaster" ? TILE_SIZE*2 : TILE_SIZE));}});
     }
     let material: T.Material | T.Material[];
     if (["battle", "fortress"].includes(this.game.level.story?.kind ?? "")) {
@@ -310,7 +310,7 @@ export class World {
       tile.userData.sandMaterial = tile.material;
       if (t === "building")
         this.box(this.root, x, 0.012, z, 1.94, 0.025, 1.94, 0xcaae83);
-      if (t === "rock" && !["oasis", "bridge"].includes(this.game.level.story?.kind ?? "")) {
+      if (t === "rock" && !["oasis", "bridge", "city"].includes(this.game.level.story?.kind ?? "")) {
         const rock = this.shaded(
           new T.DodecahedronGeometry(0.52, 0),
           0xc4ad87,
@@ -345,7 +345,7 @@ export class World {
         part.raycast = () => {};
       }),
     );
-    if (["oasis", "bridge"].includes(this.game.level.story?.kind ?? "")) { this.sync(); return; }
+    if (["oasis", "bridge", "city"].includes(this.game.level.story?.kind ?? "")) { this.sync(); return; }
     // Sparkle-like source landmarks rise above the oasis.
     const source = this.game.level.sources[0];
     const sx = gridWorld(source % SIZE),
@@ -481,7 +481,8 @@ export class World {
   }
   bridgeMachine(i: number) {
     // Two reserved cells directly north of the inlet own the full mechanism footprint.
-    const x=gridWorld(i%SIZE)-TILE_SIZE/2, z=gridWorld(Math.floor(i/SIZE))-TILE_SIZE;
+    const city=this.game.level.story?.kind === "city";
+    const x=gridWorld(i%SIZE)+(city?1:-1)*TILE_SIZE/2, z=gridWorld(Math.floor(i/SIZE))-(city?0:TILE_SIZE);
     this.box(this.root,x,.06,z,3.8,.16,1.5,0x9c8d72,"stone");
     for(const sign of [-1,1])
       this.box(this.root,x+sign*.76,1.02,z-.24,.24,1.88,.32,0x80533b,"wood");
@@ -510,7 +511,7 @@ export class World {
     hub.rotation.x=Math.PI/2;
   }
   machine(i: number, n: number) {
-    if(this.game.level.story?.kind === "bridge") {this.bridgeMachine(i);return;}
+    if(["bridge","city"].includes(this.game.level.story?.kind ?? "")) {this.bridgeMachine(i);return;}
     const firstChild = this.root.children.length;
     const x = gridWorld(i % SIZE),
       z = gridWorld(Math.floor(i / SIZE));
@@ -591,7 +592,7 @@ export class World {
     const mesh = this.box(
       this.root,
       x,
-      elevated ? 1.74 : -0.14,
+      elevated ? (this.game.level.story?.kind === "city" ? 3.34 : 1.74) : -0.14,
       z,
       elevated || pool ? 0.985 : 0.72,
       0.035,
@@ -899,12 +900,14 @@ export class World {
           0,
           gridWorld(Math.floor(this.game.level.targets[0] / SIZE)),
         );
+    const city=this.game.level.story?.kind === "city";
+    if(city) target.set(0,0,-2);
     this.cameraTransition = {
       from: this.viewTarget.clone(),
       to: this.viewTarget.clone().lerp(target, 0.14),
       start: this.elapsed,
       fromZoom: this.zoom,
-      toZoom: this.zoom * 1.045,
+      toZoom: this.zoom * (city ? .98 : 1.045),
     };
     this.viewChanged = true;
   }
@@ -921,7 +924,7 @@ export class World {
       if (at !== undefined && !m.visible) pending = true;
       if (m.visible && !this.reduced)
         m.position.y =
-          (this.game.level.tiles[i] === "aqueduct" ? 1.74 : -0.14) +
+          (this.game.level.tiles[i] === "aqueduct" ? (this.game.level.story?.kind === "city" ? 3.34 : 1.74) : -0.14) +
           Math.sin(this.elapsed * 2 + i) * 0.006;
       for (const arm of m.children)
         if (typeof arm.userData.neighbor === "number")
@@ -978,6 +981,7 @@ export class World {
   disposeRoot() {
     this.story?.oasisSprites?.dispose();
     this.story?.bridgeSprites?.dispose();
+    this.story?.citySprites?.dispose();
     this.scene.remove(this.root);
     this.root.traverse((o) => {
       if (o instanceof T.Mesh) o.geometry.dispose();

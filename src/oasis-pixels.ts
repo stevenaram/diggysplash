@@ -1,8 +1,8 @@
 /** Original pixel drawings, deliberately rasterized without antialiasing. */
-export type PixelKind = 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust';
+export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust';
 /** Every source pixel occupies 1/32 of a tile; small props get small drawings. */
 export const PIXEL_SIZES: Record<PixelKind, readonly [number, number]> = {
-  shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
+  villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
   grass: [10, 12], basket: [16, 16], blanket: [22, 12], heart: [12, 12],
   pebble: [8, 6], dust: [3, 3],
 };
@@ -14,8 +14,10 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const oval = (x:number,y:number,rx:number,ry:number,c:string) => {for(let j=Math.floor(y-ry);j<=y+ry;j++)for(let i=Math.floor(x-rx);i<=x+rx;i++)if(((i-x)/rx)**2+((j-y)/ry)**2<=1)dot(i,j,c);};
   const poly = (points:number[][],c:string) => {for(let y=0;y<h;y++)for(let x=0;x<w;x++){let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++){const a=points[i],b=points[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;}if(inside)dot(x,y,c);}};
   const ink='#494353', deep='#706052', tan='#aa805b', gold='#d6ac67', light='#f0d294';
-  if(kind==='shepherd') {
-    const walking=frame===1||frame===2, step=frame===2?1:0;
+  if(kind==='shepherd'||kind==='villager') {
+    // Human frames 6/7/8 are rear idle / left step / right step.
+    const rear=frame>=6, pose=rear?frame-6:frame;
+    const walking=pose===1||pose===2, step=pose===2?1:0;
     const bob=walking?step:0;
     rect(10,32,4,4+step,deep);rect(18,32,4,5-step,deep);
     rect(9,36+step,6,2,ink);rect(18,37-step,6,2,ink);
@@ -25,12 +27,24 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
     rect(7,24+bob,3,7,gold);rect(21,24-bob,3,6,gold);
     rect(8,25+bob,2,3,light);rect(22,26-bob,3,3,'#eec28d');
     // Curved crook is part of every frame, never a rotating 3D limb.
-    rect(27,16,2,22,tan);rect(25,13,5,2,gold);rect(24,15,2,4,gold);rect(25,18,2,2,deep);
+    if(kind==='shepherd'){rect(27,16,2,22,tan);rect(25,13,5,2,gold);rect(24,15,2,4,gold);rect(25,18,2,2,deep);}
     oval(16,17+bob,7,7,tan);oval(16,16+bob,6,6,'#efc496');
     rect(11,12+bob,10,2,'#81604d');rect(10,14+bob,2,5,'#81604d');rect(21,14+bob,2,4,'#81604d');
     rect(12,18+bob,2,2,ink);rect(19,18+bob,2,2,ink);
     if(frame===3){rect(12,18+bob,2,2,'#efc496');rect(19,18+bob,2,2,'#efc496');dot(12,19,ink);dot(19,19,ink);}
     dot(16,21+bob,'#c78e68');rect(14,23+bob,5,2,'#765249');
+    if(rear) {
+      // Back of the head: hair and nape, never front-facing eyes or a beard.
+      oval(16,17+bob,7,7,'#654c42');
+      oval(16,16+bob,6,6,'#81604d');
+      rect(12,16+bob,2,5,'#a27b58');rect(19,17+bob,2,5,'#70513f');
+      rect(14,23+bob,5,2,'#d4a078');
+      rect(11,25,11,5,'#5b9f88');rect(16,25,1,5,'#366c68');
+      // A small rear satchel and shoulder straps make direction legible at phone size.
+      rect(11,24,2,7,deep);rect(20,24,2,7,deep);
+      rect(12,27,9,6,deep);rect(13,27,7,5,tan);rect(13,27,7,2,gold);dot(16,30,light);
+      rect(10,35+step,3,1,tan);rect(19,36-step,3,1,tan);
+    }
     oval(16,11+bob,12,3,tan);oval(16,10+bob,12,3,gold);
     poly([[9,10+bob],[10,4+bob],[13,2+bob],[21,3+bob],[23,10+bob]],gold);
     rect(12,4+bob,7,3,light);rect(10,8+bob,13,2,'#947249');rect(7,10+bob,16,1,light);
@@ -89,6 +103,10 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   } else if(kind==='heart') {
     poly([[6,10],[1,5],[1,3],[3,1],[6,3],[9,1],[11,3],[11,5]],'#ae5364');
     poly([[6,8],[2,4],[3,2],[6,4],[9,2],[10,4]],'#f18d95');dot(3,3,'#ffceba');
+  }
+  if(kind==='villager'){
+    const colors:Record<string,string>={'#366c68':'#985744','#5b9f88':'#c58358','#87b59a':'#edb782'};
+    for(let i=0;i<pixels.length;i++)if(pixels[i]&&colors[pixels[i]!])pixels[i]=colors[pixels[i]!];
   }
   const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
   const ctx=canvas.getContext('2d')!;

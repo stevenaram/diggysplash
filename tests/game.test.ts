@@ -31,7 +31,7 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
-    assert.equal(minimumDigs(l), [4, 5, 6, 7, 9, 10, 11, 12][n]);
+    assert.equal(minimumDigs(l), [4, 5, 11, 7, 9, 10, 11, 12][n]);
     assert.equal(l.starThresholds!.three, minimumDigs(l));
     assert.ok(l.budget - l.starThresholds!.three >= 4);
     const g = new Game(l);
@@ -128,16 +128,22 @@ test("actual wins earn three, two, or one star from net digs after undo", () => 
   level.solution.forEach((i) => game.dig(i));
   assert.equal(game.stars, 3);
 });
-test("the aqueduct carries water between both gears, and cannot be entered through the ground underneath", () => {
-  const level = levels[2],
-    game = new Game(level);
-  assert.equal(game.dig(cell(4, 2)), false);
-  assert.equal(connections(level, cell(4, 3)).includes(cell(4, 2)), false);
-  level.solution.forEach((i) => game.dig(i));
-  assert.deepEqual(game.active, [true, true]);
-  assert.ok(game.wet.get(level.targets[1])! > game.wet.get(level.targets[0])!);
+test("city wheels require separate ground branches and work in either order", () => {
+  const level=levels[2], game=new Game(level);
+  assert.equal(game.dig(cell(4,2)),false);
+  assert.equal(level.links?.length ?? 0,0);
+  level.solution.slice(0,6).forEach(i=>game.dig(i));
+  assert.deepEqual(game.active,[true,false]);
+  level.solution.slice(6).forEach(i=>game.dig(i));
+  assert.deepEqual(game.active,[true,true]);
   game.undo();
-  assert.deepEqual(game.active, [false, false]);
+  assert.deepEqual(game.active,[true,false]);
+  const reverse=new Game(level);
+  [48,49,50,51,52,53,54,46,38].forEach(i=>reverse.dig(i));
+  assert.deepEqual(reverse.active,[false,true]);
+  [43,35].forEach(i=>reverse.dig(i));
+  assert.equal(reverse.won,true);
+  assert.equal(reverse.stars,3);
 });
 test("ravine blocks flow and cannot be dug; dry oasis fills without any gears", () => {
   const bridge = new Game(levels[1]);
