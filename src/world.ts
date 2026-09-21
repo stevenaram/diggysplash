@@ -247,15 +247,32 @@ export class World {
     this.wetAt.clear();
     this.particles = [];
     if (this.game.level.story?.kind === "bridge") {
-      this.box(this.root, -3, -1.08, 0, 10, 1.5, 16.15, 0xb17b51, "stone");
-      this.box(this.root, 6, -1.08, 0, 4, 1.5, 16.15, 0xb17b51, "stone");
-      this.box(this.root, 3, -1.8, 0, 2, 0.15, 16.15, 0x553f33);
-      this.box(this.root, -3, -0.39, 0, 10, 0.2, 16.15, 0xd5a36b);
-      this.box(this.root, 6, -0.39, 0, 4, 0.2, 16.15, 0xd5a36b);
+      this.box(this.root, -4, -1.08, 0, 12, 1.5, 20.15, 0xb17b51, "stone");
+      this.box(this.root, 7, -1.08, 0, 6, 1.5, 20.15, 0xb17b51, "stone");
+      this.box(this.root, 3, -1.8, 0, 2, 0.15, 20.15, 0x553f33);
+      this.box(this.root, -4, -0.39, 0, 12, 0.2, 20.15, 0xd5a36b);
+      this.box(this.root, 7, -0.39, 0, 6, 0.2, 20.15, 0xd5a36b);
     } else {
-      this.box(this.root, 0, -0.82, 0, 16.15, 0.9, 16.15, 0xb97e55);
-      this.box(this.root, 0, -0.35, 0, 16.2, 0.12, 16.2, 0xd5a36b);
+      this.box(this.root, 0, -0.82, 0, 20.15, 0.9, 20.15, 0xb97e55);
+      this.box(this.root, 0, -0.35, 0, 20.2, 0.12, 20.2, 0xd5a36b);
     }
+    // Decorative ring is outside the 64-cell game state and has no cell IDs.
+    for (let z = -1; z <= SIZE; z++)
+      for (let x = -1; x <= SIZE; x++) {
+        if (x >= 0 && x < SIZE && z >= 0 && z < SIZE) continue;
+        const ravine = this.game.level.story?.kind === "bridge" && x === 5;
+        this.box(
+          this.root,
+          gridWorld(x),
+          ravine ? -1.8 : -0.09,
+          gridWorld(z),
+          1.97,
+          0.2,
+          1.97,
+          ravine ? 0x573c2f : 0xcaae83,
+          ravine ? "soil" : "stone",
+        );
+      }
     for (let i = 0; i < CELL_COUNT; i++) {
       const x = gridWorld(i % SIZE),
         z = gridWorld(Math.floor(i / SIZE)),
@@ -281,33 +298,19 @@ export class World {
       if (t === "building")
         this.box(this.root, x, 0.012, z, 1.94, 0.025, 1.94, 0xcaae83);
       if (t === "rock") {
-        if (
-          i % SIZE === 0 ||
-          i % SIZE === SIZE - 1 ||
-          i < SIZE ||
-          i >= CELL_COUNT - SIZE
-        ) {
-          this.box(this.root, x, 0.01, z, 1.86, 0.14, 1.86, 0xcbae84);
-          if (i % 3 === 0)
-            this.box(this.root, x, 0.12, z, 0.55, 0.12, 0.6, 0xd4b88e);
-        } else {
-          const rock = this.shaded(
-            new T.DodecahedronGeometry(0.52, 0),
-            0xc4ad87,
-            "sand",
-          );
-          rock.scale.set(1.55, 1.1, 1.5);
-          rock.position.set(x, 0.26, z);
-          rock.rotation.y = i * 0.71;
-          this.root.add(rock);
-          const chip = this.shaded(
-            new T.DodecahedronGeometry(0.18, 0),
-            0xd6bd92,
-          );
-          chip.scale.y = 0.6;
-          chip.position.set(x - 0.27, 0.08, z + 0.24);
-          this.root.add(chip);
-        }
+        const rock = this.shaded(
+          new T.DodecahedronGeometry(0.52, 0),
+          0xc4ad87,
+          "sand",
+        );
+        rock.scale.set(1.55, 1.1, 1.5);
+        rock.position.set(x, 0.26, z);
+        rock.rotation.y = i * 0.71;
+        this.root.add(rock);
+        const chip = this.shaded(new T.DodecahedronGeometry(0.18, 0), 0xd6bd92);
+        chip.scale.y = 0.6;
+        chip.position.set(x - 0.27, 0.08, z + 0.24);
+        this.root.add(chip);
       }
       if (t === "ravine") {
         tile.position.y = -1.8;
@@ -322,7 +325,13 @@ export class World {
     }
     if (this.game.level.story?.kind !== "oasis")
       this.game.level.targets.forEach((i, n) => this.machine(i, n));
+    const sceneryStart = this.root.children.length;
     this.story = new StoryScene(this);
+    this.root.children.slice(sceneryStart).forEach((object) =>
+      object.traverse((part) => {
+        part.raycast = () => {};
+      }),
+    );
     // Sparkle-like source landmarks rise above the oasis.
     const source = this.game.level.sources[0];
     const sx = gridWorld(source % SIZE),
@@ -838,7 +847,7 @@ export class World {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.fitDistance =
-      Math.max(9.6, 12.2 / this.camera.aspect) /
+      Math.max(11.6, 14.5 / this.camera.aspect) /
       Math.tan(T.MathUtils.degToRad(this.camera.fov / 2));
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.setSize(Math.round(w), Math.round(h), false);

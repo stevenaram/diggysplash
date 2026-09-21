@@ -39,9 +39,21 @@ export class StoryScene {
       this.campaign = new CampaignScene(this);
     this.hearts.visible = false;
   }
+  scenePoint(x: number, z: number) {
+    if (
+      !["oasis", "bridge", "city"].includes(
+        this.world.game.level.story?.kind ?? "",
+      )
+    ) {
+      if (z <= 3) z = -1.3 + (z - 1.8) * 0.4;
+      else if (z >= 12.5) z = 16.4 + (z - 14) * 0.5;
+      if (x >= 13.5) x = 16.5 + (x - 14.3) * 0.5;
+    }
+    return new T.Vector3(x - 7.5, 0, z - 7.5);
+  }
   at(x: number, z: number) {
     const group = new T.Group();
-    group.position.set(x - 7.5, 0, z - 7.5);
+    group.position.copy(this.scenePoint(x, z));
     this.world.root.add(group);
     return group;
   }
@@ -192,7 +204,8 @@ export class StoryScene {
     );
     mesh.material.side = T.DoubleSide;
     mesh.scale.setScalar(0.15);
-    mesh.position.set(x - 7.5, y, z - 7.5);
+    mesh.position.copy(this.scenePoint(x, z));
+    mesh.position.y = y;
     this.hearts.add(mesh);
   }
   oasis() {

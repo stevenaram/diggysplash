@@ -1,6 +1,6 @@
 # Diggy Splash
 
-A low-poly 3D desert puzzle told in eight chapters, each on an 8 × 8 board. Guide water through freshly dug trenches, from giving a flock a drink to defending Sunfall in a battle between two armies.
+A low-poly 3D desert puzzle told in eight chapters, each on a full 8 × 8 action grid inside a separate decorative ring (10 × 10 overall). Guide water through freshly dug trenches, from giving a flock a drink to defending Sunfall in a battle between two armies.
 
 ## Run
 
@@ -15,18 +15,18 @@ Open the URL printed by Vite. For a production build, run `npm run build`, then 
 
 | Chapter               | Water's consequence                                                                                    | Dig budget | Three stars | Two stars  | One star   |
 | --------------------- | ------------------------------------------------------------------------------------------------------ | ---------- | ----------- | ---------- | ---------- |
-| A drink for the flock | Fill a dry oasis; sheep approach and drink. No gears.                                                  | 7          | ≤ 3 digs    | 4–5 digs   | 6–7 digs   |
-| The way across        | Power one wheel; the drawbridge lowers and the shepherd crosses to the lost sheep.                     | 8          | ≤ 4 digs    | 5–6 digs   | 7–8 digs   |
-| Welcome home          | Feed one wheel; a raised aqueduct supplies the second. Both portcullises rise and the villagers enter. | 10         | ≤ 5 digs    | 6–8 digs   | 9–10 digs  |
-| Bread for everyone    | Restart two mills; golden wheat grows and bread appears.                                               | 11         | ≤ 6 digs    | 7–9 digs   | 10–11 digs |
-| Caravan in the embers | Three pumps extinguish burning wagons independently.                                                   | 13         | ≤ 8 digs    | 9–11 digs  | 12–13 digs |
-| The sleeping sun      | Awaken three shrines; a floating sun beacon lights the desert.                                         | 14         | ≤ 9 digs    | 10–12 digs | 13–14 digs |
-| Before the storm      | Raise the wall, fill the cistern, and open the refuge gate; escort the convoy inside.                  | 15         | ≤ 10 digs   | 11–13 digs | 14–15 digs |
-| The battle of Sunfall | Four water-powered trebuchets break the palisade, scatter the red army, and smash its siege engines.   | 18         | ≤ 13 digs   | 14–16 digs | 17–18 digs |
+| A drink for the flock | Fill a dry oasis; sheep approach and drink. No gears.                                                  | 8          | ≤ 4 digs    | 5–6 digs   | 7–8 digs   |
+| The way across        | Power one wheel; the drawbridge lowers and the shepherd crosses to the lost sheep.                     | 9          | ≤ 5 digs    | 6–7 digs   | 8–9 digs   |
+| Welcome home          | Feed one wheel; a raised aqueduct supplies the second. Both portcullises rise and the villagers enter. | 11         | ≤ 6 digs    | 7–9 digs   | 10–11 digs |
+| Bread for everyone    | Restart two mills; golden wheat grows and bread appears.                                               | 13         | ≤ 8 digs    | 9–11 digs  | 12–13 digs |
+| Caravan in the embers | Three pumps extinguish burning wagons independently.                                                   | 15         | ≤ 10 digs   | 11–13 digs | 14–15 digs |
+| The sleeping sun      | Awaken three shrines; a floating sun beacon lights the desert.                                         | 16         | ≤ 11 digs   | 12–14 digs | 15–16 digs |
+| Before the storm      | Raise the wall, fill the cistern, and open the refuge gate; escort the convoy inside.                  | 17         | ≤ 12 digs   | 13–15 digs | 16–17 digs |
+| The battle of Sunfall | Four water-powered trebuchets break the palisade, scatter the red army, and smash its siege engines.   | 19         | ≤ 14 digs   | 15–17 digs | 18–19 digs |
 
 Objectives have no numbered order. Thin sealed pipes visibly connect the later wheels to their machinery; these are delivery pipes, not extra puzzle channels. Each device reacts to its own water supply, while the final celebration waits for the whole level.
 
-Tiles span two world units, giving the 64-cell puzzles large click/touch targets while retaining the detailed 3D scenery. All routes and star thresholds were redesigned for the compact boards. Existing chapter unlocks and mute preferences persist; medals use a new save key so old 16 × 16 scores do not count toward the new puzzles.
+Tiles span two world units. All eight rows and columns belong to the puzzle, including the corners and former boundary. A separate 36-tile stone ring surrounds the 64 action cells; it never receives water or consumes digs. Perimeter campaign scenery sits on this ring, and decorative silhouettes do not intercept tile input. All routes and star thresholds were redesigned for the compact boards. Existing chapter unlocks and mute preferences persist; medals use a new save key so old 16 × 16 scores do not count toward the new puzzles.
 
 Three-star thresholds are verified minimum routes. Scores count the trenches currently dug: undo refunds the dig. The best star rating for each chapter persists and cannot be lowered by a worse replay. Winning on the final dig still succeeds. A failure result appears only after the last water animation settles.
 

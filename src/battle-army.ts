@@ -85,7 +85,7 @@ export class BattleArmy {
           : clamp((age - CYCLE - IMPACT - (i % 3) * 0.055) / 0.8)
         : 0;
       const cheer = !this.enemy ? clamp(state.victoryAge / 0.9) : 0;
-      model.position.set(x - 7.5, 0, z - 7.5);
+      model.position.copy(this.campaign.story.scenePoint(x, z));
       model.rotation.set(0, this.enemy ? 0 : Math.PI, 0);
       model.scale.setScalar(0.88);
       if (!reduced) {

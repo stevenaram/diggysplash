@@ -211,7 +211,11 @@ export class BattleScene {
     for (let shot = 0; shot < VOLLEYS; shot++) {
       const crater = new T.Mesh(new T.CircleGeometry(0.5, 18), w.mat(0x82664e));
       crater.rotation.x = -Math.PI / 2;
-      crater.position.set(x - 7.5, 0.023, 2.55 - shot * 0.91 - 7.5);
+      crater.position.set(
+        x - 7.5,
+        0.023,
+        this.campaign.story.scenePoint(0, 2.55 - shot * 0.91).z,
+      );
       crater.scale.y = 0.72;
       crater.visible = false;
       crater.raycast = () => {};
@@ -224,7 +228,11 @@ export class BattleScene {
     const s = this.campaign.story,
       w = this.w,
       root = s.at(x, z);
-    root.rotation.y = Math.atan2(x - targetX, z - 1.7);
+    const aim = s.scenePoint(targetX, 1.7);
+    root.rotation.y = Math.atan2(
+      root.position.x - aim.x,
+      root.position.z - aim.z,
+    );
     const base = new T.Group();
     root.add(base);
     for (const dx of [-0.4, 0.4]) {
@@ -347,7 +355,11 @@ export class BattleScene {
         this.w.onBattleSound(event.kind);
         if (event.kind === "impact") {
           const e = this.engines[event.sector];
-          this.v.set(e.goal.x, 0.13, 2.55 - event.shot * 0.91 - 7.5);
+          this.v.set(
+            e.goal.x,
+            0.13,
+            this.campaign.story.scenePoint(0, 2.55 - event.shot * 0.91).z,
+          );
           this.effects.burst(event.sector, event.shot, this.v);
         }
       }
@@ -410,7 +422,7 @@ export class BattleScene {
       e.shadow.visible = flying;
       if (flying) {
         const t = (age - RELEASE) / FLIGHT;
-        e.goal.z = 2.55 - shot * 0.91 - 7.5;
+        e.goal.z = this.campaign.story.scenePoint(0, 2.55 - shot * 0.91).z;
         e.stone.position.lerpVectors(e.launch, e.goal, t);
         e.stone.position.y += Math.sin(t * Math.PI) * 3.15;
         e.stone.rotation.set(time * 8, n + time * 5, 0);

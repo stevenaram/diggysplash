@@ -51,6 +51,9 @@ export class CampaignScene {
     const i = this.w.game.level.targets[n],
       sx = gridWorld(i % SIZE) + 7.5,
       sz = gridWorld(Math.floor(i / SIZE)) + 7.5;
+    const destination = this.story.scenePoint(x, z);
+    x = destination.x + 7.5;
+    z = destination.z + 7.5;
     const seam = 0.94 - n * 0.035;
     const points = [
       [sx + 0.28, sz + 0.28],
@@ -400,8 +403,7 @@ export class CampaignScene {
       w.cylinder(lamp, 0, 0.5, 0, 0.045, 1, 0x8b7352);
       const orb = s.blob(lamp, 0, 1.05, 0, 0.14, gold);
       s.greenery.add(orb);
-      orb.position.x += x - 7.5;
-      orb.position.z += 13 - 7.5;
+      orb.position.add(s.scenePoint(x, 13));
     }
   }
   wall(x: number, z: number, h: number) {

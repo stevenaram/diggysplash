@@ -304,9 +304,9 @@ export class FortressScene {
     compact(trough, w.mat(0xffffff, "stone", true));
     const fill = w.box(
       w.root,
-      6.5,
+      this.s.scenePoint(14, 9.2).x,
       0.16,
-      1.7,
+      this.s.scenePoint(14, 9.2).z,
       0.65,
       0.045,
       1.1,
@@ -435,7 +435,7 @@ export class FortressScene {
     this.draft = { head, legs };
   }
   walker(actor: Actor, coords: number[][]): Walker {
-    const points = coords.map(([x, z]) => new T.Vector3(x - 7.5, 0, z - 7.5));
+    const points = coords.map(([x, z]) => this.s.scenePoint(x, z));
     const lengths = points.slice(1).map((p, n) => p.distanceTo(points[n]));
     return {
       actor,
