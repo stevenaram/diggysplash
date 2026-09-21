@@ -11,6 +11,14 @@ npm run dev
 
 Open the URL printed by Vite. For a production build, run `npm run build`, then `npm run preview`. No backend, accounts, API keys, or external asset services are needed.
 
+## Hosting
+
+Play at [stevenaram.github.io/diggysplash](https://stevenaram.github.io/diggysplash/).
+
+Every push to `main` runs the tests, builds the game, and deploys to GitHub Pages through `.github/workflows/deploy-pages.yml`. You can also run “Deploy game to GitHub Pages” manually from the repository's Actions tab. A failed test or build prevents deployment. GitHub Pages is free for this public repository.
+
+The workflow builds with the `/diggysplash/` asset base required by the project URL. Normal local builds retain the root base. The existing ChatGPT Sites deployment remains separate and is not updated by this workflow.
+
 ## Chapters and scoring
 
 | Chapter               | Water's consequence                                                                                    | Dig budget | Three stars | Two stars  | One star   |
