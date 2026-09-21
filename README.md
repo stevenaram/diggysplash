@@ -1,6 +1,6 @@
 # Diggy Splash
 
-A low-poly 3D desert puzzle told in eight chapters, each on an 8 × 8 map edged by a stone lip one-eighth of a tile wide (8.25 × 8.25 tiles overall). Guide water through freshly dug trenches, from giving a flock a drink to defending Sunfall in a battle between two armies.
+A low-poly 3D desert puzzle told in eight chapters, each on an 8 × 8 map edged by a stone lip one-eighth of a tile wide (8.25 × 8.25 tiles overall). Guide water through freshly dug trenches, from accidentally awakening a hungry plant to defending Sunfall in a battle between two armies.
 
 ## Run
 
@@ -23,7 +23,7 @@ The workflow builds with the `/diggysplash/` asset base required by the project 
 
 | Chapter               | Water's consequence                                                                                    | Dig budget | Three stars | Two stars  | One star   |
 | --------------------- | ------------------------------------------------------------------------------------------------------ | ---------- | ----------- | ---------- | ---------- |
-| A drink for the flock | Fill a dry oasis; sheep approach and drink. No gears.                                                  | 8          | ≤ 4 digs    | 5–6 digs   | 7–8 digs   |
+| Something in the water | Water the north-bank flowers; a plant monster grows and stages a cartoon cookout. No gears.                                                  | 8          | ≤ 4 digs    | 5–6 digs   | 7–8 digs   |
 | The way across        | Power one wheel; the drawbridge lowers and the shepherd crosses to the lost sheep.                     | 9          | ≤ 5 digs    | 6–7 digs   | 8–9 digs   |
 | Welcome home          | Feed one wheel; a raised aqueduct supplies the second. Both portcullises rise and the villagers enter. | 11         | ≤ 6 digs    | 7–9 digs   | 10–11 digs |
 | Bread for everyone    | Restart two mills; golden wheat grows and bread appears.                                               | 12 | ≤ 7 digs | 8–10 digs | 11–12 digs |
@@ -80,3 +80,9 @@ Tests cover minimum routes, all star boundaries, actual one/two/three-star finis
 ### Art direction for future levels
 
 Important contraptions should be large, immediately recognizable focal points, following the stage-two water wheel. Give them real reserved board space and keep their silhouettes clear of rocks, trees, and characters. Use 32 artwork pixels per gameplay tile for billboards and approximately the same texel density on 3D surfaces. Check idle, activation, and completion compositions in portrait and landscape; actors should cross through the clear center of bridges, away from handrails.
+
+### Stage-one creature scene
+
+The reserved north bank holds flowers that bloom and twist into a 3D plant. Its jaws use hollow shells, uneven teeth, normal-expanded inverted-hull outlines, and metric pixel textures (32 pixels per two world units). Continuous tapered vines update preallocated buffers. The shepherd has panic/flailing frames and stays at the shared sprite scale while entering the mouth. A curved palm trunk and feathered fronds become the spit-roast setup; the three roast models remain unchanged.
+
+The 20-second timeline drives growth, grabs, the palm, cooking, camera pan/zoom, and eight synthesized sound types. Camera angles remain 60° tilt, 0° orbit, 0° roll. Undo/restart resets the scene and stops its sounds; reduced motion presents the final tableau. No external art or audio assets are required.

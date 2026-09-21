@@ -1,3 +1,4 @@
+import type { CreatureCue } from './creature-sound';
 /** Deterministic cutscene beats. Seeking, undo and reduced motion share this state. */
 export const OASIS_DURATION = 20;
 export const ramp = (time:number, start:number, duration:number) => {
@@ -17,4 +18,11 @@ export function oasisBeats(progress:number) {
     fire:ramp(time,15.5,.8),
     settle:ramp(time,17,2),
   };
+}
+
+const cues:readonly (readonly [number,CreatureCue])[]=[
+  [.15,'bloom'],[1.6,'twist'],[3.8,'roar'],[4.7,'gasp'],[6.6,'grab'],[7.75,'gulp'],[8.2,'uproot'],[11.2,'grab'],[12.55,'grab'],[13.9,'grab'],[15.5,'sizzle'],
+];
+export function oasisCuesBetween(previous:number,current:number):CreatureCue[]{
+  return current<=previous?[]:cues.filter(([at])=>previous<at&&current>=at).map(([,cue])=>cue);
 }

@@ -33,3 +33,14 @@ test('seeking/reset and reduced-motion completion need no intermediate animation
   assert.equal(final.fire,1);
   assert.deepEqual(oasisBeats(5),final);
 });
+
+test('sound cues survive frame skips, never repeat, and reset silently',async()=>{
+  const {oasisCuesBetween}=await import('../src/oasis-timeline');
+  assert.deepEqual(oasisCuesBetween(0,1),['bloom']);
+  assert.deepEqual(oasisCuesBetween(1,4),['twist','roar']);
+  assert.deepEqual(oasisCuesBetween(4,4),[]);
+  assert.deepEqual(oasisCuesBetween(7,0),[]);
+  const stepped=[];
+  for(let t=0;t<20;t+=.25)stepped.push(...oasisCuesBetween(t,t+.25));
+  assert.deepEqual(stepped,oasisCuesBetween(0,20));
+});

@@ -2,34 +2,31 @@ import * as T from 'three';
 import { gridWorld, SIZE } from './game';
 import type { World } from './world';
 import { PixelSprites } from './pixel-sprites';
-import { OasisMonster } from './oasis-monster';
-import { oasisBeats } from './oasis-timeline';
+import { OasisMonster, PLANT_X, PLANT_Z } from './oasis-monster';
+import { oasisBeats, oasisCuesBetween } from './oasis-timeline';
 
 type Walker = { sprite: T.Sprite; kind: 'sheep' | 'shepherd'; start: T.Vector3; end: T.Vector3; phase: number };
-/** Stage-one-only billboard experiment. Shared frame materials keep uploads bounded. */
+/** Stage-one cast and choreography. Sprite frames retain the shared 32px/tile scale. */
 export class OasisSprites extends PixelSprites {
   walkers: Walker[] = [];
-  palms: T.Sprite[] = [];
   grass: T.Sprite[] = [];
-  hearts: T.Sprite[] = [];
   dust: { sprite: T.Sprite; born: number; x:number; z:number; vx: number; vz: number }[] = [];
   time = 0;
   monster: OasisMonster;
-  flowers: T.Sprite[] = [];
   private previousBeatTime=0;
   private startingZoom=1;
   constructor(world: World) {
     super(world);
     this.monster = new OasisMonster(world);
-    for(const x of [4.3,5.1,5.8])this.flowers.push(this.add('flower',x,2.7));
+
     world.game.level.tiles.forEach((t,i)=>{
       const x=gridWorld(i%SIZE), z=gridWorld(Math.floor(i/SIZE));
       if(t==='rock')this.add('rock',x,z);
     });
-    // Only the reserved southern bank gets scenery. All diggable approaches stay clear.
+    // Reserve the north bank for the shrub; keep all oasis approaches clear.
     for(const x of [4.35,5.15,5.8]) {
-      this.add('pebble',x,2.65);
-      this.grass.push(this.add('grass',x+.08,2.78));
+      this.add('pebble',x,-2.5);
+      this.grass.push(this.add('grass',x+.08,-2.55));
     }
     this.add('blanket',2.6,4.5);
     this.add('basket',6.3,4.8);
@@ -68,12 +65,11 @@ export class OasisSprites extends PixelSprites {
       this.startingZoom=this.world.zoom;
     }
     if(!reduced){
-      for(const [at,sound] of [[1.6,'wind'],[6.6,'launch'],[7.9,'impact'],[8.2,'launch'],[11,'impact'],[12.4,'impact'],[13.75,'impact'],[15.1,'impact']] as const)
-        if(this.previousBeatTime<at&&beat.time>=at)this.world.onBattleSound(sound);
+      for(const cue of oasisCuesBetween(this.previousBeatTime,beat.time))this.world.onCreatureSound(cue);
       // Only pan/zoom: the approved camera tilt, orbit and roll never change.
-      for(const [at,x,y,z,zoom] of [[2,.7,.3,.4,1.04],[11.1,3,1,2,1.3]]){
+      for(const [at,x,y,z,zoom] of [[2,1.3,.7,-1,1.08],[11.1,3,1,.1,1.25]]){
         if(this.previousBeatTime<at&&beat.time>=at){
-          this.world.cameraTransition={from:this.world.viewTarget.clone(),to:new T.Vector3(x,y,z),start:this.world.elapsed,fromZoom:this.world.zoom,toZoom:this.startingZoom*(at>10&&this.world.camera.aspect<.85?1.85:zoom)};
+          this.world.cameraTransition={from:this.world.viewTarget.clone(),to:new T.Vector3(x,y,z),start:this.world.elapsed,fromZoom:this.world.zoom,toZoom:this.startingZoom*(at>10&&this.world.camera.aspect<.85?1.6:zoom)};
           this.world.viewChanged=true;
         }
       }
@@ -89,12 +85,18 @@ export class OasisSprites extends PixelSprites {
         // The whole sprite is lifted into the mouth: no cut-up frames or hidden action.
         a.sprite.position.x=T.MathUtils.lerp(a.start.x,-1.3,beat.flee);
         a.sprite.position.z=T.MathUtils.lerp(a.start.z,5.4,beat.flee);
+        if(beat.grow>.55&&beat.swallow===0&&!reduced){
+          a.sprite.position.y=.04+Math.abs(Math.sin(time*16))*.12;
+          a.sprite.material=this.material('shepherd',beat.flee>0?10+Math.floor(time*10)%2:9,beat.flee>0);
+        }
         if(beat.swallow>0){
-          a.sprite.position.set(T.MathUtils.lerp(-1.3,4.6,beat.swallow),Math.sin(beat.swallow*Math.PI)*2+beat.swallow*3.1,T.MathUtils.lerp(5.4,.7,beat.swallow));
-          a.sprite.scale.multiplyScalar(1-.95*Math.max(0,(beat.swallow-.6)/.4));
+          a.sprite.position.set(T.MathUtils.lerp(-1.3,PLANT_X,beat.swallow),.04+Math.sin(beat.swallow*Math.PI)*2.3+beat.swallow*2.1,T.MathUtils.lerp(5.4,PLANT_Z+.35,beat.swallow));
+          a.sprite.material=this.material('shepherd',12+Math.floor(time*12)%2);
+          // Remains 32 px per tile throughout: depth occlusion carries him into the jaw.
           a.sprite.visible=beat.swallow<1;
         }
         if(beat.flee>0&&beat.swallow<1)this.monster.vine(0,a.sprite.position.x,a.sprite.position.y+.7,a.sprite.position.z,time);
+        a.sprite.userData.frame=beat.swallow>0?12+Math.floor(time*12)%2:beat.grow>.55?beat.flee>0?10+Math.floor(time*10)%2:9:frame;
       }else{
         const n=a.phase-1,travel=beat.sheep[n];
         a.sprite.position.set(T.MathUtils.lerp(a.start.x,2.5+(n-1)*1.12,travel),.04+Math.sin(travel*Math.PI)*2.6,T.MathUtils.lerp(a.start.z,4.3,travel));
@@ -105,7 +107,6 @@ export class OasisSprites extends PixelSprites {
         }
       }
     }
-    this.flowers.forEach((s,n)=>{s.material=this.material('flower',beat.bloom>.5?1:0);s.visible=beat.grow<.9;s.position.y=.04+(reduced?0:Math.sin(time*2+n)*.015);});
     this.grass.forEach(s=>{s.visible=beat.bloom>.5;s.material=this.material('grass',1);});
   }
   override dispose(){super.dispose();this.monster.dispose();}

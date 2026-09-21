@@ -24,7 +24,7 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
     oval(x,y,2,2,'#f6ce7a');dot(x,y-1,'#fff0b2');
   } else if(kind==='shepherd'||kind==='villager') {
     // Human frames 6/7/8 are rear idle / left step / right step.
-    const rear=frame>=6, pose=rear?frame-6:frame;
+    const rear=frame>=6&&frame<=8, pose=rear?frame-6:frame>=10?1+(frame%2):frame;
     const walking=pose===1||pose===2, step=pose===2?1:0;
     const bob=walking?step:0;
     rect(10,32,4,4+step,deep);rect(18,32,4,5-step,deep);
@@ -35,7 +35,7 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
     rect(7,24+bob,3,7,gold);rect(21,24-bob,3,6,gold);
     rect(8,25+bob,2,3,light);rect(22,26-bob,3,3,'#eec28d');
     // Curved crook is part of every frame, never a rotating 3D limb.
-    if(kind==='shepherd'){rect(27,16,2,22,tan);rect(25,13,5,2,gold);rect(24,15,2,4,gold);rect(25,18,2,2,deep);}
+    if(kind==='shepherd'&&frame<12){rect(27,16,2,22,tan);rect(25,13,5,2,gold);rect(24,15,2,4,gold);rect(25,18,2,2,deep);}
     oval(16,17+bob,7,7,tan);oval(16,16+bob,6,6,'#efc496');
     rect(11,12+bob,10,2,'#81604d');rect(10,14+bob,2,5,'#81604d');rect(21,14+bob,2,4,'#81604d');
     rect(12,18+bob,2,2,ink);rect(19,18+bob,2,2,ink);
@@ -56,6 +56,19 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
     oval(16,11+bob,12,3,tan);oval(16,10+bob,12,3,gold);
     poly([[9,10+bob],[10,4+bob],[13,2+bob],[21,3+bob],[23,10+bob]],gold);
     rect(12,4+bob,7,3,light);rect(10,8+bob,13,2,'#947249');rect(7,10+bob,16,1,light);
+    if(frame>=9){
+      // Readable front-facing panic: wide eyes, open mouth, raised / flailing arms.
+      rect(11,17+bob,4,3,'#fff5d8');rect(18,17+bob,4,3,'#fff5d8');
+      dot(13,18+bob,ink);dot(19,18+bob,ink);
+      oval(17,23+bob,2,2,ink);dot(17,24+bob,'#d78b86');
+      rect(7,24,3,8,'#00000000');rect(22,24,4,7,'#00000000');
+      const lift=frame>=12?(frame%2?3:0):2;
+      poly([[10,25],[7,23],[4,18-lift],[6,17-lift],[10,22]],'#5b9f88');
+      rect(4,15-lift,3,3,'#efc496');
+      poly([[21,25],[25,22],[28,17+lift],[26,16+lift],[22,21]],'#5b9f88');
+      rect(26,14+lift,3,3,'#efc496');
+      rect(3,10,2,3,'#6bcbd0');dot(3,9,'#b5efdf');
+    }
   } else if(kind==='sheep') {
     const walk=frame===1||frame===2, step=frame===2?1:0, drink=frame===4||frame===5;
     rect(7,30,3,5+(walk?step:0),deep);rect(13,31,3,4-(walk?step:0),ink);rect(22,30,3,5-(walk?step:0),deep);

@@ -2,6 +2,7 @@ import * as T from "three";
 import { reducedMotion } from "./motion";
 import { Game, SIZE, CELL_COUNT, TILE_SIZE, BORDER_WIDTH, BOARD_EXTENT, gridWorld } from "./game";
 import { SurfaceTextures, type Surface } from "./textures";
+import type { CreatureCue } from "./creature-sound";
 import { StoryScene } from "./story";
 const palette = {
   sand: 0xe8c58c,
@@ -18,6 +19,7 @@ export class World {
   banks = new Map<number, T.Mesh[]>();
   onHover: (i: number | null) => void = () => {};
   onViewChanged = () => {};
+  onCreatureSound: (cue:CreatureCue)=>void = ()=>{};
   onBattleSound: (kind: "wind" | "launch" | "impact") => void = () => {};
   tiles: T.Mesh[] = [];
   waters = new Map<number, T.Mesh>();

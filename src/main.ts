@@ -1,3 +1,4 @@
+import { creatureSound, stopCreatureSounds, type CreatureCue } from "./creature-sound";
 import "@fontsource/outfit/latin-600.css";
 import "@fontsource/outfit/latin-800.css";
 import "@fontsource/dm-sans/latin-500.css";
@@ -66,12 +67,15 @@ try {
 }
 function sound(
   kind:
-    "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact",
+    "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact" | CreatureCue,
 ) {
   if (muted) return;
   try {
     audio ??= new AudioContext();
     void audio.resume();
+    if(['bloom','twist','roar','gasp','grab','gulp','uproot','sizzle'].includes(kind)){
+      creatureSound(audio,kind as CreatureCue);return;
+    }
     if (["wind", "launch", "impact"].includes(kind)) {
       const t = audio.currentTime,
         impact = kind === "impact",
@@ -299,6 +303,7 @@ world.onSettled = () => {
   update();
 };
 function load(n: number) {
+  stopCreatureSounds();
   closeResult();
   document.querySelectorAll(".dig-drop").forEach(drop => drop.remove());
   stage = n;
@@ -312,6 +317,7 @@ function load(n: number) {
   update();
 }
 function undo() {
+  stopCreatureSounds();
   closeResult();
   game.undo();
   celebrated = false;
@@ -319,7 +325,7 @@ function undo() {
   sound("undo");
   update();
 }
-$("#motion").onclick = () => { toggleMotion(); update(); };
+$("#motion").onclick = () => { toggleMotion(); if(world.reduced)stopCreatureSounds(); update(); };
 matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", update);
 $("#undo").onclick = undo;
 $("#restart").onclick = () => load(stage);
@@ -332,6 +338,7 @@ $("#zoom-out").onclick = () => world.zoomBy(0.8);
 $("#overview").onclick = () => world.overview();
 $(".sound").onclick = () => {
   muted = !muted;
+  if(muted)stopCreatureSounds();
   save("diggy-muted", String(muted));
   sound("water");
   update();
@@ -379,6 +386,8 @@ window.addEventListener("keydown", (e) => {
   if (e.key.toLowerCase() === "r") load(stage);
 });
 world.onBattleSound = sound;
+world.onCreatureSound = sound;
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stopCreatureSounds();});
 update();
 if (import.meta.env.DEV)
   Object.assign(window, {
@@ -400,6 +409,10 @@ if (import.meta.env.DEV)
         return {
           oasis: world.story?.oasisSprites ? {
             plant:world.story.oasisSprites.monster.plant.visible,
+            plantPosition:world.story.oasisSprites.monster.plant.position.toArray(),
+            shepherdScale:world.story.oasisSprites.walkers[0].sprite.scale.toArray(),
+            shepherdFrame:world.story.oasisSprites.walkers[0].sprite.userData.frame,
+            outlineCount:world.story.oasisSprites.monster.root.getObjectsByProperty('name','inverted-hull').length,
             palm:world.story.oasisSprites.monster.palm.visible,
             actors:world.story.oasisSprites.walkers.map(a=>a.sprite.visible),
             roasts:world.story.oasisSprites.monster.roasts.map(r=>r.visible),
