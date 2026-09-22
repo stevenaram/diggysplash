@@ -36,7 +36,7 @@ export class OasisSprites extends PixelSprites {
 
     world.game.level.tiles.forEach((t,i)=>{
       const x=gridWorld(i%SIZE), z=gridWorld(Math.floor(i/SIZE));
-      if(t==='rock')this.add('rock',x,z);
+      if(t==='rock')this.addTileRock(x,z);
     });
     // Reserve the north bank for the shrub; keep all oasis approaches clear.
     for(const x of [4.35,5.15,5.8]) {

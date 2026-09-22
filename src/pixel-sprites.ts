@@ -34,5 +34,14 @@ export class PixelSprites {
     this.root.add(sprite);
     return sprite;
   }
+  /** Center the visible rock drawing (not its transparent canvas) over a tile.
+   * Lift along the fixed viewing ray so its lower pixels stay above the ground. */
+  addTileRock(x:number,z:number){
+    const rock=this.add('rock',x,z);
+    rock.center.set(.5,15/40);
+    const lift=.75;
+    rock.position.set(x,lift,z+lift/Math.tan(T.MathUtils.degToRad(this.world.viewAngles.x)));
+    return rock;
+  }
   dispose(){for(const m of this.frames.values()){m.map?.dispose();m.dispose();}this.frames.clear();}
 }

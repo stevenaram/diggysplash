@@ -31,8 +31,7 @@ export class BridgeSprites extends PixelSprites {
     palm.traverse(o=>{if(o instanceof T.Mesh){const old=o.geometry;o.geometry=metricUV(old);if(old!==o.geometry)old.dispose();}});
     this.river=new BridgeRiver(world,this.root);
     for(const [i,t] of world.game.level.tiles.entries())if(t==='rock'){
-      const margin=[26,27].includes(i)?-.45:[42,43].includes(i)?.5:0;
-      this.add('rock',gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE))+margin);
+      this.addTileRock(gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE)));
     }
     for(const kind of ['shepherd','sheep','sheep'] as const)this.cast.push({sprite:this.add(kind,0,0),kind});
     this.alarm=this.add('alarm',7,5);
