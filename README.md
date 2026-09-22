@@ -42,7 +42,7 @@ Each budget equals the verified minimum route cost. Levels are complete or incom
 
 - Click or tap sand to dig; a shovel and the updated remaining count rise from each successfully dug tile. Hover only highlights valid sand. Dark soil beds and cut banks distinguish trenches from untouched sand, even when water is flowing.
 - Water travels through orthogonal ground connections. Elevated aqueduct sections use explicit links and cannot receive water from a trench underneath them.
-- Drag to pan, scroll or pinch to zoom; the corner-frame button shows the board. The fixed camera uses 60° tilt, 0° orbit, and 0° roll. The whole island fits the available width in portrait or height in landscape, with headroom for scenery. Stage buttons and toolbars move to side rails in landscape. Resizing and the frame button restore this fit.
+- Drag to pan, scroll or pinch to zoom; the fixed camera starts with the full board visible. The fixed camera uses 60° tilt, 0° orbit, and 0° roll. The whole island fits the available width in portrait or height in landscape, with headroom for scenery. Stage buttons and toolbars move to side rails in landscape. Resizing restores this fit.
 - There are no undo or restart controls. Focus the board, use arrow keys to select a tile, and Enter or Space to dig.
 - Watch each consequence before the completion card appears. Continue or replay a completed level; failed attempts retry automatically. Numbered chapter buttons revisit unlocked levels.
 - Sound preference, chapter completion are saved locally. In-progress trenches are not.
@@ -90,3 +90,5 @@ The 18.88-second timeline drives growth, grabs, the palm, cooking, camera pan/zo
 First-time players get a text-free shovel cue over stage one’s first solution tile. It follows camera movement, disappears after that dig, and stays off once completion has been saved. The north-bank flowers are enlarged in geometry before texture mapping; decorative pebbles are removed and the camp props stay on reserved tiles.
 
 Stage one’s wilted flowers use four 28×36 billboard frames at the shared 32px/tile density, handing off to 3D petals as the creature grows. The palm transfer lasts 1.68 seconds (60% of its original 2.8 seconds), with subsequent action and sound cues shifted forward together.
+
+The gameplay HUD shows only the shovel and remaining digs. Stage buttons use centered numbers in rounded squares, with corner checkmarks for completed stages. Automatic retry uses fading sand puffs and a fading notice, allowing the last particles to finish before the board reloads.

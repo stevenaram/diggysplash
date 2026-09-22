@@ -8,7 +8,6 @@ import "./style.css";
 import { SIZE, Game } from "./game";
 import { levels } from "./levels";
 import { World } from "./world";
-import { toggleMotion } from "./motion";
 const icons = {
   motion: '<path d="m9 5 11 7-11 7Z"/><path d="M3 6h2M2 12h3M3 18h2"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
@@ -154,7 +153,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 <main><div class="sun-disc" aria-hidden="true"></div>
 <div class="scene" tabindex="0" role="application" aria-label="Desert puzzle board. Click sand to dig. Drag to pan; scroll or pinch to zoom. Arrow keys select a tile, Enter digs."></div>
 </main>
-<footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">14</strong><span class="budget">/ <span id="budget">14</span></span><div class="dig-pips" aria-hidden="true"></div></div><span class="divider"></span><div id="targets" aria-label="Water objectives"></div></div><div class="view-controls" role="group" aria-label="Camera controls"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">${svg("minus")}</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">${svg("plus")}</button><button id="overview" class="icon-button" aria-label="Show whole board" title="Show whole board">${svg("fit")}</button><button class="icon-button sound" aria-label="Mute sound">${svg("sound")}</button><button id="motion" class="icon-button" aria-label="Reduce animations">${svg("motion")}</button></div></footer>
+<footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">4</strong></div></div></footer>
 <div id="retry-notice" role="status" aria-live="polite" hidden><strong>Out of digs</strong><span>Try again</span><div class="retry-track"><i></i></div></div><dialog id="result" aria-labelledby="result-title" aria-describedby="result-message"><div class="result-chapter" id="result-chapter"></div><h2 id="result-title"></h2><p id="result-message" class="sr-only"></p><div class="result-check" aria-hidden="true">${svg("check")}</div><div class="result-score" id="result-score"></div><div class="result-actions"><button id="result-primary" class="primary"></button><button id="result-secondary" class="secondary"></button></div></dialog>
 <div id="dig-tutorial" hidden role="img" aria-label="Dig the highlighted sand tile next to the water. Press Enter or tap it."><svg class="tutorial-tile" aria-hidden="true"><polygon /></svg><span class="tutorial-shovel" aria-hidden="true">${svg("shovel")}<i></i></span></div>
 <div id="status" class="sr-only" aria-live="polite"></div>`;
@@ -221,6 +220,7 @@ function autoRetry(){
   stopCreatureSounds();
   closeResult();
   document.querySelectorAll(".dig-drop").forEach(drop=>drop.remove());
+  $("#retry-notice").classList.remove("leaving");
   $("#retry-notice").hidden=false;
   $("#dig-tutorial").hidden=true;
   $("#app").classList.add("retrying");
@@ -233,44 +233,19 @@ function autoRetry(){
     if(game.digs.length){
       const cell=game.digs[game.digs.length-1];
       game.undo();world.sync();
-      if(!world.reduced)world.burst(cell);
+      if(!world.reduced)world.restoreDust(cell);
       sound("dig");update();
       retryTimer=window.setTimeout(rewind,interval);
-    }else retryTimer=window.setTimeout(()=>{if(generation===retryGeneration)load(stage);},220);
+    }else {
+      $("#retry-notice").classList.add("leaving");
+      retryTimer=window.setTimeout(()=>{if(generation===retryGeneration)load(stage);},world.reduced?180:700);
+    }
   };
   retryTimer=window.setTimeout(rewind,world.reduced?500:850);
 }
-const objectiveNames: Record<string, string[]> = {
-  oasis: ["Watering hole"],
-  bridge: ["Drawbridge"],
-  city: ["West gate", "East gate"],
-  harvest: ["West mill", "East mill"],
-  caravan: ["Ochre wagon pump", "Teal wagon pump", "Cream wagon pump"],
-  temple: ["West shrine", "East shrine", "South shrine"],
-  fortress: ["Defensive wall", "Refuge cistern", "Convoy gate"],
-  battle: [
-    "North trebuchet",
-    "Upper trebuchet",
-    "Lower trebuchet",
-    "South trebuchet",
-  ],
-};
 function update() {
   updateTutorial();
-  $("#motion").setAttribute("aria-label", world.reduced ? "Enable animations" : "Reduce animations");
-  $("#motion").setAttribute("aria-pressed", String(!world.reduced));
   $("#remaining").textContent = String(game.remaining);
-  $("#budget").textContent = String(game.level.budget);
-  $(".dig-pips").innerHTML = Array.from(
-    { length: game.level.budget },
-    (_, i) => `<i class="${i < game.remaining ? "full" : ""}"></i>`,
-  ).join("");
-  $("#targets").innerHTML = game.active
-    .map(
-      (active, n) =>
-        `<span class="target ${active ? "active" : ""}" role="img" title="${objectiveNames[game.level.story!.kind][n]}" aria-label="${objectiveNames[game.level.story!.kind][n]}: ${active ? "active" : "dry"}">${svg(active ? "check" : stage === 0 ? "drop" : "wheel")}</span>`,
-    )
-    .join("");
   $(".toolbar").classList.toggle("empty", game.failed && world.settled);
   document.querySelectorAll<HTMLButtonElement>(".stage").forEach((b, n) => {
     b.disabled = n > completed;
@@ -280,9 +255,6 @@ function update() {
     b.setAttribute("aria-label", `Stage ${n + 1}, ${n<completed?"complete":"incomplete"}`);
     b.querySelector(".stage-complete")!.textContent = n<completed?"✓":"";
   });
-  $(".sound").innerHTML = svg(muted ? "mute" : "sound");
-  $(".sound").setAttribute("aria-label", muted ? "Enable sound" : "Mute sound");
-  $(".sound").setAttribute("aria-pressed", String(muted));
   $("#status").textContent =
     world.settled && game.won
       ? `${game.level.story!.success} Level complete. `
@@ -322,22 +294,11 @@ function load(n: number) {
   world.framePuzzle();
   update();
 }
-$("#motion").onclick = () => { toggleMotion(); if(world.reduced)stopCreatureSounds(); update(); };
 matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", update);
 $("#result-primary").onclick = () =>
   load(game.won ? (stage === levels.length - 1 ? 0 : stage + 1) : stage);
 $("#result-secondary").onclick = () => load(stage);
 result.addEventListener("cancel", (e) => e.preventDefault());
-$("#zoom-in").onclick = () => world.zoomBy(1.25);
-$("#zoom-out").onclick = () => world.zoomBy(0.8);
-$("#overview").onclick = () => world.overview();
-$(".sound").onclick = () => {
-  muted = !muted;
-  if(muted)stopCreatureSounds();
-  save("diggy-muted", String(muted));
-  sound("water");
-  update();
-};
 document
   .querySelectorAll<HTMLButtonElement>(".stage")
   .forEach((b, n) => (b.onclick = () => load(n)));

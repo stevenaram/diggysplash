@@ -39,7 +39,7 @@ export class World {
   frame = 0;
   last = 0;
   wetAt = new Map<number, number>();
-  particles: { mesh: T.Mesh; v: T.Vector3; life: number }[] = [];
+  particles: { mesh: T.Mesh; v: T.Vector3; life: number; dust?:boolean; duration?:number }[] = [];
   onSettled = () => {};
   settled = false;
   elapsed = 0;
@@ -700,6 +700,18 @@ export class World {
     this.hover.visible = false;
     this.onHover(null);
   }
+  restoreDust(i:number){
+    if(this.reduced)return;
+    for(let n=0;n<7;n++){
+      const angle=n*2.399,radius=.2+(n%3)*.18;
+      const material=new T.MeshBasicMaterial({color:n%2?0xd6ba87:0xe6d0a6,transparent:true,opacity:0,depthWrite:false});
+      const mesh=new T.Mesh(new T.SphereGeometry(.12+(n%3)*.035,7,5),material);
+      mesh.position.set(gridWorld(i%SIZE)+Math.cos(angle)*radius,.03,gridWorld(Math.floor(i/SIZE))+Math.sin(angle)*radius);
+      mesh.raycast=()=>{};mesh.userData.ownedMaterial=material;this.root.add(mesh);
+      const duration=.5+(n%3)*.07;
+      this.particles.push({mesh,v:new T.Vector3(Math.cos(angle)*.35,.2+(n%2)*.07,Math.sin(angle)*.35),life:duration,duration,dust:true});
+    }
+  }
   burst(i: number, celebrate = false) {
     if (this.reduced) return;
     if (this.story?.oasisSprites) { this.story.oasisSprites.burst(i); return; }
@@ -972,6 +984,14 @@ export class World {
     }
     for (const p of this.particles) {
       p.life -= dt;
+      if(p.dust){
+        const age=1-Math.max(0,p.life)/p.duration!;
+        p.mesh.position.addScaledVector(p.v,dt);
+        p.v.multiplyScalar(Math.exp(-dt*2));
+        p.mesh.scale.set(1+age*.8,.55+age*.4,1+age*.8);
+        (p.mesh.material as T.MeshBasicMaterial).opacity=.5*Math.min(1,age/.12)*Math.pow(1-age,1.8);
+        continue;
+      }
       p.v.y -= dt * 6;
       p.mesh.position.addScaledVector(p.v, dt);
       p.mesh.scale.setScalar(Math.max(0, p.life));
@@ -980,6 +1000,7 @@ export class World {
       if (p.life > 0) return true;
       this.root.remove(p.mesh);
       p.mesh.geometry.dispose();
+      if(p.dust)(p.mesh.material as T.Material).dispose();
       return false;
     });
     if (!pending && !this.settled) {
