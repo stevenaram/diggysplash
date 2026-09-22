@@ -29,7 +29,6 @@ export class OasisMonster {
   leaves:T.Mesh[]=[];
   flames:T.Mesh[]=[];
   roasts:T.Group[]=[];
-  wool:T.Mesh[]=[];
   pollen:T.Mesh[]=[];
   impactDust:T.Mesh[]=[];
   private vineGrowth=0;
@@ -140,8 +139,6 @@ export class OasisMonster {
     for(let n=0;n<18;n++)this.pollen.push(this.mesh(this.root,new T.OctahedronGeometry(.055,0),pollenMat,0,0,0));
     const dustMat=this.mat(0xd8bd87);
     for(let n=0;n<12;n++)this.impactDust.push(this.mesh(this.root,new T.BoxGeometry(.09,.09,.09),dustMat,0,0,0));
-    const woolMat=this.mat(0xffefd3);
-    for(let n=0;n<30;n++)this.wool.push(this.mesh(this.root,new T.IcosahedronGeometry(.1+(n%3)*.025,0),woolMat,0,0,0));
     // Enlarge the flowers in geometry before UV generation: +50% size, same texel density.
     for(const flower of this.flowers)flower.traverse(o=>{
       if(o===flower)return;
@@ -250,12 +247,7 @@ export class OasisMonster {
       const angle=n*2.4+b.grow*7;
       p.position.set(PLANT_X+Math.cos(angle)*(1.4-b.grow*.4),.2+(n%6)*.65+b.grow,PLANT_Z+Math.sin(angle)*(1.4-b.grow*.4));
     });
-    this.wool.forEach((w,n)=>{
-      const s=b.sheep[Math.floor(n/10)],u=(n%10)/10;
-      w.visible=s>.25;
-      w.position.set(T.MathUtils.lerp(2.5+Math.cos(u*6.28)*(.5+u),1.75+(n%6)*.29,s),.1+Math.sin(s*Math.PI)*(1+u*2),T.MathUtils.lerp(5.9+Math.sin(u*6.28)*.45,5.65+Math.floor(n/6)*.22,s));
-      w.rotation.set(t+n,t*.7,0);
-    });
+
   }
   dispose(){this.materials.forEach(m=>m.dispose());this.art.dispose();}
 }
