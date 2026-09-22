@@ -1,6 +1,7 @@
 import * as T from "three";
 import { HarvestScene } from "./harvest-scene";
 import { CitySprites } from "./city-sprites";
+import { BRIDGE_DURATION } from "./bridge-timeline";
 import { BridgeSprites } from "./bridge-sprites";
 import { OasisSprites } from "./oasis-sprites";
 import { OASIS_DURATION } from "./oasis-timeline";
@@ -294,71 +295,8 @@ export class StoryScene {
       w.box(camp, -0.56 + k * 0.16, 0.18, 0, 0.035, 0.02, 0.33, 0xf0cc9a);
   }
   crossing() {
-    const w = this.world;
-    this.bridgeSprites = new BridgeSprites(w);
-    const bridge = this.at(12.5, 10);
-    bridge.position.y = 0.13;
-    this.bridge = bridge;
-    for (let j = 0; j < 14; j++)
-      w.box(
-        bridge,
-        0.1 + j * 0.225,
-        0,
-        .65,
-        0.205,
-        0.12,
-        3.1,
-        j % 3 ? 0xba8957 : 0xa97649,
-        "wood",
-      );
-    for (const z of [-0.85, 2.15]) {
-      w.box(bridge, 1.55, -0.1, z, 3.2, 0.15, 0.1, 0x80533b);
-      for (const x of [0.05, 1.05, 2.05, 3.05])
-        w.box(bridge, x, 0.29, z, 0.065, 0.66, 0.065, 0x916749);
-      for (let j = 0; j < 6; j++)
-        this.pole(
-          bridge,
-          new T.Vector3(j * 0.53, 0.59, z),
-          new T.Vector3((j + 1) * 0.53, 0.59, z),
-          0.018,
-          0xd8b785,
-        );
-    }
-    bridge.children.forEach((child) => (child.position.x *= -1));
-    bridge.rotation.z = -Math.PI * 0.36;
-    for (const z of [9.15, 12.15]) {
-      const anchor = this.at(9.4, z);
-      w.cylinder(anchor, 0, 0.25, 0, 0.18, 0.5, 0x9c8060);
-      w.box(anchor, 0, 0.65, 0, 0.12, 0.65, 0.12, 0x80533b);
-    }
-    // A crank shaft visibly connects the powered wheel to the bridge winch.
-    this.pole(
-      w.root,
-      new T.Vector3(0, 2.24, -1),
-      new T.Vector3(0, 1.14, 1.65),
-      0.045,
-      0x8d7657,
-    );
-    this.pole(
-      w.root,
-      new T.Vector3(0, 1.14, 1.65),
-      new T.Vector3(1.9, 1.14, 1.65),
-      0.045,
-      0x8d7657,
-    );
-    // Exposed strata and broken ledges emphasize the depth of the canyon.
-    for (let z = 1; z < 15; z += 2) {
-      for (const side of [9.6, 11.4]) {
-        const rock = w.shaded(
-          new T.DodecahedronGeometry(0.36, 0),
-          z % 3 ? 0x956349 : 0xab7753,
-          "stone",
-        );
-        rock.position.set(side - 7.5, -0.8 - (z % 3) * 0.18, z - 7.5);
-        rock.scale.set(0.6, 1.4, 1.3);
-        w.root.add(rock);
-      }
-    }
+    this.bridgeSprites=new BridgeSprites(this.world);
+    this.bridge=this.bridgeSprites.deck;
   }
   city() {
     const w=this.world;
@@ -453,7 +391,7 @@ export class StoryScene {
             this.progress +
               dt /
                 (this.campaign?.duration ??
-                  (this.oasisSprites ? OASIS_DURATION : this.world.game.level.story?.kind === "city" ? 9 : this.world.game.level.story?.kind === "bridge" ? 6 : 4)),
+                  (this.oasisSprites ? OASIS_DURATION : this.world.game.level.story?.kind === "city" ? 9 : this.world.game.level.story?.kind === "bridge" ? BRIDGE_DURATION : 4)),
           );
       this.done = this.progress >= 1;
     }

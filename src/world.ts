@@ -271,10 +271,13 @@ export class World {
     const bridge = this.game.level.story?.kind === "bridge";
     const half = BOARD_EXTENT / 2;
     if (bridge) {
-      // The ravine stays aligned to column five, including the narrow rim.
-      this.box(this.root, (-half + 2) / 2, -1.08, 0, half + 2, 1.5, BOARD_EXTENT, 0xb17b51, "stone");
-      this.box(this.root, (half + 4) / 2, -1.08, 0, half - 4, 1.5, BOARD_EXTENT, 0xb17b51, "stone");
-      this.box(this.root, 3, -1.8, 0, 2, 0.15, BOARD_EXTENT, 0x553f33);
+      // Three entire columns (x=0..6) form an uninterrupted black chasm.
+      this.box(this.root,-half/2,-1.5,0,half,2.4,BOARD_EXTENT,0x9b704f,"stone");
+      this.box(this.root,(half+6)/2,-1.5,-3.125,half-6,2.4,10.25,0x9b704f,"stone");
+      this.box(this.root,3,-5.5,0,6.3,.1,BOARD_EXTENT,0x17131f);
+      this.box(this.root,3,-2.8,-8.12,6,5.6,.12,0x17131f);
+      for(const x of [-.025,6.025])for(let n=0;n<5;n++)
+        this.box(this.root,x,-.65-n*1.2,0,.06,1.25,BOARD_EXTENT,[0x6d4e40,0x49343a,0x2c2230,0x17131f][Math.min(n,3)]);
     } else {
       this.box(this.root, 0, -0.82, 0, BOARD_EXTENT, 0.9, BOARD_EXTENT, 0xb97e55);
     }
@@ -283,7 +286,8 @@ export class World {
     for (const sign of [-1, 1]) {
       this.box(this.root, sign * edge, -0.09, 0, BORDER_WIDTH, 0.2, BOARD_EXTENT, 0xcaae83, "stone");
       for (let x = 0; x < SIZE; x++) {
-        const ravine = bridge && x === 5;
+        const ravine = bridge && x >= 4 && x <= 6;
+        if(ravine)continue;
         this.box(this.root, gridWorld(x), ravine ? -1.8 : -0.09, sign * edge,
           TILE_SIZE, 0.2, BORDER_WIDTH, ravine ? 0x573c2f : 0xcaae83, ravine ? "soil" : "stone");
       }
@@ -328,8 +332,7 @@ export class World {
         this.root.add(chip);
       }
       if (t === "ravine") {
-        tile.position.y = -1.8;
-        tile.material = this.mat(0x573c2f, "soil");
+        tile.visible=false;
       }
       if (["source", "channel", "target", "basin"].includes(t))
         tile.position.y = -0.3;
@@ -921,8 +924,10 @@ export class World {
           0,
           gridWorld(Math.floor(this.game.level.targets[0] / SIZE)),
         );
+    const bridge=this.game.level.story?.kind === "bridge";
     const city=this.game.level.story?.kind === "city";
     const harvest=this.game.level.story?.kind === "harvest";
+    if(bridge)target.set(1,0,1);
     if(city) target.set(0,0,-2);
     if(harvest) target.set(0,0,2);
     this.cameraTransition = {
@@ -930,7 +935,7 @@ export class World {
       to: this.viewTarget.clone().lerp(target, 0.14),
       start: this.elapsed,
       fromZoom: this.zoom,
-      toZoom: this.zoom * (city || harvest ? .98 : 1.045),
+      toZoom: this.zoom * (city || harvest || bridge ? .98 : 1.045),
     };
     this.viewChanged = true;
   }

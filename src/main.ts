@@ -1,3 +1,4 @@
+import { BRIDGE_DURATION } from "./bridge-timeline";
 import { OASIS_DURATION } from "./oasis-timeline";
 import { showFirstDigHint } from "./tutorial";
 import { creatureSound, stopCreatureSounds, type CreatureCue } from "./creature-sound";
@@ -421,6 +422,16 @@ if (import.meta.env.DEV)
         world.story.oasisSprites.update(world.story.progress,seconds);
         world.cameraTransition=undefined;
         stopCreatureSounds();
+        world.renderer.render(world.scene,world.camera);
+      },
+      previewBridge(seconds:number){
+        if(!world.story?.bridgeSprites)return;
+        cancelAnimationFrame(world.frame);
+        world.story.progress=seconds/BRIDGE_DURATION;
+        document.querySelectorAll(".dig-drop").forEach(drop=>drop.remove());
+        world.story.bridgeSprites.update(world.story.progress,seconds);
+        world.cameraTransition=undefined;
+        world.updateCamera();
         world.renderer.render(world.scene,world.camera);
       },
       resumeAnimation(){world.last=0;world.animate(0);},

@@ -24,7 +24,7 @@ The workflow builds with the `/diggysplash/` asset base required by the project 
 | Chapter | Minimum digs |
 | --- | --- |
 | Something in the water | 4 |
-| The way across | 5 |
+| The way across | 9 |
 | Welcome home | 11 |
 | Bread for everyone | 13 |
 | Caravan in the embers | 9 |
@@ -92,3 +92,5 @@ First-time players get a text-free shovel cue over stage one’s first solution 
 Stage one’s wilted flowers use four 28×36 billboard frames at the shared 32px/tile density, handing off to 3D petals as the creature grows. The palm transfer lasts 1.68 seconds (60% of its original 2.8 seconds), with subsequent action and sound cues shifted forward together.
 
 The gameplay HUD shows only the shovel and remaining digs. Stage buttons use centered numbers in rounded squares, with corner checkmarks for completed stages. Automatic retry uses fading sand puffs and a fading notice, allowing the last particles to finish before the board reloads.
+
+Stage two now spans a three-column chasm. Its exact nine-dig route winds around rock and machinery reservations. A deterministic 11.8-second ending lowers the long bridge, starts the crossing, shakes the wheel loose, breaks the occupied deck into falling boards, tilts the far bank, then gives the last sheep a reaction and jump. Geometry remains 3D with metric pixel textures; the cast uses full-size directional and struggle sprites. Reduced motion shows the aftermath directly; retry/replay reconstructs all pieces.
