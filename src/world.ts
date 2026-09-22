@@ -272,12 +272,15 @@ export class World {
     const bridge = this.game.level.story?.kind === "bridge";
     const half = BOARD_EXTENT / 2;
     if (bridge) {
-      // Half-tile margins leave a four-world-unit river between solid level banks.
-      this.box(this.root,(-half+1)/2,-1.5,0,half+1,2.4,BOARD_EXTENT,0x9b704f,"stone");
-      this.box(this.root,(half+5)/2,-1.5,0,half-5,2.4,BOARD_EXTENT,0x9b704f,"stone");
-      for(const x of [.5,5.5])this.box(this.root,x,-.09,0,1,.2,BOARD_EXTENT,0xe7c58d,"soil");
-      for(const x of [.99,5.01])for(let n=0;n<3;n++)
-        this.box(this.root,x,-.5-n*.8,0,.05,.82,BOARD_EXTENT,[0xa17a57,0x82664e,0x5d5547][n]);
+      // Continuous sandstone masses, with a clean cutaway six units below the rim.
+      this.box(this.root,(-half+1)/2,-3.15,0,half+1,6,BOARD_EXTENT,0x8c684e);
+      this.box(this.root,(half+5)/2,-3.15,0,half-5,6,BOARD_EXTENT,0x8c684e);
+      // Half tiles use the same sand texels as the playable tiles, cropped rather than stretched.
+      for(const x of [.5,5.5])for(let row=0;row<SIZE;row++){
+        const strip=this.box(this.root,x,-.09,gridWorld(row),1,.2,1.97,0xe7c58d,"sand");
+        const uv=strip.geometry.getAttribute('uv');
+        for(let n=0;n<uv.count;n++)uv.setX(n,uv.getX(n)*.5);
+      }
     } else {
       this.box(this.root, 0, -0.82, 0, BOARD_EXTENT, 0.9, BOARD_EXTENT, 0xb97e55);
     }
@@ -490,12 +493,11 @@ export class World {
     const bridge=this.game.level.story?.kind === "bridge";
     const x=gridWorld(i%SIZE)+(city?1:-1)*TILE_SIZE/2, z=gridWorld(Math.floor(i/SIZE))-(city||bridge?0:TILE_SIZE);
     if(bridge){
-      // Recessed stone corners leave broad, legible water entrances on every side.
+      // A narrow stone race runs left-to-right beneath the paddles. Its left mouth is open.
       this.box(this.root,x,-.43,z,3.85,.16,1.85,0x716555,"stone");
-      for(const side of [-1,1])for(const end of [-1,1]){
-        this.box(this.root,x+side*1.72,-.02,z+end*.78,.48,.3,.3,0xc5b696,"stone");
-        this.box(this.root,x+side*1.87,-.02,z+end*.55,.18,.3,.65,0xb5a384,"stone");
-      }
+      for(const edge of [-1,1])
+        this.box(this.root,x,-.03,z+edge*.86,3.9,.32,.22,0xc5b696,"stone");
+      this.box(this.root,x+1.88,-.03,z,.18,.32,1.8,0xb5a384,"stone");
     }else this.box(this.root,x,.06,z,3.8,.16,1.5,0x9c8d72,"stone");
     for(const sign of [-1,1])
       this.box(this.root,x+sign*.76,1.02,z-.24,.24,1.88,.32,0x80533b,"wood");
@@ -904,7 +906,7 @@ export class World {
     const corners: T.Vector3[] = [];
     for (const x of [-half, half])
       for (const z of [-half, half])
-        for (const y of [-1.9, 0]) corners.push(new T.Vector3(x, y, z));
+        for (const y of [this.game.level.story?.kind === "bridge" ? -6.3 : -1.9, 0]) corners.push(new T.Vector3(x, y, z));
     // Headroom for rear banners, city walls, and artillery during their animations.
     for (const x of [-half, half]) corners.push(new T.Vector3(x, 3.5, -half));
     // Center the projected footprint, compensating for perspective foreshortening.

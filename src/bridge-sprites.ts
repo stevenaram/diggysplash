@@ -30,7 +30,10 @@ export class BridgeSprites extends PixelSprites {
     this.fronds=buildPalm(palm,this.palmArt).fronds;
     palm.traverse(o=>{if(o instanceof T.Mesh){const old=o.geometry;o.geometry=metricUV(old);if(old!==o.geometry)old.dispose();}});
     this.river=new BridgeRiver(world,this.root);
-    for(const [i,t] of world.game.level.tiles.entries())if(t==='rock')this.add('rock',gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE)));
+    for(const [i,t] of world.game.level.tiles.entries())if(t==='rock'){
+      const margin=[26,27].includes(i)?-.45:[42,43].includes(i)?.5:0;
+      this.add('rock',gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE))+margin);
+    }
     for(const kind of ['shepherd','sheep','sheep'] as const)this.cast.push({sprite:this.add(kind,0,0),kind});
     this.alarm=this.add('alarm',7,5);
     this.wheel=world.root.getObjectByName('bridge-wheel-mount') as T.Group;
@@ -53,11 +56,6 @@ export class BridgeSprites extends PixelSprites {
       }
     }
     for(const x of [.55,5.45])for(const z of [3.5,6.6])world.box(this.root,x,.4,z,.28,.9,.28,0x967858,'stone');
-    // Both banks remain level throughout. Half-tile margins keep the cast clear of rails.
-    for(const x of [1.02,4.98])for(let n=0;n<8;n++){
-      const shard=world.shaded(new T.DodecahedronGeometry(.27,0),n%2?0x897656:0xa38b64,'stone');
-      shard.position.set(x,-.45-(n%3)*.35,-7+n*2);shard.scale.set(.45,1,1.3);this.root.add(shard);
-    }
     for(let n=0;n<26;n++){
       const chunk=world.shaded(new T.DodecahedronGeometry(.1+(n%3)*.055,0),n%2?0xb68c5f:0x846046,'stone');
       const start=new T.Vector3(n%2?4.95:1.05,.05,3.9+(n%7)*.36);

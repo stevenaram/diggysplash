@@ -24,7 +24,7 @@ The workflow builds with the `/diggysplash/` asset base required by the project 
 | Chapter | Minimum digs |
 | --- | --- |
 | Something in the water | 4 |
-| The way across | 6 |
+| The way across | 7 |
 | Welcome home | 11 |
 | Bread for everyone | 13 |
 | Caravan in the embers | 9 |
@@ -93,4 +93,4 @@ Stage one’s wilted flowers use four 28×36 billboard frames at the shared 32px
 
 The gameplay HUD shows only the shovel and remaining digs. Stage buttons use centered numbers in rounded squares, with corner checkmarks for completed stages. Automatic retry uses fading sand puffs and a fading notice, allowing the last particles to finish before the board reloads.
 
-Stage two uses three canyon columns with half-tile margins, leaving a two-tile-wide rushing river between level banks. Its exact six-dig winding route fills a recessed stone wheel basin from an adjacent trench; rear cells remain diggable. A shared 3D palm matches stage one, and the shepherd has a separate four-frame walk. Water-filled wheel buckets spill during the runaway; the shortened bridge breaks above river splashes and drifting wreckage. The far-bank sheep stays clear of the bridge and jumps from solid ground. Retry/replay restores the entire scene; reduced motion shows the aftermath.
+Stage two uses three canyon columns with half-tile sand margins, leaving a two-tile-wide ravine. Layered sandstone cliffs descend to a dark cutaway with a narrow, distant trickle. Its exact seven-dig winding route reaches the stone wheel race from the left; rocks seal rear and lower shortcuts. A shared 3D palm matches stage one, and the shepherd has a separate four-frame walk. Water-filled wheel buckets spill during the runaway; the shortened bridge breaks over the ravine. The far-bank sheep stays clear of the bridge. Retry/replay restores the entire scene; reduced motion shows the aftermath.
