@@ -1,13 +1,15 @@
 import * as T from 'three';
+import {gridWorld} from './game';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { World } from './world';
 import { oasisBeats, PALM_END } from './oasis-timeline';
-import { buildPalm } from './palm-model';
+import { buildPalm,placePalmOnTile } from './palm-model';
 import { MonsterArt } from './monster-art';
 import { LivingVine } from './living-vine';
 import { metricUV } from './metric-uv';
 import { swallowPose } from './swallow-pose';
 export const PLANT_X=4.6, PLANT_Z=-3.15;
+export const CAMP_Z=gridWorld(6);
 
 /** Pooled, unlit geometry. No per-frame meshes, textures, lights or particle allocations. */
 export class OasisMonster {
@@ -103,7 +105,7 @@ export class OasisMonster {
     }
     const palm=buildPalm(this.palm,this.art);
     this.crown=palm.crown;this.fronds.push(...palm.fronds);
-    this.grill.position.set(2.5,0,4.3);
+    this.grill.position.set(2.5,0,CAMP_Z);
     for(const x of [-1.9,1.9])for(const sign of [-1,1]){
       const leg=this.mesh(this.grill,new T.CylinderGeometry(.09,.12,1.8,6),bark,x,.8,sign*.22);leg.rotation.x=sign*.32;
     }
@@ -146,7 +148,7 @@ export class OasisMonster {
     });
     for(const group of [this.upper,this.lower,this.palm,this.grill,...this.roasts])this.batch(group);
     // Reuse the finished, metric-textured tree without joining the chop choreography.
-    this.scenicPalm=this.palm.clone(true);this.scenicPalm.position.set(-5,0,-3.5);
+    this.scenicPalm=this.palm.clone(true);placePalmOnTile(this.scenicPalm,1,2);
     this.scenicPalm.rotation.y=0;this.root.add(this.scenicPalm);
     this.scenicPalm.traverse(o=>{if(o instanceof T.Mesh&&o.name==='palm-frond')this.fronds.push(o);});
     const outlined:T.Mesh[]=[];
@@ -213,13 +215,13 @@ export class OasisMonster {
     this.leaves.forEach((leaf,n)=>leaf.rotation.z=Math.sin(n*2.4)*.7+Math.sin(t*2+n)*.06);
     // Fall around the trunk base, directly into the cooking area. Gravity accelerates it.
     const fall=b.palm*b.palm;
-    this.palm.visible=b.palm<1;this.palm.position.set(-1,0,4.3);
+    this.palm.visible=b.palm<1;placePalmOnTile(this.palm,3,6);
     this.palm.rotation.z=-fall*Math.PI/2;this.palm.rotation.y=0;
     const impactAge=b.time-PALM_END;
     this.impactDust.forEach((p,n)=>{
       const u=Math.max(0,impactAge),angle=n*2.399;
       p.visible=impactAge>=0&&impactAge<.38;
-      p.position.set(-.8+(n%6)*.75+Math.cos(angle)*u*1.5,.1+Math.sin(Math.min(1,u/.38)*Math.PI)*(.18+(n%3)*.09),4.3+Math.sin(angle)*u*1.5);
+      p.position.set(-.8+(n%6)*.75+Math.cos(angle)*u*1.5,.1+Math.sin(Math.min(1,u/.38)*Math.PI)*(.18+(n%3)*.09),CAMP_Z+Math.sin(angle)*u*1.5);
       p.scale.setScalar(Math.max(.01,1-u/.38));
       p.rotation.set(n+u*3,n,0);
     });
@@ -232,7 +234,7 @@ export class OasisMonster {
     this.vine(1,6.3,.7,3.5,t+2);
     // Cock the vine, then whip across the trunk; release as the tree falls.
     const wind=Math.sin(b.chop*Math.PI),strike=b.chop,release=b.palm;
-    this.vine(2,T.MathUtils.lerp(3.4-4.6*strike,3.4,release),T.MathUtils.lerp(1.2+wind*1.5,1.2,release),T.MathUtils.lerp(4.3-wind*.8,4.3,release),t+4);
+    this.vine(2,T.MathUtils.lerp(3.4-4.6*strike,3.4,release),T.MathUtils.lerp(1.2+wind*1.5,1.2,release),T.MathUtils.lerp(CAMP_Z-wind*.8,CAMP_Z,release),t+4);
     this.pollen.forEach((p,n)=>{
       p.visible=b.grow>0&&b.grow<1;
       const angle=n*2.4+b.grow*7;

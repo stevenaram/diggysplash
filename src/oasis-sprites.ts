@@ -2,7 +2,7 @@ import * as T from 'three';
 import { gridWorld, SIZE } from './game';
 import type { World } from './world';
 import { PixelSprites } from './pixel-sprites';
-import { OasisMonster, PLANT_X, PLANT_Z } from './oasis-monster';
+import { OasisMonster, PLANT_X, PLANT_Z, CAMP_Z } from './oasis-monster';
 import { swallowPose } from './swallow-pose';
 import { oasisBeats, oasisCuesBetween, PALM_END, SNATCH_START, ESCAPE_X, ESCAPE_Z, EMOTE_START, escapePosition } from './oasis-timeline';
 
@@ -141,7 +141,7 @@ export class OasisSprites extends PixelSprites {
         a.sprite.userData.frame=beat.time>SNATCH_START?12+Math.floor(time*12)%2:shepherdFrame;
       }else{
         const n=a.phase-1,travel=beat.sheep[n];
-        a.sprite.position.set(T.MathUtils.lerp(a.start.x,2.5+(n-1)*1.12,travel),.04+Math.sin(travel*Math.PI)*2.6,T.MathUtils.lerp(a.start.z,4.3,travel));
+        a.sprite.position.set(T.MathUtils.lerp(a.start.x,2.5+(n-1)*1.12,travel),.04+Math.sin(travel*Math.PI)*2.6,T.MathUtils.lerp(a.start.z,CAMP_Z,travel));
         a.sprite.visible=travel<1;
         if(travel>0&&travel<1){
           a.sprite.material=this.material('sheep',6+Math.floor(time*12)%3,true);

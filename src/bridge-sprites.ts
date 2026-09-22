@@ -4,7 +4,7 @@ import {gridWorld,SIZE} from './game';
 import {PixelSprites} from './pixel-sprites';
 import type {World} from './world';
 import {bridgeBeats,wheelAngle,ravineFall,bridgeWalkPose} from './bridge-timeline';
-import {buildPalm} from './palm-model';
+import {buildPalm,placePalmOnTile} from './palm-model';
 import {MonsterArt} from './monster-art';
 import {metricUV} from './metric-uv';
 import {BridgeRiver} from './bridge-river';
@@ -26,7 +26,7 @@ export class BridgeSprites extends PixelSprites {
   private previous=0;
   constructor(world:World){
     super(world);
-    const palm=new T.Group();palm.position.set(6.7,0,-5.2);this.root.add(palm);
+    const palm=new T.Group();placePalmOnTile(palm,7,1);this.root.add(palm);
     this.fronds=buildPalm(palm,this.palmArt).fronds;
     palm.traverse(o=>{if(o instanceof T.Mesh){const old=o.geometry;o.geometry=metricUV(old);if(old!==o.geometry)old.dispose();}});
     this.river=new BridgeRiver(world,this.root);

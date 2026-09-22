@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {gridWorld} from './game';
 import {MonsterArt,palmFrond} from './monster-art';
 /** Shared stage-one palm silhouette; callers bake metric UVs after construction. */
 export function buildPalm(root:T.Group,art:MonsterArt){
@@ -16,4 +17,9 @@ export function buildPalm(root:T.Group,art:MonsterArt){
   }
   for(let n=0;n<3;n++)mesh(crown,new T.SphereGeometry(.16,7,5),bark,Math.cos(n*2.1)*.2,-.12,Math.sin(n*2.1)*.2);
   return {crown,fronds};
+}
+
+/** The trunk starts at the model origin, so its base belongs exactly to a tile center. */
+export function placePalmOnTile(root:T.Group,column:number,row:number){
+  root.position.set(gridWorld(column),0,gridWorld(row));
 }
