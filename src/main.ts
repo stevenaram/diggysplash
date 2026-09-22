@@ -1,4 +1,4 @@
-import {splashSound} from './splash-sound';
+import {splashSound,scoopSound} from './splash-sound';
 import { BRIDGE_DURATION } from "./bridge-timeline";
 import { OASIS_DURATION } from "./oasis-timeline";
 import { showFirstDigHint } from "./tutorial";
@@ -68,7 +68,8 @@ function sound(
   try {
     audio ??= new AudioContext();
     void audio.resume();
-    if(kind === "dig" || kind === "water"){splashSound(audio);return;}
+    if(kind === "dig"){scoopSound(audio);return;}
+    if(kind === "water"){splashSound(audio);return;}
     if(['bloom','twist','roar','gasp','grab','gulp','uproot','sizzle'].includes(kind)){
       creatureSound(audio,kind as CreatureCue);return;
     }
@@ -194,12 +195,11 @@ function showDigDrop(i: number) {
 }
 function dig(i: number) {
   if(retrying)return;
-  const before = game.wet.size;
   if (!game.dig(i)) return;
   showDigDrop(i);
   world.burst(i);
   world.sync();
-  sound(game.wet.size > before ? "water" : "dig");
+  sound("dig");
   update();
 }
 function closeResult() {
@@ -336,6 +336,7 @@ host.addEventListener("keydown", (e) => {
     dig(focused);
   }
 });
+world.onWater=()=>sound("water");
 world.onBattleSound = sound;
 world.onCreatureSound = sound;
 document.addEventListener("visibilitychange",()=>{if(document.hidden)stopCreatureSounds();});

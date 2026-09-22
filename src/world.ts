@@ -19,6 +19,8 @@ export class World {
   root = new T.Group();
   story?: StoryScene;
   banks = new Map<number, T.Mesh[]>();
+  onWater:()=>void=()=>{};
+  scoopedAt=new Map<number,number>();
   onHover: (i: number | null) => void = () => {};
   onViewChanged = () => {};
   onCreatureSound: (cue:CreatureCue)=>void = ()=>{};
@@ -244,6 +246,7 @@ export class World {
     this.palms = [];
     this.markers = [];
     this.wetAt.clear();
+    this.scoopedAt.clear();
     this.waterEffects=new WaterEffects(this.root);
     this.particles = [];
     const bridge = this.game.level.story?.kind === "bridge";
@@ -617,8 +620,6 @@ export class World {
     mesh.userData.halfX=(elevated||pool) ? .985 : .72;
     mesh.userData.halfZ=elevated ? .38 : pool ? .985 : .72;
     mesh.userData.splashed=false;
-    const front=this.box(mesh,0,.025,0,.035,.012,.65,0xb6f4e2);
-    front.visible=false;mesh.userData.front=front;
     this.waters.set(i, mesh);
     if (!elevated && !pool)
       for (const [dx, dz] of [
@@ -702,7 +703,7 @@ export class World {
     const ordered = [...this.game.wet].sort((a, b) => a[1] - b[1]);
     for (const [i,depth] of ordered)if(!this.wetAt.has(i)){
       const parent=connections(this.game.level,i).find(j=>(this.game.wet.get(j)??Infinity)<depth)??-1;
-      const start=this.game.level.sources.includes(i)?this.elapsed-.32:Math.max(this.elapsed,(this.wetAt.get(parent)??this.elapsed)+.22);
+      const start=this.game.level.sources.includes(i)?this.elapsed-.32:Math.max(this.elapsed,(this.scoopedAt.get(i)??-100)+.22,(this.wetAt.get(parent)??this.elapsed)+.17);
       this.wetAt.set(i,this.reduced?this.elapsed-.32:start);
       const water=this.waters.get(i);if(water){water.userData.parent=parent;water.userData.splashed=this.game.level.sources.includes(i);}
     }
@@ -729,7 +730,11 @@ export class World {
   }
   burst(i: number, celebrate = false) {
     if (this.reduced) return;
-    if(!celebrate){if(!this.game.wet.has(i))this.restoreDust(i);return;}
+    if(!celebrate){
+      this.scoopedAt.set(i,this.elapsed);
+      this.waterEffects.splash(gridWorld(i%SIZE),-.05,gridWorld(Math.floor(i/SIZE)),this.elapsed,true);
+      return;
+    }
     for (let k = 0; k < (celebrate ? 45 : 8); k++) {
       const m = this.box(
         this.root,
@@ -891,18 +896,12 @@ export class World {
     for (const [i, m] of this.waters) {
       const at = this.wetAt.get(i);
       m.visible = at !== undefined && this.elapsed >= at;
-      const fill=at===undefined?0:this.reduced?1:T.MathUtils.clamp((this.elapsed-at)/.3,0,1);
-      if(at!==undefined&&fill<1)pending=true;
-      const origin=m.userData.origin as T.Vector3,parent=m.userData.parent as number;
+      if(at!==undefined&&this.elapsed<at+.2&&!this.reduced)pending=true;
+      const origin=m.userData.origin as T.Vector3;
       m.position.copy(origin);m.scale.set(TILE_SIZE,1,TILE_SIZE);
-      const dx=parent<0?0:Math.sign(i%SIZE-parent%SIZE),dz=parent<0?0:Math.sign(Math.floor(i/SIZE)-Math.floor(parent/SIZE));
-      const front=m.userData.front as T.Mesh;
-      front.visible=m.visible&&fill>0&&fill<1;
-      if(dx){m.scale.x=TILE_SIZE*Math.max(.001,fill);m.position.x-=dx*m.userData.halfX*(1-fill);front.position.set(dx*.35,.04,0);front.rotation.y=0;}
-      else if(dz){m.scale.z=TILE_SIZE*Math.max(.001,fill);m.position.z-=dz*m.userData.halfZ*(1-fill);front.position.set(0,.04,dz*.35);front.rotation.y=Math.PI/2;}
-      if(m.visible&&!this.reduced){
-        m.position.y+=Math.sin(this.elapsed*2+i)*.006-.075*(1-fill);
-        if(fill>.35&&!m.userData.splashed){this.waterEffects.splash(origin.x,origin.y,origin.z,this.elapsed);m.userData.splashed=true;}
+      if(m.visible&&!m.userData.splashed){
+        if(!this.reduced)this.waterEffects.splash(origin.x,origin.y,origin.z,this.elapsed);
+        this.onWater();m.userData.splashed=true;
       }
       for (const arm of m.children)
         if (typeof arm.userData.neighbor === "number")

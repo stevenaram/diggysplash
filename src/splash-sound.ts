@@ -14,3 +14,11 @@ export function splashSound(ctx:AudioContext){
     osc.connect(env).connect(ctx.destination);osc.start(at);osc.stop(at+.18);osc.onended=()=>{osc.disconnect();env.disconnect();};
   }
 }
+
+export function scoopSound(ctx:AudioContext){
+  const t=ctx.currentTime,buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.16),ctx.sampleRate);
+  const data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2);
+  const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();source.buffer=buffer;
+  filter.type='lowpass';filter.frequency.value=1200;gain.gain.value=.1;
+  source.connect(filter).connect(gain).connect(ctx.destination);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
+}

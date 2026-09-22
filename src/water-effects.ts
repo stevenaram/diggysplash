@@ -1,39 +1,38 @@
 import * as T from 'three';
-/** Fixed pools keep rapid digging and long channel fills allocation-free. */
+/** Shared fixed pool for soil scoops and splash jets; no expanding ripple rings. */
 export class WaterEffects {
   root=new T.Group();
   private drops:T.InstancedMesh;
   private dummy=new T.Object3D();
   private cursor=0;
-  private bursts=Array.from({length:24},()=>({at:-100,x:0,y:0,z:0}));
-  private rings:T.Mesh<T.RingGeometry,T.MeshBasicMaterial>[]=[];
+  private bursts=Array.from({length:48},()=>({at:-100,x:0,y:0,z:0,soil:false}));
+  private sand=new T.Color(0x967044);
+  private water=new T.Color(0x8febde);
   constructor(parent:T.Group){
     parent.add(this.root);
-    this.drops=new T.InstancedMesh(new T.IcosahedronGeometry(.055,0),new T.MeshBasicMaterial({color:0x91eee1}),24*8);
+    this.drops=new T.InstancedMesh(new T.IcosahedronGeometry(.09,0),new T.MeshBasicMaterial(),48*12);
     this.drops.frustumCulled=false;this.drops.instanceMatrix.setUsage(T.DynamicDrawUsage);this.root.add(this.drops);
-    for(let n=0;n<24;n++){
-      const ring=new T.Mesh(new T.RingGeometry(.19,.225,24),new T.MeshBasicMaterial({color:0xc4fff0,transparent:true,opacity:0,depthWrite:false,side:T.DoubleSide}));
-      ring.rotation.x=-Math.PI/2;ring.visible=false;ring.userData.ownedMaterial=ring.material;this.root.add(ring);this.rings.push(ring);
-    }
     this.drops.userData.ownedMaterial=this.drops.material;
     this.root.traverse(o=>o.raycast=()=>{});
   }
-  splash(x:number,y:number,z:number,time:number){Object.assign(this.bursts[this.cursor],{x,y,z,at:time});this.cursor=(this.cursor+1)%24;}
+  splash(x:number,y:number,z:number,time:number,soil=false){Object.assign(this.bursts[this.cursor],{x,y,z,at:time,soil});this.cursor=(this.cursor+1)%48;}
   reset(){this.bursts.forEach(b=>b.at=-100);}
   update(time:number,reduced:boolean){
     this.root.visible=!reduced;
     this.bursts.forEach((b,n)=>{
-      const age=time-b.at,visible=age>=0&&age<.65;
-      const ring=this.rings[n];ring.visible=visible;
-      if(visible){ring.position.set(b.x,b.y+.045,b.z);ring.scale.setScalar(.35+age*2);ring.material.opacity=.65*Math.sin(Math.min(1,age/.65)*Math.PI);}
-      for(let j=0;j<8;j++){
-        const a=j*2.399+n*.7,speed=.55+(j%3)*.2;
-        this.dummy.position.set(b.x+Math.cos(a)*age*speed,b.y+age*(1.4+(j%3)*.25)-age*age*3.8,b.z+Math.sin(a)*age*speed);
-        const scale=visible?Math.max(0,1-age/.65):0;
-        this.dummy.scale.set(scale,scale*(1.5-age),scale);this.dummy.rotation.set(a,age*3,a);
-        this.dummy.updateMatrix();this.drops.setMatrixAt(n*8+j,this.dummy.matrix);
+      const age=time-b.at,life=b.soil?.42:.48,visible=age>=0&&age<life;
+      for(let j=0;j<12;j++){
+        const a=j*2.399+n*.7,speed=.8+(j%3)*.25;
+        const r=b.soil?.15:0.12;
+        this.dummy.position.set(b.x+Math.cos(a)*(r+age*speed),b.y+age*(b.soil?2.8:3.2)-age*age*7.5,b.z+Math.sin(a)*(r+age*speed));
+        const scale=visible?Math.pow(Math.max(0,1-age/life),.7):0;
+        // Water jets briefly stretch upward; soil clods tumble in a scooping arc.
+        this.dummy.scale.set(scale*(b.soil?1.1:.65),scale*(b.soil?.8:2.8),scale*(b.soil?1:.65));
+        this.dummy.rotation.set(b.soil?a+age*8:Math.sin(a)*age*2,age*3,b.soil?a:Math.cos(a)*age*2);
+        this.dummy.updateMatrix();this.drops.setMatrixAt(n*12+j,this.dummy.matrix);
+        this.drops.setColorAt(n*12+j,b.soil?this.sand:this.water);
       }
     });
-    this.drops.instanceMatrix.needsUpdate=true;
+    this.drops.instanceMatrix.needsUpdate=true;this.drops.instanceColor!.needsUpdate=true;
   }
 }
