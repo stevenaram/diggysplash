@@ -1,13 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {oasisBeats,OASIS_DURATION,PALM_DURATION,PALM_END,SHEEP_START,FIRE_START} from '../src/oasis-timeline';
+import {oasisBeats,OASIS_DURATION,PALM_DURATION,PALM_END,SHEEP_START,FIRE_START,SNATCH_START} from '../src/oasis-timeline';
 const at=(seconds:number)=>oasisBeats(seconds/OASIS_DURATION);
 test('the plant grows before the shepherd flees; the palm is repurposed before the sheep arrive',()=>{
   assert.equal(at(1.6).bloom,1);
   assert.equal(at(1.6).grow,0);
   assert.equal(at(4.6).grow,1);
   assert.equal(at(4.6).flee,0);
-  assert.equal(at(6.6).flee,1);
+  assert.equal(at(SNATCH_START).flee,1);
   assert.equal(at(8.2).swallow,1);
   assert.equal(at(PALM_END+.001).palm,1);
   assert.deepEqual(at(SHEEP_START).sheep,[0,0,0]);

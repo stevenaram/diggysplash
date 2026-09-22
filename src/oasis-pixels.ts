@@ -1,8 +1,8 @@
 /** Original pixel drawings, deliberately rasterized without antialiasing. */
-export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower' | 'jug' | 'camp-rug';
+export type PixelKind = 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower' | 'jug' | 'camp-rug' | 'alarm';
 /** Every source pixel occupies 1/32 of a tile; small props get small drawings. */
 export const PIXEL_SIZES: Record<PixelKind, readonly [number, number]> = {
-  villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
+  alarm:[14,20], villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
   grass: [10, 12], basket: [16, 16], blanket: [22, 12], heart: [12, 12],
   pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20], flower:[28,36], jug:[16,24], 'camp-rug':[48,24],
 };
@@ -14,7 +14,13 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const oval = (x:number,y:number,rx:number,ry:number,c:string) => {for(let j=Math.floor(y-ry);j<=y+ry;j++)for(let i=Math.floor(x-rx);i<=x+rx;i++)if(((i-x)/rx)**2+((j-y)/ry)**2<=1)dot(i,j,c);};
   const poly = (points:number[][],c:string) => {for(let y=0;y<h;y++)for(let x=0;x<w;x++){let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++){const a=points[i],b=points[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;}if(inside)dot(x,y,c);}};
   const ink='#494353', deep='#706052', tan='#aa805b', gold='#d6ac67', light='#f0d294';
-  if(kind==='camp-rug') {
+  if(kind==='alarm') {
+    // Cream comic badge and a dark, high-contrast exclamation, at native density.
+    rect(2,0,10,16,ink);rect(0,2,14,12,ink);
+    rect(2,2,10,12,'#fff4cf');rect(1,3,12,10,'#fff4cf');
+    poly([[4,15],[9,15],[5,20]],ink);poly([[5,14],[8,14],[5,17]],'#fff4cf');
+    rect(5,3,4,7,'#bc4d42');rect(6,10,2,1,'#bc4d42');rect(5,12,4,2,'#bc4d42');
+  } else if(kind==='camp-rug') {
     rect(2,2,44,20,'#a6574d');rect(4,4,40,16,'#d3996c');rect(6,6,36,12,'#814e49');
     for(let x=4;x<45;x+=4){rect(x,0,2,2,'#e8c799');rect(x,22,2,2,'#e8c799');}
     for(const x of [13,24,35]){
@@ -94,6 +100,22 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
       poly([[21,25],[25,22],[28,17+lift],[26,16+lift],[22,21]],'#5b9f88');
       rect(26,14+lift,3,3,'#efc496');
       rect(3,10,2,3,'#6bcbd0');dot(3,9,'#b5efdf');
+    }
+    if(frame===14||frame===15){
+      // True left-facing sprint: profile nose, trailing arms/crook, alternating strides.
+      pixels.fill(undefined);
+      const step=frame===15;
+      poly(step?[[13,30],[17,31],[10,37],[5,37],[5,35]]:[[13,30],[17,31],[18,36],[23,36],[23,38],[15,38]],deep);
+      poly(step?[[18,30],[21,30],[23,36],[28,36],[28,38],[20,38]]:[[18,30],[21,31],[13,37],[8,37],[8,35]],ink);
+      poly([[12,21],[21,22],[23,32],[11,32],[9,28]],'#366c68');
+      poly([[12,22],[18,23],[17,30],[11,29]],'#5b9f88');rect(12,24,2,4,'#87b59a');
+      poly([[18,24],[23,22],[27,23],[26,26],[21,27]],'#5b9f88');rect(26,22,3,3,'#efc496');
+      rect(27,12,2,20,tan);rect(25,10,5,2,gold);
+      oval(15,17,6,6,'#81604d');poly([[10,13],[16,13],[16,23],[10,22],[10,19],[7,18],[9,16]],'#efc496');
+      rect(9,15,3,3,'#fff5d8');dot(9,16,ink);rect(9,21,3,2,ink);
+      oval(14,11,12,3,tan);oval(13,10,12,2,gold);
+      poly([[7,10],[9,3],[19,2],[22,9]],gold);rect(10,4,8,3,light);rect(8,8,14,2,'#947249');
+      rect(22,14,2,3,'#6bcbd0');dot(23,12,'#b5efdf');
     }
   } else if(kind==='sheep') {
     const walk=frame===1||frame===2, step=frame===2?1:0, drink=frame===4||frame===5;

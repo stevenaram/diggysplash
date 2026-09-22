@@ -4,7 +4,7 @@ import type { World } from './world';
 import { PixelSprites } from './pixel-sprites';
 import { OasisMonster, PLANT_X, PLANT_Z } from './oasis-monster';
 import { swallowPose } from './swallow-pose';
-import { oasisBeats, oasisCuesBetween, PALM_END } from './oasis-timeline';
+import { oasisBeats, oasisCuesBetween, PALM_END, SNATCH_START, ESCAPE_X, ESCAPE_Z, EMOTE_START } from './oasis-timeline';
 
 type Walker = { sprite: T.Sprite; kind: 'sheep' | 'shepherd'; start: T.Vector3; end: T.Vector3; phase: number };
 /** Stage-one cast and choreography. Sprite frames retain the shared 32px/tile scale. */
@@ -13,6 +13,7 @@ export class OasisSprites extends PixelSprites {
   grass: T.Sprite[] = [];
   flowers: T.Sprite[] = [];
   dust: { sprite: T.Sprite; born: number; x:number; z:number; vx: number; vz: number }[] = [];
+  private alarm:T.Sprite;
   time = 0;
   monster: OasisMonster;
   private previousBeatTime=0;
@@ -54,6 +55,7 @@ export class OasisSprites extends PixelSprites {
     this.walker('sheep',6.8,2.9,6.55,1.2,2);
     this.walker('sheep',6.8,.15,6.55,-.85,3);
 
+    this.alarm=this.add('alarm',0,0);
     this.update(0,0);
   }
   walker(kind:Walker['kind'],x:number,z:number,tx:number,tz:number,phase:number){
@@ -107,38 +109,47 @@ export class OasisSprites extends PixelSprites {
     const center=this.mouthUp.dot(this.mouthCenter);
     this.mouthPlanes[0].normal.copy(this.mouthUp);this.mouthPlanes[0].constant=-center+aperture;
     this.mouthPlanes[1].normal.copy(this.mouthUp).negate();this.mouthPlanes[1].constant=center+aperture;
+    this.alarm.visible=beat.emote&&!reduced;
     for(const a of this.walkers){
       a.sprite.position.copy(a.start);a.sprite.visible=true;a.sprite.scale.set(2,2.5,1);
       const frame=reduced?0:beat.flee>0&&beat.swallow<1?1+Math.floor(time*9+a.phase)%2:(time+a.phase*.71)%4.2>3.95?3:0;
       a.sprite.material=this.material(a.kind,frame,a.kind==='sheep');
       a.sprite.userData.frame=frame;
       if(a.kind==='shepherd'){
-        // The whole sprite is lifted into the mouth: no cut-up frames or hidden action.
-        a.sprite.position.x=T.MathUtils.lerp(a.start.x,-1.3,beat.flee);
-        a.sprite.position.z=T.MathUtils.lerp(a.start.z,5.4,beat.flee);
-        if(beat.grow>.55&&beat.swallow===0&&!reduced){
-          a.sprite.position.y=.04+Math.abs(Math.sin(time*16))*.12;
-          a.sprite.material=this.material('shepherd',beat.flee>0?10+Math.floor(time*10)%2:9,beat.flee>0);
+        a.sprite.position.x=T.MathUtils.lerp(a.start.x,ESCAPE_X,beat.flee);
+        a.sprite.position.z=T.MathUtils.lerp(a.start.z,ESCAPE_Z,beat.flee);
+        let shepherdFrame=frame;
+        if(beat.look)shepherdFrame=6;
+        else if(beat.flee>0&&beat.time<=SNATCH_START){
+          shepherdFrame=14+Math.floor(time*13)%2;
+          a.sprite.position.y=.04+Math.abs(Math.sin(time*24))*.13;
         }
-        if(beat.time>6.6){
+        a.sprite.material=this.material('shepherd',shepherdFrame);
+        // Offset along billboard-up so the badge stays directly above the hat.
+        this.alarm.position.copy(a.sprite.position);
+        this.alarm.position.y+=1.35;
+        this.alarm.position.z-=2.34;
+        this.alarm.position.y+=Math.sin(Math.min(1,(beat.time-EMOTE_START)/.1)*Math.PI)*.09;
+        if(beat.time>SNATCH_START){
           // First lift into a clear staging point in front of the open mouth.
           // Then travel along its normal; keep the entire billboard at full scale.
           const u=swallow.approach,v=1-u,end=this.mouthEntry;
           a.sprite.position.set(
-            v*v*v*-1.3+3*v*v*u*-1.3+3*v*u*u*(end.x-1.2)+u*u*u*end.x,
+            v*v*v*ESCAPE_X+3*v*v*u*ESCAPE_X+3*v*u*u*(end.x-1.2)+u*u*u*end.x,
             v*v*v*.04+3*v*v*u*3.8+3*v*u*u*end.y+u*u*u*end.y,
-            v*v*v*5.4+3*v*v*u*5.4+3*v*u*u*end.z+u*u*u*end.z,
+            v*v*v*ESCAPE_Z+3*v*v*u*ESCAPE_Z+3*v*u*u*end.z+u*u*u*end.z,
           );
           if(swallow.insert>0)a.sprite.position.lerpVectors(this.mouthEntry,this.mouthSeat,swallow.insert);
           a.sprite.material=this.mouthMaterials.get(12+Math.floor(time*12)%2)!;
           // Actual jaw geometry occludes him before visibility is retired.
           a.sprite.visible=!swallow.hidden;
         }
-        if(beat.flee>0&&!swallow.hidden){
+        if(beat.time>SNATCH_START-.16&&!swallow.hidden){
           const release=T.MathUtils.smoothstep(swallow.insert,.35,1);
-          this.monster.vine(0,T.MathUtils.lerp(a.sprite.position.x-.7,1.3,release),T.MathUtils.lerp(a.sprite.position.y+.65,.8,release),T.MathUtils.lerp(a.sprite.position.z+.15,2.5,release),time);
+          const lash=T.MathUtils.smoothstep(beat.time,SNATCH_START-.16,SNATCH_START);
+          this.monster.vine(0,T.MathUtils.lerp(1.3,T.MathUtils.lerp(a.sprite.position.x-.7,1.3,release),lash),T.MathUtils.lerp(.8,T.MathUtils.lerp(a.sprite.position.y+.65,.8,release),lash),T.MathUtils.lerp(2.5,T.MathUtils.lerp(a.sprite.position.z+.15,2.5,release),lash),time);
         }
-        a.sprite.userData.frame=beat.time>6.6?12+Math.floor(time*12)%2:beat.grow>.55?beat.flee>0?10+Math.floor(time*10)%2:9:frame;
+        a.sprite.userData.frame=beat.time>SNATCH_START?12+Math.floor(time*12)%2:shepherdFrame;
       }else{
         const n=a.phase-1,travel=beat.sheep[n];
         a.sprite.position.set(T.MathUtils.lerp(a.start.x,2.5+(n-1)*1.12,travel),.04+Math.sin(travel*Math.PI)*2.6,T.MathUtils.lerp(a.start.z,4.3,travel));

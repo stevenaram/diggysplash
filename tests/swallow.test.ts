@@ -14,3 +14,14 @@ test('lateral approach finishes before depth entry; actor retires only behind cl
   assert.equal(swallowPose(8.6).opening,.38);
   assert.equal(swallowPose(0).hidden,false);
 });
+
+test('shepherd notices, reacts, and escapes before the fast snatch',async()=>{
+  const {oasisBeats,OASIS_DURATION,SNATCH_START,ESCAPE_X}=await import('../src/oasis-timeline');
+  const at=(t:number)=>oasisBeats(t/OASIS_DURATION);
+  assert.equal(at(4.1).look,true);assert.equal(at(4.1).emote,false);
+  assert.equal(at(4.3).look,true);assert.equal(at(4.3).emote,true);
+  assert.equal(at(4.59).flee,0);assert.equal(at(4.7).look,false);
+  assert.equal(at(SNATCH_START).flee,1);assert.ok(3.2-ESCAPE_X>8);
+  assert.equal(swallowPose(SNATCH_START).approach,0);
+  assert.equal(swallowPose(SNATCH_START+.34).approach,1);
+});
