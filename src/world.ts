@@ -25,7 +25,7 @@ export class World {
   onHover: (i: number | null) => void = () => {};
   onViewChanged = () => {};
   onCreatureSound: (cue:CreatureCue)=>void = ()=>{};
-  onBattleSound: (kind: "wind" | "launch" | "impact") => void = () => {};
+  onBattleSound: (kind: "wind" | "launch" | "impact" | "wood") => void = () => {};
   tiles: T.Mesh[] = [];
   waters = new Map<number, T.Mesh>();
   wheels: T.Group[] = [];

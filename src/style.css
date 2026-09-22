@@ -987,3 +987,9 @@ footer .dig-meter {padding:0;gap:9px;}
 @media (max-width:360px){header nav .stage{width:32px;height:36px;flex-basis:32px}header nav{gap:4px}}
 @media (orientation:landscape) and (max-height:420px){header nav .stage{width:32px;height:32px;flex-basis:32px}}
 @media(prefers-reduced-motion:reduce){#retry-notice.leaving:not([hidden]){animation:retry-leave 150ms linear both}}
+
+footer .toolbar {gap:14px;}
+#sound-toggle {width:44px;height:44px;min-width:44px;padding:10px;border:1px solid #978b6b33;border-radius:12px;background:#ece5d677;color:#59705d;}
+#sound-toggle svg {width:24px;height:24px;}
+#sound-toggle[aria-pressed="true"] {color:#9a7161;background:#e5d9c977;}
+#sound-toggle:focus-visible {outline:3px solid #597a65;outline-offset:3px;}

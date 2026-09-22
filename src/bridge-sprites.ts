@@ -69,7 +69,7 @@ export class BridgeSprites extends PixelSprites {
   update(progress:number,time:number){
     const b=bridgeBeats(progress),t=b.time,reduced=this.world.reduced;
     if(!reduced){
-      for(const [at,cue] of [[4.3,'launch'],[5.05,'impact'],[6.4,'impact'],[8.1,'wind']] as const)
+      for(const [at,cue] of [[4.3,'launch'],[5.15,'wood'],[8.1,'wind']] as const)
         if(this.previous<at&&t>=at)this.world.onBattleSound(cue);
       if(this.previous<7.35&&t>=7.35)this.world.onCreatureSound('gasp');
     }
@@ -118,9 +118,12 @@ export class BridgeSprites extends PixelSprites {
       let frame=0;
       a.sprite.visible=true;a.sprite.scale.set(2,2.5,1);
       if(n<2){
-        const walk=ramp(t,1.65+n*.3,2.75);
-        a.sprite.position.set(T.MathUtils.lerp(n?-6.5:-4.8,n?2:3.4,walk),.2,T.MathUtils.lerp(n?6.7:6.2,5.3+n*.3,walk));
-        if(walk>0&&walk<1)frame=1+Math.floor(time*8)%2;
+        const approach=ramp(t,.18+n*.12,1.05),walk=ramp(t,1.65+n*.3,2.75);
+        const waitingX=n?-2.4:-.75,waitingZ=5.3+n*.3;
+        a.sprite.position.set(
+          walk>0?T.MathUtils.lerp(waitingX,n?2:3.4,walk):T.MathUtils.lerp(n?-6.5:-4.8,waitingX,approach),
+          .2,T.MathUtils.lerp(n?6.7:6.2,waitingZ,approach));
+        if((approach>0&&approach<1)||(walk>0&&walk<1))frame=1+Math.floor(time*8)%2;
         if(t>5.05){
           frame=n?6+Math.floor(time*12)%3:12+Math.floor(time*12)%2;
           const fall=ravineFall(t,5.22+n*.1,2.7);
