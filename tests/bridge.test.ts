@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {bridgeBeats,BRIDGE_DURATION} from '../src/bridge-timeline';
+import {bridgeBeats,BRIDGE_DURATION,wheelAngle,ravineFall} from '../src/bridge-timeline';
 import {levels} from '../src/levels';
 import {Game,minimumDigs} from '../src/game';
 const at=(t:number)=>bridgeBeats(t/BRIDGE_DURATION);
@@ -32,4 +32,18 @@ test('stage two approaches the stone race from the left with no rear shortcut',(
   const game=new Game(level);
   level.solution.slice(0,-1).forEach(i=>game.dig(i));assert.equal(game.won,false);
   game.dig(33);assert.equal(game.won,true);assert.equal(game.remaining,0);
+});
+
+test('wheel spins before bridge lowers and has constant speed across release',()=>{
+  assert.equal(at(.3).lower,0);assert.ok(wheelAngle(.3)<0);
+  for(const t of [.4,1.5,4.29,4.9,5.2,6.8])
+    assert.ok(Math.abs((wheelAngle(t+.01)-wheelAngle(t))/.01+2.2)<1e-10);
+});
+test('falling actors recede continuously and wrong branches exhaust the exact budget',()=>{
+  assert.equal(ravineFall(5,5).scale,1);
+  assert.ok(ravineFall(6,5).scale>ravineFall(7,5).scale);
+  assert.equal(ravineFall(8,5).progress,1);
+  const g=new Game(levels[1]);
+  [1,2,10,11,18,17,25].forEach(i=>assert.equal(g.dig(i),true));
+  assert.equal(g.remaining,0);assert.equal(g.won,false);
 });

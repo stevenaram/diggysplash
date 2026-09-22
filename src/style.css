@@ -179,7 +179,7 @@ main {
 .scene {
   position: absolute;
   inset: -35px 0 -25px;
-  touch-action: none;
+  touch-action: pinch-zoom;
 }
 .scene canvas {
   width: 100%;

@@ -152,7 +152,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 <header><nav aria-label="Stages">${levels.map((_, n) => `<button class="stage" data-stage="${n}" aria-label="Stage ${n + 1}"><span>${n + 1}</span><small class="stage-complete" aria-hidden="true"></small></button>`).join("")}</nav>
 </header>
 <main><div class="sun-disc" aria-hidden="true"></div>
-<div class="scene" tabindex="0" role="application" aria-label="Desert puzzle board. Click sand to dig. Drag to pan; scroll or pinch to zoom. Arrow keys select a tile, Enter digs."></div>
+<div class="scene" tabindex="0" role="application" aria-label="Desert puzzle board. Click sand to dig. Pinch to magnify the page. Arrow keys select a tile, Enter digs."></div>
 </main>
 <footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">4</strong></div></div></footer>
 <div id="retry-notice" role="status" aria-live="polite" hidden><strong>Out of digs</strong><span>Try again</span><div class="retry-track"><i></i></div></div><dialog id="result" aria-labelledby="result-title" aria-describedby="result-message"><div class="result-chapter" id="result-chapter"></div><h2 id="result-title"></h2><p id="result-message" class="sr-only"></p><div class="result-check" aria-hidden="true">${svg("check")}</div><div class="result-score" id="result-score"></div><div class="result-actions"><button id="result-primary" class="primary"></button><button id="result-secondary" class="secondary"></button></div></dialog>
@@ -329,7 +329,6 @@ host.addEventListener("keydown", (e) => {
       ),
     );
     focused = nz * SIZE + nx;
-    world.reveal(focused);
     world.highlight(focused);
   }
   if (e.key === "Enter" || e.key === " ") {
@@ -420,7 +419,6 @@ if (import.meta.env.DEV)
         cancelAnimationFrame(world.frame);
         world.story.progress=seconds/OASIS_DURATION;
         world.story.oasisSprites.update(world.story.progress,seconds);
-        world.cameraTransition=undefined;
         stopCreatureSounds();
         world.renderer.render(world.scene,world.camera);
       },
@@ -430,7 +428,6 @@ if (import.meta.env.DEV)
         world.story.progress=seconds/BRIDGE_DURATION;
         document.querySelectorAll(".dig-drop").forEach(drop=>drop.remove());
         world.story.bridgeSprites.update(world.story.progress,seconds);
-        world.cameraTransition=undefined;
         world.updateCamera();
         world.renderer.render(world.scene,world.camera);
       },

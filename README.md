@@ -42,7 +42,7 @@ Each budget equals the verified minimum route cost. Levels are complete or incom
 
 - Click or tap sand to dig; a shovel and the updated remaining count rise from each successfully dug tile. Hover only highlights valid sand. Dark soil beds and cut banks distinguish trenches from untouched sand, even when water is flowing.
 - Water travels through orthogonal ground connections. Elevated aqueduct sections use explicit links and cannot receive water from a trench underneath them.
-- Drag to pan, scroll or pinch to zoom; the fixed camera starts with the full board visible. The fixed camera uses 60° tilt, 0° orbit, and 0° roll. The whole island fits the available width in portrait or height in landscape, with headroom for scenery. Stage buttons and toolbars move to side rails in landscape. Resizing restores this fit.
+- The board stays fixed at 60° tilt, 0° orbit, and 0° roll. All stages frame only the same four top-plane corners; scenery and underground depth do not affect framing. Dragging cancels a tap without moving the board. Native pinch zoom remains available. UI rails adapt to orientation.
 - There are no undo or restart controls. Focus the board, use arrow keys to select a tile, and Enter or Space to dig.
 - Watch each consequence before the completion card appears. Continue or replay a completed level; failed attempts retry automatically. Numbered chapter buttons revisit unlocked levels.
 - Sound preference, chapter completion are saved locally. In-progress trenches are not.
@@ -85,7 +85,7 @@ Important contraptions should be large, immediately recognizable focal points, f
 
 The reserved north bank holds flowers that bloom and twist into a 3D plant. Its jaws use hollow shells, uneven teeth, normal-expanded inverted-hull outlines, and metric pixel textures (32 pixels per two world units). Continuous tapered vines update preallocated buffers. The shepherd has panic/flailing frames and stays at the shared sprite scale while entering the mouth. A curved palm trunk and feathered fronds become the spit-roast setup; the three roast models remain unchanged.
 
-The 18.88-second timeline drives growth, grabs, the palm, cooking, camera pan/zoom, and eight synthesized sound types. Camera angles remain 60° tilt, 0° orbit, 0° roll. Undo/restart resets the scene and stops its sounds; reduced motion presents the final tableau. No external art or audio assets are required.
+The 18.88-second timeline drives growth, grabs, the palm, cooking, and eight synthesized sound types. Camera angles remain 60° tilt, 0° orbit, 0° roll. Undo/restart resets the scene and stops its sounds; reduced motion presents the final tableau. No external art or audio assets are required.
 
 First-time players get a text-free shovel cue over stage one’s first solution tile. It follows camera movement, disappears after that dig, and stays off once completion has been saved. The north-bank flowers are enlarged in geometry before texture mapping; decorative pebbles are removed and the camp props stay on reserved tiles.
 
@@ -93,4 +93,4 @@ Stage one’s wilted flowers use four 28×36 billboard frames at the shared 32px
 
 The gameplay HUD shows only the shovel and remaining digs. Stage buttons use centered numbers in rounded squares, with corner checkmarks for completed stages. Automatic retry uses fading sand puffs and a fading notice, allowing the last particles to finish before the board reloads.
 
-Stage two uses three canyon columns with half-tile sand margins, leaving a two-tile-wide ravine. Layered sandstone cliffs descend to a dark cutaway with a narrow, distant trickle. Its exact seven-dig winding route reaches the stone wheel race from the left; rocks seal rear and lower shortcuts. A shared 3D palm matches stage one, and the shepherd has a separate four-frame walk. Water-filled wheel buckets spill during the runaway; the shortened bridge breaks over the ravine. The far-bank sheep stays clear of the bridge. Retry/replay restores the entire scene; reduced motion shows the aftermath.
+Stage two uses three canyon columns with half-tile sand margins, leaving a two-tile-wide ravine. Layered sandstone cliffs descend to a dark cutaway with a narrow, distant trickle. Its exact seven-dig winding route reaches the stone wheel race from the left; rocks seal rear and lower shortcuts, with two optional wrong turns. A shared 3D palm matches stage one, and the shepherd has a separate four-frame walk. Water-filled wheel buckets spill during the runaway; the shortened bridge breaks over the ravine. The far-bank sheep stays clear of the bridge. Retry/replay restores the entire scene; reduced motion shows the aftermath.

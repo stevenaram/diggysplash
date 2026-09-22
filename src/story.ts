@@ -382,7 +382,6 @@ export class StoryScene {
     } else {
       if (!this.started) {
         this.started = true;
-        this.world.focusConsequence();
       }
       this.progress = this.world.reduced
         ? 1

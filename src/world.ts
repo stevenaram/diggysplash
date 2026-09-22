@@ -52,14 +52,6 @@ export class World {
   readonly viewAngles = { x: 60, y: 0, z: 0 } as const;
   zoom = 1;
   fitDistance = 40;
-  cameraTransition?: {
-    from: T.Vector3;
-    to: T.Vector3;
-    start: number;
-    fromZoom: number;
-    toZoom: number;
-  };
-  viewChanged = false;
   pointers = new Map<number, T.Vector2>();
   gesture = false;
   pointerStart = new T.Vector2();
@@ -95,18 +87,8 @@ export class World {
         return;
       }
       const next = new T.Vector2(e.clientX, e.clientY);
-      if (this.pointers.size > 1) {
-        const other = [...this.pointers.entries()].find(
-          ([id]) => id !== e.pointerId,
-        )![1];
-        const before = previous.distanceTo(other),
-          after = next.distanceTo(other);
-        if (before > 4) this.zoomBy(after / before);
-        this.panPixels((next.x - previous.x) / 2, (next.y - previous.y) / 2);
-      } else if (this.gesture || next.distanceTo(this.pointerStart) > 7) {
-        this.gesture = true;
-        this.panPixels(next.x - previous.x, next.y - previous.y);
-      }
+      // A drag cancels the tap, but never moves the board.
+      if (this.pointers.size > 1 || next.distanceTo(this.pointerStart) > 7) this.gesture = true;
       this.pointers.set(e.pointerId, next);
     });
     host.addEventListener("pointerup", (e) => {
@@ -127,14 +109,6 @@ export class World {
       this.hover.visible = false;
       this.onHover(null);
     });
-    host.addEventListener(
-      "wheel",
-      (e) => {
-        e.preventDefault();
-        this.zoomBy(Math.exp(-e.deltaY * 0.0015));
-      },
-      { passive: false },
-    );
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(host);
     document.addEventListener("visibilitychange", () => {
@@ -529,7 +503,7 @@ export class World {
         const geometry=bakeColored(bucket);
         for(const child of [...bucket.children]){if(child instanceof T.Mesh)child.geometry.dispose();child.removeFromParent();}
         bucket.add(new T.Mesh(geometry,this.mat(0xffffff,'wood',true)));
-        const water=this.box(bucket,0,.04,0,.46,.035,.47,0x55d8d1);
+        const water=this.box(bucket,0,-.015,0,.42,.025,.43,0x55d8d1);
         water.name='bucket-water';water.userData.bucket=k;water.visible=false;
       }else{
         const paddle=this.box(rotor,Math.sin(angle)*1.68,Math.cos(angle)*1.68,0,.6,.4,.6,0xa37145,"wood");paddle.rotation.z=-angle;
@@ -828,24 +802,6 @@ export class World {
       return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2};
     });
   }
-  reveal(i: number) {
-    const p = this.screen(i),
-      r = this.host.getBoundingClientRect();
-    if (
-      p.x < r.left + 35 ||
-      p.x > r.right - 35 ||
-      p.y < r.top + 65 ||
-      p.y > r.bottom - 35
-    ) {
-      this.viewChanged = true;
-      this.viewTarget.set(
-        gridWorld(i % SIZE),
-        0,
-        gridWorld(Math.floor(i / SIZE)),
-      );
-      this.updateCamera();
-    }
-  }
   updateCamera() {
     const orientation = new T.Quaternion().setFromEuler(new T.Euler(
       -T.MathUtils.degToRad(this.viewAngles.x),
@@ -867,48 +823,19 @@ export class World {
     this.onHover(null);
     this.onViewChanged();
   }
-  zoomBy(factor: number) {
-    this.cameraTransition = undefined;
-    this.viewChanged = true;
-    this.zoom = T.MathUtils.clamp(this.zoom * factor, 0.75, 4);
-    this.updateCamera();
-  }
-  panPixels(dx: number, dy: number) {
-    this.cameraTransition = undefined;
-    this.viewChanged = true;
-    const scale =
-      (2 *
-        (this.fitDistance / this.zoom) *
-        Math.tan(T.MathUtils.degToRad(this.camera.fov / 2))) /
-      this.host.clientHeight;
-    const right = new T.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
-    const up = new T.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
-    this.viewTarget
-      .addScaledVector(right, -dx * scale)
-      .addScaledVector(up, dy * scale);
-    this.viewTarget.x = T.MathUtils.clamp(this.viewTarget.x, -8, 8);
-    this.viewTarget.z = T.MathUtils.clamp(this.viewTarget.z, -8, 8);
-    this.viewTarget.y = T.MathUtils.clamp(this.viewTarget.y, -8, 8);
-    this.updateCamera();
-  }
   overview() {
     this.framePuzzle();
   }
   framePuzzle() {
-    this.cameraTransition = undefined;
-    this.viewChanged = false;
     this.viewTarget.set(0, 0, 0);
     this.zoom = 1;
     this.updateCamera();
-    // Fit the complete island, including its decorative ring, into the actual
-    // scene area. UI rails are outside this area in either orientation.
+    // Every stage uses exactly the same four top-plane corners. Scenery and
+    // underground depth never alter the playable grid's position or scale.
     const half = BOARD_EXTENT / 2;
     const corners: T.Vector3[] = [];
     for (const x of [-half, half])
-      for (const z of [-half, half])
-        for (const y of [this.game.level.story?.kind === "bridge" ? -6.3 : -1.9, 0]) corners.push(new T.Vector3(x, y, z));
-    // Headroom for rear banners, city walls, and artillery during their animations.
-    for (const x of [-half, half]) corners.push(new T.Vector3(x, 3.5, -half));
+      for (const z of [-half, half]) corners.push(new T.Vector3(x, 0, z));
     // Center the projected footprint, compensating for perspective foreshortening.
     for (let pass = 0; pass < 3; pass++) {
       const points = corners.map(p => p.clone().project(this.camera));
@@ -921,7 +848,12 @@ export class World {
     const points = corners.map(p => p.clone().project(this.camera));
     const maxX = Math.max(...points.map(p => Math.abs(p.x)));
     const maxY = Math.max(...points.map(p => Math.abs(p.y)));
-    this.zoom = Math.min(0.96 / maxX, 0.96 / maxY);
+    this.zoom = Math.min(0.96 / maxX, 0.80 / maxY);
+    this.updateCamera();
+    // A constant screen-space gutter for every stage, never measured from its props.
+    const anchor=this.viewTarget.clone().project(this.camera);
+    anchor.y+=.08;
+    this.viewTarget.copy(anchor.unproject(this.camera));
     this.updateCamera();
   }
   resize() {
@@ -936,34 +868,6 @@ export class World {
     this.renderer.setSize(Math.round(w), Math.round(h), false);
     this.framePuzzle();
   }
-  focusConsequence() {
-    if (this.reduced) return;
-    // Restore the victory camera beat without abandoning the chosen angle or
-    // tightly cropping the larger campaign scenes.
-    const focus = this.game.level.story?.consequenceFocus;
-    const target = focus
-      ? new T.Vector3(focus[0] - 7.5, 0, focus[1] - 7.5)
-      : new T.Vector3(
-          gridWorld(this.game.level.targets[0] % SIZE),
-          0,
-          gridWorld(Math.floor(this.game.level.targets[0] / SIZE)),
-        );
-    const bridge=this.game.level.story?.kind === "bridge";
-    const city=this.game.level.story?.kind === "city";
-    const harvest=this.game.level.story?.kind === "harvest";
-    if(bridge)target.set(1,0,1);
-    if(city) target.set(0,0,-2);
-    if(harvest) target.set(0,0,2);
-    this.cameraTransition = {
-      from: this.viewTarget.clone(),
-      to: this.viewTarget.clone().lerp(target, 0.14),
-      start: this.elapsed,
-      fromZoom: this.zoom,
-      toZoom: this.zoom * (city || harvest || bridge ? .98 : 1.045),
-    };
-    this.viewChanged = true;
-  }
-
   animate = (time: number) => {
     if (document.hidden) return;
     const dt = this.last ? Math.min((time - this.last) / 1000, 0.05) : 0;
@@ -987,21 +891,12 @@ export class World {
     this.wheels.forEach((w, n) => {
       const active = this.waters.get(this.game.level.targets[n])?.visible;
       if(this.markers[n]) this.markers[n].material = this.mat(active ? 0x67d1bb : 0xe5a64e);
-      if (active && !this.reduced) w.rotation.z -= dt * 1.3;
+      if (active && !this.reduced && this.game.level.story?.kind !== "bridge") w.rotation.z -= dt * 1.3;
     });
     const active = this.game.level.targets.map(
       (i) => !!this.waters.get(i)?.visible,
     );
     this.story?.update(dt, active, this.elapsed);
-    if (this.cameraTransition) {
-      const t = this.cameraTransition,
-        p = Math.min(1, (this.elapsed - t.start) / 1.6),
-        e = p * p * (3 - 2 * p);
-      this.viewTarget.lerpVectors(t.from, t.to, e);
-      this.zoom = T.MathUtils.lerp(t.fromZoom, t.toZoom, e);
-      this.updateCamera();
-      if (p === 1) this.cameraTransition = undefined;
-    }
     if (this.game.won && !this.story?.done) pending = true;
     if (!this.reduced) {
       this.palms.forEach(

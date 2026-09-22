@@ -17,7 +17,6 @@ export class OasisSprites extends PixelSprites {
   time = 0;
   monster: OasisMonster;
   private previousBeatTime=0;
-  private startingZoom=1;
   private mouthEntry=new T.Vector3();
   private mouthSeat=new T.Vector3();
   private mouthCenter=new T.Vector3();
@@ -83,17 +82,9 @@ export class OasisSprites extends PixelSprites {
     const beat=oasisBeats(progress);
     if(progress===0){
       if(this.previousBeatTime>0)this.world.framePuzzle();
-      this.startingZoom=this.world.zoom;
     }
     if(!reduced){
       for(const cue of oasisCuesBetween(this.previousBeatTime,beat.time))this.world.onCreatureSound(cue);
-      // Only pan/zoom: the approved camera tilt, orbit and roll never change.
-      for(const [at,x,y,z,zoom] of [[2,1.3,.7,-1,1.08],[PALM_END+.1,3,1,.1,1.25]]){
-        if(this.previousBeatTime<at&&beat.time>=at){
-          this.world.cameraTransition={from:this.world.viewTarget.clone(),to:new T.Vector3(x,y,z),start:this.world.elapsed,fromZoom:this.world.zoom,toZoom:this.startingZoom*(at>8&&this.world.camera.aspect<.85?1.6:zoom)};
-          this.world.viewChanged=true;
-        }
-      }
     }
     this.previousBeatTime=beat.time;
     this.monster.update(progress,time);

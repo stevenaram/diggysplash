@@ -3,7 +3,7 @@ import * as T from 'three';
 import {gridWorld,SIZE} from './game';
 import {PixelSprites} from './pixel-sprites';
 import type {World} from './world';
-import {bridgeBeats} from './bridge-timeline';
+import {bridgeBeats,wheelAngle,ravineFall} from './bridge-timeline';
 import {buildPalm} from './palm-model';
 import {MonsterArt} from './monster-art';
 import {metricUV} from './metric-uv';
@@ -76,9 +76,12 @@ export class BridgeSprites extends PixelSprites {
     this.previous=t;
     this.deck.rotation.z=(1-b.lower)*1.02;
     for(const p of this.pieces){
-      const f=ramp(t,5.45+Math.abs(p.start.x-2.1)*.06,1.55);
+      const falling=ravineFall(t,5.45+Math.abs(p.start.x-2.1)*.06);
+      const f=falling.progress;
       p.mesh.position.copy(p.start);
-      p.mesh.position.y-=f*f*(9+(p.n%3));
+      p.mesh.position.y-=falling.depth;
+      p.mesh.position.x=T.MathUtils.lerp(p.start.x,2.3,f);
+      p.mesh.scale.setScalar(falling.scale);
       p.mesh.position.x+=Math.sin(p.n*2.4)*f*.6;
       p.mesh.rotation.set(f*(p.n%2?1.2:-.8),f*(p.n%3-1)*.6,f*(p.n%2?-.7:.8));
       p.mesh.visible=f<1;
@@ -86,23 +89,26 @@ export class BridgeSprites extends PixelSprites {
     this.wheel.position.copy(this.wheelStart);
     this.wheel.position.x+=Math.sin(time*33)*b.wobble*.08*(1-b.runaway);
     this.wheel.position.lerp(new T.Vector3(2.6,1.8,3.9),b.runaway);
-    this.wheel.position.y-=b.collapse*b.collapse*10;
+    const wheelFall=ravineFall(t,5.15,2.7);
+    this.wheel.position.y-=wheelFall.depth+wheelFall.progress*1.8;
+    this.wheel.scale.setScalar(wheelFall.scale);
     this.wheel.rotation.set(-Math.PI/6,b.runaway*.15,Math.sin(time*24)*b.wobble*.08);
-    this.wheel.visible=b.collapse<1;
+    this.wheel.visible=wheelFall.progress<1;
     const rotor=this.wheel.getObjectByName('bridge-wheel-rotor');
-    if(rotor)rotor.rotation.z=-b.runaway*9-t*(b.lower>.9?2:0);
+    if(rotor)rotor.rotation.z=wheelAngle(t);
     this.fronds.forEach((f,n)=>f.rotation.set(0,f.userData.azimuth,f.userData.baseTilt+(reduced?0:Math.sin(time*1.1+n*.8)*.04)));
     this.buckets.forEach((water,n)=>{
       water.visible=progress>0&&b.collapse<1;
-      water.position.y=.02+Math.sin(time*(b.runaway>0?18:5)+n)*(.025+b.runaway*.06);
-      water.rotation.z=Math.sin(time*15+n)*b.runaway*.3;
+      water.position.y=-.015+Math.sin(time*5+n)*.008;
+      water.rotation.z=0;
     });
     this.river.update(time,t,this.wheel,b.runaway,reduced);
     this.rubble.forEach(p=>{
-      const f=ramp(t,5.17+(p.n%7)*.07,1.9);
+      const fall=ravineFall(t,5.17+(p.n%7)*.07,2.8),f=fall.progress;
       p.mesh.visible=f>0&&f<1;
-      p.mesh.position.copy(p.start);p.mesh.position.x+=(p.n%2?-1:1)*f*(.4+(p.n%3)*.35);
-      p.mesh.position.y+=Math.sin(f*Math.PI)*.65-f*f*11;
+      p.mesh.position.copy(p.start);p.mesh.position.x=T.MathUtils.lerp(p.start.x,3,f);
+      p.mesh.scale.setScalar(fall.scale);
+      p.mesh.position.y+=Math.sin(f*Math.PI)*.35-fall.depth;
       p.mesh.rotation.set(f*5+p.n,f*3,0);
     });
     for(const [n,a] of this.cast.entries()){
@@ -114,19 +120,22 @@ export class BridgeSprites extends PixelSprites {
         if(walk>0&&walk<1)frame=n?1+Math.floor(time*8)%2:16+Math.floor(time*8)%4;
         if(t>5.05){
           frame=n?6+Math.floor(time*12)%3:12+Math.floor(time*12)%2;
-          const fall=ramp(t,5.22+n*.1,1.45);
-          a.sprite.position.y+=Math.sin(fall*Math.PI)*.45-fall*fall*11;
-          a.sprite.position.x+=Math.sin(fall*Math.PI)*.3;
-          a.sprite.visible=fall<1;
+          const fall=ravineFall(t,5.22+n*.1,2.7);
+          a.sprite.position.y-=fall.depth;
+          a.sprite.position.x=T.MathUtils.lerp(a.sprite.position.x,3,fall.progress);
+          a.sprite.scale.set(2*fall.scale,2.5*fall.scale,1);
+          a.sprite.visible=fall.progress<1;
         }
       }else{
         a.sprite.position.set(7,.2,2.4);
         if(b.jump>0){
-          a.sprite.position.x=T.MathUtils.lerp(7,3.6,b.jump);
-          a.sprite.position.y=.2+Math.sin(b.jump*Math.PI)*2-b.jump*b.jump*11;
-          a.sprite.position.z=T.MathUtils.lerp(2.4,3.7,b.jump);
+          const leap=ramp(t,8.05,.8),fall=ravineFall(t,8.85,2.6);
+          a.sprite.position.x=T.MathUtils.lerp(7,3,leap);
+          a.sprite.position.y=.2+Math.sin(leap*Math.PI)*1.8-fall.depth;
+          a.sprite.position.z=T.MathUtils.lerp(2.4,3.7,leap);
+          a.sprite.scale.set(2*fall.scale,2.5*fall.scale,1);
           frame=6+Math.floor(time*12)%3;
-          a.sprite.visible=b.jump<1;
+          a.sprite.visible=fall.progress<1;
         }
       }
       a.sprite.material=this.material(a.kind,reduced?0:frame,n===2||(n===0&&frame>=14));
