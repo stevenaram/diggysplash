@@ -3,7 +3,7 @@ import * as T from 'three';
 import {gridWorld,SIZE} from './game';
 import {PixelSprites} from './pixel-sprites';
 import type {World} from './world';
-import {bridgeBeats,wheelAngle,ravineFall} from './bridge-timeline';
+import {bridgeBeats,wheelAngle,ravineFall,bridgeWalkPose} from './bridge-timeline';
 import {buildPalm} from './palm-model';
 import {MonsterArt} from './monster-art';
 import {metricUV} from './metric-uv';
@@ -118,12 +118,9 @@ export class BridgeSprites extends PixelSprites {
       let frame=0;
       a.sprite.visible=true;a.sprite.scale.set(2,2.5,1);
       if(n<2){
-        const approach=ramp(t,.18+n*.12,1.05),walk=ramp(t,1.65+n*.3,2.75);
-        const waitingX=n?-2.4:-.75,waitingZ=5.3+n*.3;
-        a.sprite.position.set(
-          walk>0?T.MathUtils.lerp(waitingX,n?2:3.4,walk):T.MathUtils.lerp(n?-6.5:-4.8,waitingX,approach),
-          .2,T.MathUtils.lerp(n?6.7:6.2,waitingZ,approach));
-        if((approach>0&&approach<1)||(walk>0&&walk<1))frame=1+Math.floor(time*8)%2;
+        const walk=bridgeWalkPose(t,n);
+        a.sprite.position.set(walk.x,.2,walk.z);
+        if(walk.moving)frame=1+Math.floor(time*8)%2;
         if(t>5.05){
           frame=n?6+Math.floor(time*12)%3:12+Math.floor(time*12)%2;
           const fall=ravineFall(t,5.22+n*.1,2.7);

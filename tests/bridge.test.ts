@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {bridgeBeats,BRIDGE_DURATION,wheelAngle,ravineFall,ravineImpacts} from '../src/bridge-timeline';
+import {bridgeBeats,BRIDGE_DURATION,wheelAngle,ravineFall,ravineImpacts,bridgeWalkPose} from '../src/bridge-timeline';
 import {levels} from '../src/levels';
 import {Game,minimumDigs} from '../src/game';
 const at=(t:number)=>bridgeBeats(t/BRIDGE_DURATION);
@@ -12,8 +12,8 @@ test('stage two has three full chasm columns and a winding exact-budget solution
   assert.ok(new Set(level.solution.map((i,n,a)=>n?i-a[n-1]:0)).size>=3);
 });
 test('bridge lowers before crossing, wheel strikes occupied deck, last sheep jumps afterward',()=>{
-  assert.equal(at(1.6).lower,1);assert.equal(at(1.6).walk,0);
-  assert.equal(at(4.4).walk,1);assert.ok(at(4.7).runaway>0);
+  assert.equal(at(1.6).lower,1);assert.ok(at(1.6).walk>0);
+  assert.ok(at(4.4).walk<1);assert.ok(at(4.7).runaway>0);
   assert.equal(at(5).collapse,0);assert.ok(at(6).collapse>0);
   assert.equal(at(7.5).collapse,1);assert.equal(at(7.5).alarm,true);assert.equal(at(7.5).jump,0);
   assert.equal(at(10).jump,1);
@@ -54,4 +54,16 @@ test('distant splash cues follow the falls and finish before completion',()=>{
   assert.ok(ravineImpacts[2].time>=5.32+2.7-1e-9);
   assert.ok(ravineImpacts.at(-1)!.time>=8.85+2.6-1e-9);
   assert.ok(ravineImpacts.at(-1)!.time+1.1<BRIDGE_DURATION);
+});
+
+test('both walkers move continuously until collision and enter only after bridge lowers',()=>{
+  for(const actor of [0,1]){
+    for(let t=.5;t<5.04;t+=.02){
+      const a=bridgeWalkPose(t,actor),b=bridgeWalkPose(t+.01,actor);
+      assert.equal(a.moving,true);assert.ok(b.x>a.x);
+      if(a.x>=.65)assert.equal(at(t).lower,1);
+    }
+    const hit=bridgeWalkPose(5.049,actor);
+    assert.ok(hit.x>1&&hit.x<5);assert.equal(hit.moving,true);
+  }
 });
