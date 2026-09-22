@@ -47,9 +47,6 @@ export class OasisSprites extends PixelSprites {
     const rug=new T.Mesh(new T.PlaneGeometry(3,1.5),rugMaterial);
     rug.rotation.x=-Math.PI/2;rug.position.set(4,.035,3.1);rug.raycast=()=>{};
     rug.userData.ownedMaterial=rugMaterial;world.root.add(rug);
-    // Separate supplies from the rug, actor silhouette, and southern cooking area.
-    this.add('jug',1.45,1.75);
-    this.add('blanket',.15,1.6);
     this.walker('shepherd',3.2,3.8,3.2,2.85,0);
     this.walker('sheep',5.0,4.65,4.7,2.05,1);
     this.walker('sheep',6.8,2.9,6.55,1.2,2);
