@@ -1,7 +1,7 @@
 import * as T from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { World } from './world';
-import { oasisBeats } from './oasis-timeline';
+import { oasisBeats, PALM_END } from './oasis-timeline';
 import { MonsterArt, palmFrond } from './monster-art';
 import { LivingVine } from './living-vine';
 import { metricUV } from './metric-uv';
@@ -30,6 +30,8 @@ export class OasisMonster {
   roasts:T.Group[]=[];
   wool:T.Mesh[]=[];
   pollen:T.Mesh[]=[];
+  impactDust:T.Mesh[]=[];
+  private vineGrowth=0;
   materials:T.Material[]=[];
   private green:T.MeshBasicMaterial;
   private petalMaterial:T.MeshBasicMaterial;
@@ -132,6 +134,8 @@ export class OasisMonster {
     }
     const pollenMat=this.mat(0xffdda0);
     for(let n=0;n<18;n++)this.pollen.push(this.mesh(this.root,new T.OctahedronGeometry(.055,0),pollenMat,0,0,0));
+    const dustMat=this.mat(0xd8bd87);
+    for(let n=0;n<12;n++)this.impactDust.push(this.mesh(this.root,new T.BoxGeometry(.09,.09,.09),dustMat,0,0,0));
     const woolMat=this.mat(0xffefd3);
     for(let n=0;n<30;n++)this.wool.push(this.mesh(this.root,new T.IcosahedronGeometry(.1+(n%3)*.025,0),woolMat,0,0,0));
     // Enlarge the flowers in geometry before UV generation: +50% size, same texel density.
@@ -180,10 +184,11 @@ export class OasisMonster {
     const mesh=new T.Mesh(g,m);mesh.position.set(x,y,z);parent.add(mesh);return mesh;
   }
   vine(index:number,x:number,y:number,z:number,t:number){
-    this.vines[index].update(PLANT_X+(index-1)*.35,1.4,PLANT_Z,x,y,z,t);
+    this.vines[index].update(PLANT_X+(index-1)*.35,1.4*this.vineGrowth,PLANT_Z,x,y,z,t,this.vineGrowth);
   }
   update(progress:number,time:number){
     const b=oasisBeats(progress),reduced=this.world.reduced,t=reduced?0:time;
+    this.vineGrowth=b.vines;
     this.plant.visible=b.grow>0;
     this.plant.scale.setScalar(Math.max(.001,b.grow));
     const swallow=swallowPose(b.time);
@@ -210,16 +215,28 @@ export class OasisMonster {
     });
     this.fronds.forEach((frond,n)=>frond.rotation.z=frond.userData.baseTilt+Math.sin(t*1.1+n*.8)*.04);
     this.leaves.forEach((leaf,n)=>leaf.rotation.z=Math.sin(n*2.4)*.7+Math.sin(t*2+n)*.06);
-    this.palm.visible=b.palm<1;this.palm.position.set(T.MathUtils.lerp(-5,.9,b.palm),Math.sin(b.palm*Math.PI)*3+b.palm*1.5,T.MathUtils.lerp(-3.5,4.3,b.palm));
-    this.palm.rotation.z=-b.palm*Math.PI/2;this.palm.rotation.y=Math.sin(t)*.02*(1-b.palm);
+    // Fall around the trunk base, directly into the cooking area. Gravity accelerates it.
+    const fall=b.palm*b.palm;
+    this.palm.visible=b.palm<1;this.palm.position.set(.5,0,4.3);
+    this.palm.rotation.z=-fall*Math.PI/2;this.palm.rotation.y=0;
+    const impactAge=b.time-PALM_END;
+    this.impactDust.forEach((p,n)=>{
+      const u=Math.max(0,impactAge),angle=n*2.399;
+      p.visible=impactAge>=0&&impactAge<.38;
+      p.position.set(.7+(n%6)*.55+Math.cos(angle)*u*1.5,.1+Math.sin(Math.min(1,u/.38)*Math.PI)*(.18+(n%3)*.09),4.3+Math.sin(angle)*u*1.5);
+      p.scale.setScalar(Math.max(.01,1-u/.38));
+      p.rotation.set(n+u*3,n,0);
+    });
     this.grill.visible=b.palm>=1;
     this.roasts.forEach((r,n)=>r.visible=b.sheep[n]>=1);
     this.spit.rotation.x=b.fire>0?t*.65:0;
     this.flames.forEach((f,n)=>{f.visible=b.fire>0;f.scale.y=b.fire*(.7+Math.sin(t*8+n)*.3);});
-    this.vines.forEach(v=>v.mesh.visible=b.grow>=1);
+    this.vines.forEach(v=>v.mesh.visible=b.vines>0);
     this.vine(0,1.3+Math.sin(t)*.3,.8,2.5,t);
     this.vine(1,6.3,.7,3.5,t+2);
-    this.vine(2,b.palm>0&&b.palm<1?this.palm.position.x:3.4,b.palm>0&&b.palm<1?this.palm.position.y+1:1.2,b.palm>0&&b.palm<1?this.palm.position.z:4.3,t+4);
+    // Cock the vine, then whip across the trunk; release as the tree falls.
+    const wind=Math.sin(b.chop*Math.PI),strike=b.chop,release=b.palm;
+    this.vine(2,T.MathUtils.lerp(3.4-3.1*strike,3.4,release),T.MathUtils.lerp(1.2+wind*1.5,1.2,release),T.MathUtils.lerp(4.3-wind*.8,4.3,release),t+4);
     this.pollen.forEach((p,n)=>{
       p.visible=b.grow>0&&b.grow<1;
       const angle=n*2.4+b.grow*7;

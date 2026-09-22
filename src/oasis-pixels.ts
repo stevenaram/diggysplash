@@ -132,6 +132,20 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
     dot(27,y-1,frame===3?'#796a60':ink);dot(28,y+3,ink);
     if(!drink){oval(24,18,4,2,'#fff5d8');dot(22,18,'#e3dec5');}
     oval(3,25,2,2,'#fff5d8');
+    if(frame>=6&&frame<=8){
+      // Three struggle cels: bicycling hooves, pinned ears, wide eye and bleating mouth.
+      rect(0,31,32,9,'#00000000');
+      const kick=frame-6;
+      for(const [x,n] of [[8,0],[14,1],[20,2]]){
+        const dx=[-4,3,-1][(kick+n)%3],dy=[2,6,4][(kick+n)%3];
+        poly([[x,29],[x+3,29],[x+dx+3,29+dy],[x+dx,29+dy]],deep);
+        rect(x+dx-1,29+dy,4,2,ink);
+      }
+      oval(27,y-1,2,2,'#fff9e6');dot(28,y-1,ink);
+      oval(28,y+3,2,kick===1?2:1,ink);
+      rect(20,y-7,3,2,'#796a60');rect(28,y-7,3,2,'#796a60');
+      dot(30,15+kick,'#71c8d1');dot(31,12+kick,'#b5efdf');
+    }
   } else if(kind==='palm') {
     const sway=frame===1?1:0;
     poly([[27,68],[37,68],[37,61],[35,49],[35,35],[32,24],[28,24],[30,42],[28,57]],deep);

@@ -45,9 +45,17 @@ test('sound cues survive frame skips, never repeat, and reset silently',async()=
   assert.deepEqual(stepped,oasisCuesBetween(0,20));
 });
 
-test('palm motion takes 60 percent of the original duration and later beats follow promptly',()=>{
-  assert.equal(PALM_DURATION,2.8*.6);
-  assert.ok(at(8.2+PALM_DURATION/2).palm>.49);
+test('palm falls quickly in place and later beats follow promptly',()=>{
+  assert.ok(PALM_DURATION<1);
+  assert.ok(at(8.2+PALM_DURATION/2).palm>0);
   assert.equal(at(PALM_END+.001).palm,1);
   assert.ok(Math.abs(SHEEP_START-PALM_END-.2)<.00001);
+});
+
+
+test('vines grow alongside the head instead of appearing at full length',()=>{
+  assert.equal(at(1.9).vines,0);
+  assert.ok(at(2.8).vines>0&&at(2.8).vines<1);
+  assert.ok(at(2.8).grow>0&&at(2.8).grow<1);
+  assert.equal(at(4.5).vines,1);
 });

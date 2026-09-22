@@ -21,16 +21,16 @@ export class LivingVine {
     }
     g.setIndex(indices);this.mesh=new T.Mesh(g,material);this.mesh.frustumCulled=false;this.mesh.raycast=()=>{};
   }
-  update(sx:number,sy:number,sz:number,x:number,y:number,z:number,time:number){
+  update(sx:number,sy:number,sz:number,x:number,y:number,z:number,time:number,growth=1){
     const sample=(out:T.Vector3,u:number)=>out.set(sx+(x-sx)*u+Math.sin(u*8-time*1.7)*.24*Math.sin(u*Math.PI),sy+(y-sy)*u+Math.sin(u*Math.PI)*1.15+Math.sin(u*10-time)*.12*Math.sin(u*Math.PI),sz+(z-sz)*u+Math.sin(u*6+time)*.22*Math.sin(u*Math.PI));
     const p=this.mesh.geometry.getAttribute('position'),n=this.mesh.geometry.getAttribute('normal'),uv=this.mesh.geometry.getAttribute('uv');let distance=0;
     for(let r=0;r<=this.rings;r++){
-      const u=r/this.rings;sample(this.point,u);sample(this.next,u+.002);sample(this.previous,u-.002);
+      const u=r/this.rings*growth;sample(this.point,u);sample(this.next,u+.002);sample(this.previous,u-.002);
       this.tangent.subVectors(this.next,this.previous).normalize();
       this.side.crossVectors(this.tangent,this.up);if(this.side.lengthSq()<.001)this.side.set(1,0,0);this.side.normalize();
       this.normal.crossVectors(this.side,this.tangent).normalize();
-      if(r>0){sample(this.previous,(r-1)/this.rings);distance+=this.point.distanceTo(this.previous);}
-      const radius=.035+.18*Math.pow(1-u,.8);
+      if(r>0){sample(this.previous,(r-1)/this.rings*growth);distance+=this.point.distanceTo(this.previous);}
+      const radius=(.035+.18*Math.pow(1-r/this.rings,.8))*Math.min(1,growth*4);
       for(let s=0;s<=this.sides;s++){
         const angle=s/this.sides*Math.PI*2,ca=Math.cos(angle),sa=Math.sin(angle),i=r*(this.sides+1)+s;
         const nx=this.side.x*ca+this.normal.x*sa,ny=this.side.y*ca+this.normal.y*sa,nz=this.side.z*ca+this.normal.z*sa;

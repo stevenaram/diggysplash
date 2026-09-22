@@ -117,7 +117,7 @@ export class OasisSprites extends PixelSprites {
       a.sprite.userData.frame=frame;
       if(a.kind==='shepherd'){
         a.sprite.position.x=T.MathUtils.lerp(a.start.x,ESCAPE_X,beat.flee);
-        a.sprite.position.z=T.MathUtils.lerp(a.start.z,ESCAPE_Z,beat.flee);
+        a.sprite.position.z=T.MathUtils.lerp(a.start.z,ESCAPE_Z,beat.flee)+Math.sin(beat.flee*Math.PI)*.85;
         let shepherdFrame=frame;
         if(beat.look)shepherdFrame=6;
         else if(beat.flee>0&&beat.time<=SNATCH_START){
@@ -155,7 +155,7 @@ export class OasisSprites extends PixelSprites {
         a.sprite.position.set(T.MathUtils.lerp(a.start.x,2.5+(n-1)*1.12,travel),.04+Math.sin(travel*Math.PI)*2.6,T.MathUtils.lerp(a.start.z,4.3,travel));
         a.sprite.visible=travel<1;
         if(travel>0&&travel<1){
-          a.sprite.material=this.material('sheep',1+Math.floor(time*10)%2,Math.floor(time*5)%2===0);
+          a.sprite.material=this.material('sheep',6+Math.floor(time*12)%3,true);
           this.monster.vine(1,a.sprite.position.x,a.sprite.position.y+.6,a.sprite.position.z,time);
         }
       }
