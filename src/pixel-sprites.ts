@@ -34,13 +34,13 @@ export class PixelSprites {
     this.root.add(sprite);
     return sprite;
   }
-  /** Center the visible rock drawing (not its transparent canvas) over a tile.
-   * Lift along the fixed viewing ray so its lower pixels stay above the ground. */
-  addTileRock(x:number,z:number){
+  /** Approved placement: 60% centered, 40% original bottom-anchored artwork. */
+  addTileRock(x:number,z:number,originalOffset=0){
     const rock=this.add('rock',x,z);
-    rock.center.set(.5,15/40);
-    const lift=.75;
-    rock.position.set(x,lift,z+lift/Math.tan(T.MathUtils.degToRad(this.world.viewAngles.x)));
+    const blend=.6,lift=.75;
+    rock.center.set(.5,(15/40)*blend);
+    rock.position.set(x,T.MathUtils.lerp(.04,lift,blend),
+      z+T.MathUtils.lerp(originalOffset,lift/Math.tan(T.MathUtils.degToRad(this.world.viewAngles.x)),blend));
     return rock;
   }
   dispose(){for(const m of this.frames.values()){m.map?.dispose();m.dispose();}this.frames.clear();}
