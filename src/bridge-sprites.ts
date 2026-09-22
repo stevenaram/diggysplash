@@ -75,6 +75,8 @@ export class BridgeSprites extends PixelSprites {
     }
     this.previous=t;
     this.deck.rotation.z=(1-b.lower)*1.02;
+    const landingAge=Math.max(0,t-1.5);
+    this.deck.position.y=.15+(!reduced&&landingAge<.6?Math.sin(landingAge*18)*Math.exp(-landingAge*9)*.035:0);
     for(const p of this.pieces){
       const falling=ravineFall(t,5.45+Math.abs(p.start.x-2.1)*.06);
       const f=falling.progress;
@@ -87,12 +89,13 @@ export class BridgeSprites extends PixelSprites {
       p.mesh.visible=f<1;
     }
     this.wheel.position.copy(this.wheelStart);
-    this.wheel.position.x+=Math.sin(time*33)*b.wobble*.08*(1-b.runaway);
+    this.wheel.position.x+=Math.sin(t*4)*b.wobble*.018*(1-b.runaway);
     this.wheel.position.lerp(new T.Vector3(2.6,1.8,3.9),b.runaway);
     const wheelFall=ravineFall(t,5.15,2.7);
     this.wheel.position.y-=wheelFall.depth+wheelFall.progress*1.8;
     this.wheel.scale.setScalar(wheelFall.scale);
-    this.wheel.rotation.set(-Math.PI/6,b.runaway*.15,Math.sin(time*24)*b.wobble*.08);
+    // Never oscillate around the axle: that nearly cancelled the spin once per wobble.
+    this.wheel.rotation.set(-Math.PI/6+Math.sin(t*4)*b.wobble*.012,b.runaway*.15,0);
     this.wheel.visible=wheelFall.progress<1;
     const rotor=this.wheel.getObjectByName('bridge-wheel-rotor');
     if(rotor)rotor.rotation.z=wheelAngle(t);

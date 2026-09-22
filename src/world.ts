@@ -491,8 +491,11 @@ export class World {
     rotor.add(rim);
     for(let k=0;k<8;k++) {
       const angle=k*Math.PI/4;
-      const spoke=this.box(rotor,0,0,0,.22,3.16,.28,0xb6824d,"wood");
-      spoke.rotation.z=angle;
+      // Four full beams make eight spokes. Eight full beams overlapped and flickered.
+      if(k<4){
+        const spoke=this.box(rotor,0,0,0,.22,3.16,.28,0xb6824d,"wood");
+        spoke.rotation.z=angle;
+      }
       if(bridge){
         const bucket=new T.Group();bucket.position.set(Math.sin(angle)*1.68,Math.cos(angle)*1.68,0);bucket.rotation.z=-angle;rotor.add(bucket);
         this.box(bucket,0,-.15,0,.62,.09,.65,0xa37145,"wood");

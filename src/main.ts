@@ -430,6 +430,8 @@ if (import.meta.env.DEV)
         world.story.bridgeSprites.update(world.story.progress,seconds);
         world.updateCamera();
         world.renderer.render(world.scene,world.camera);
+        const scene=world.story.bridgeSprites;
+        return {angle:scene.wheel.rotation.z+(scene.wheel.getObjectByName('bridge-wheel-rotor')?.rotation.z??0),dust:scene.river.dust.filter(p=>p.visible).length,ripples:scene.river.rings.filter(p=>p.visible).length};
       },
       resumeAnimation(){world.last=0;world.animate(0);},
       levels,

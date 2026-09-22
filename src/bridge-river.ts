@@ -1,11 +1,13 @@
 import * as T from 'three';
 import type {World} from './world';
+import {ravineImpacts} from './bridge-timeline';
 /** Reused foam and spray instances: no transient meshes during the disaster. */
 export class BridgeRiver {
   root=new T.Group();
   foam:T.InstancedMesh;
   spray:T.InstancedMesh;
   rings:T.Mesh[]=[];
+  dust:T.Mesh<T.SphereGeometry,T.MeshBasicMaterial>[]=[];
   private dummy=new T.Object3D();
   private material:T.MeshBasicMaterial;
   private water:T.Texture;
@@ -46,14 +48,32 @@ export class BridgeRiver {
     const bed=new T.Mesh(new T.PlaneGeometry(.42,16.5),this.material);bed.rotation.x=-Math.PI/2;bed.position.set(3,-6.1,0);this.root.add(bed);
     const foamMat=world.mat(0x8fb7ae);
     this.foam=new T.InstancedMesh(new T.BoxGeometry(1,.025,1),foamMat,24);this.foam.instanceMatrix.setUsage(T.DynamicDrawUsage);this.foam.frustumCulled=false;this.root.add(this.foam);
-    this.spray=new T.InstancedMesh(new T.OctahedronGeometry(.075,0),foamMat,48);this.spray.instanceMatrix.setUsage(T.DynamicDrawUsage);this.spray.frustumCulled=false;this.root.add(this.spray);
-    for(let n=0;n<3;n++){
-      const ring=new T.Mesh(new T.TorusGeometry(.055,.009,4,16),new T.MeshBasicMaterial({color:0xb2f1e9,transparent:true,opacity:0,depthWrite:false}));
-      ring.rotation.x=-Math.PI/2;ring.position.set(3,-6.05,n===2?3.7:5.1);ring.userData.ownedMaterial=ring.material;this.root.add(ring);this.rings.push(ring);
+    this.spray=new T.InstancedMesh(new T.OctahedronGeometry(.075,0),foamMat,24+ravineImpacts.length*8);this.spray.instanceMatrix.setUsage(T.DynamicDrawUsage);this.spray.frustumCulled=false;this.root.add(this.spray);
+    for(let n=0;n<ravineImpacts.length;n++){
+      const ring=new T.Mesh(new T.TorusGeometry(.075,.012,4,20),new T.MeshBasicMaterial({color:0xb2f1e9,transparent:true,opacity:0,depthWrite:false}));
+      ring.rotation.x=-Math.PI/2;ring.position.set(3,-6.05,ravineImpacts[n].z);ring.userData.ownedMaterial=ring.material;this.root.add(ring);this.rings.push(ring);
+    }
+    const dustGeometry=new T.SphereGeometry(.16,6,4);
+    for(let n=0;n<24;n++){
+      const material=new T.MeshBasicMaterial({color:n%3?0xb59b79:0xd3ba92,transparent:true,opacity:0,depthWrite:false});
+      const puff=new T.Mesh(dustGeometry,material);puff.userData.ownedMaterial=material;
+      this.root.add(puff);this.dust.push(puff);
     }
   }
   update(time:number,storyTime:number,wheel:T.Group,runaway:number,reduced:boolean){
     const clock=reduced?0:time;
+    this.dust.forEach((puff,n)=>{
+      const collapse=n>=12,start=collapse?5.15:1.5;
+      const age=storyTime-start-(n%6)*.022,life=.85;
+      puff.visible=!reduced&&age>0&&age<life;
+      if(!puff.visible)return;
+      const p=age/life,angle=n*2.399,side=n%2?1:-1;
+      puff.position.set(side>0?5.35:.7,.14+age*.28,4.0+(n%3)*.9);
+      puff.position.x+=side*Math.sin(p*Math.PI/2)*.32;
+      puff.position.z+=Math.cos(angle)*age*.36;
+      puff.scale.set(1+p*2.3,.55+p*.7,1+p*1.6);
+      puff.material.opacity=.55*Math.min(1,p/.1)*Math.pow(1-p,2);
+    });
     this.water.offset.y=-clock*.22;
     for(let n=0;n<24;n++){
       this.dummy.position.set(2.84+(n*1.618%.31),-6.07,((n*.719+clock*(2.1+n%3*.2))%16)-8);
@@ -62,25 +82,25 @@ export class BridgeRiver {
     }
     this.foam.instanceMatrix.needsUpdate=true;
     wheel.updateWorldMatrix(true,false);
-    for(let n=0;n<48;n++){
+    for(let n=0;n<this.spray.count;n++){
       let scale=0;
       if(n<24&&runaway>0&&runaway<1){
         const age=((storyTime-4.3)+(n%6)*.09)%.55,angle=n*2.399;
         this.temp.set(Math.cos(angle)*1.5,Math.sin(angle)*1.5,.25).applyMatrix4(wheel.matrixWorld);
         this.dummy.position.copy(this.temp);this.dummy.position.x+=Math.cos(angle)*age;this.dummy.position.y+=age*.6-age*age*5;this.dummy.position.z+=age*.8;scale=(1-age/.55)*.8;
       }else if(n>=24){
-        const impact=n<36?8.1:11.45,age=storyTime-impact;
-        if(age>0&&age<1.05){
-          const angle=n*2.399,speed=.06+(n%4)*.02;
-          this.dummy.position.set(3+Math.cos(angle)*age*speed,-6.05+age*(.18+(n%3)*.025)-age*age*.32,(n<36?5.1:3.7)+Math.sin(angle)*age*speed);
-          scale=.12*Math.max(0,1-age/1.05);
+        const impact=ravineImpacts[Math.floor((n-24)/8)],age=storyTime-impact.time;
+        if(age>0&&age<.7){
+          const angle=n*2.399,speed=.075+(n%4)*.025;
+          this.dummy.position.set(3+Math.cos(angle)*age*speed,-6.04+age*(.3+(n%3)*.025)-age*age*.58,impact.z+Math.sin(angle)*age*speed);
+          scale=.18*Math.pow(1-age/.7,1.4);
         }
       }
       this.dummy.scale.setScalar(reduced?0:scale);this.dummy.rotation.set(n+storyTime,n,0);this.dummy.updateMatrix();this.spray.setMatrixAt(n,this.dummy.matrix);
     }
     this.spray.instanceMatrix.needsUpdate=true;
     this.rings.forEach((ring,n)=>{
-      const age=storyTime-[8.1,8.35,11.45][n];ring.visible=!reduced&&age>0&&age<1.1;
+      const age=storyTime-ravineImpacts[n].time;ring.visible=!reduced&&age>0&&age<1.1;
       ring.scale.setScalar(1+Math.max(0,age)*.8);(ring.material as T.MeshBasicMaterial).opacity=Math.max(0,1-age/1.1)*.7;
     });
   }

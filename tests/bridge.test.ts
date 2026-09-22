@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {bridgeBeats,BRIDGE_DURATION,wheelAngle,ravineFall} from '../src/bridge-timeline';
+import {bridgeBeats,BRIDGE_DURATION,wheelAngle,ravineFall,ravineImpacts} from '../src/bridge-timeline';
 import {levels} from '../src/levels';
 import {Game,minimumDigs} from '../src/game';
 const at=(t:number)=>bridgeBeats(t/BRIDGE_DURATION);
@@ -46,4 +46,12 @@ test('falling actors recede continuously and wrong branches exhaust the exact bu
   const g=new Game(levels[1]);
   [1,2,10,11,18,17,25].forEach(i=>assert.equal(g.dig(i),true));
   assert.equal(g.remaining,0);assert.equal(g.won,false);
+});
+
+test('distant splash cues follow the falls and finish before completion',()=>{
+  assert.ok(ravineImpacts[0].time>=5.15+2.7-1e-9);
+  assert.ok(ravineImpacts[1].time>=5.22+2.7-1e-9);
+  assert.ok(ravineImpacts[2].time>=5.32+2.7-1e-9);
+  assert.ok(ravineImpacts.at(-1)!.time>=8.85+2.6-1e-9);
+  assert.ok(ravineImpacts.at(-1)!.time+1.1<BRIDGE_DURATION);
 });
