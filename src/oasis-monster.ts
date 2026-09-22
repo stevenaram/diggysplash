@@ -18,6 +18,7 @@ export class OasisMonster {
   lower=new T.Group();
   palm=new T.Group();
   crown=new T.Group();
+  scenicPalm=new T.Group();
   grill=new T.Group();
   spit=new T.Group();
   vines:LivingVine[]=[];
@@ -100,12 +101,15 @@ export class OasisMonster {
     for(let v=0;v<3;v++){
       const vine=new LivingVine(dark);this.root.add(vine.mesh);this.vines.push(vine);
     }
-    const trunk=new T.CatmullRomCurve3([new T.Vector3(0,0,0),new T.Vector3(.06,1,0),new T.Vector3(.24,2.1,.06),new T.Vector3(.5,3.2,.14)]);
-    this.mesh(this.palm,new T.TubeGeometry(trunk,16,.18,8,false),bark,0,0,0);
-    this.palm.add(this.crown);this.crown.position.set(.5,3.2,.14);
-    for(let n=0;n<10;n++){
-      const frond=this.mesh(this.crown,palmFrond(1.65+(n%3)*.2),palmLeaf,0,0,0);
-      frond.rotation.y=n*2.399;frond.rotation.z=n<7?-.05-(n%3)*.07:.6;
+    const trunk=new T.CatmullRomCurve3([new T.Vector3(0,0,0),new T.Vector3(-.08,1.4,0),new T.Vector3(-.3,3,-.2),new T.Vector3(-.45,4.4,-.45)]);
+    this.mesh(this.palm,new T.TubeGeometry(trunk,16,.22,8,false),bark,0,0,0);
+    this.palm.add(this.crown);this.crown.position.set(-.45,4.4,-.45);
+    // Broad lateral fans and short front fronds leave the trunk visible at 60° tilt.
+    for(let n=0;n<8;n++){
+      const angle=n*Math.PI/4,front=Math.sin(angle)<-.3;
+      const frond=this.mesh(this.crown,palmFrond(front?1.05:1.8+(n%2)*.2),palmLeaf,0,0,0);
+      frond.name='palm-frond';frond.userData.azimuth=angle;frond.rotation.y=angle;
+      frond.rotation.z=front?.3:n%2?.12:.02;
       frond.userData.baseTilt=frond.rotation.z;this.fronds.push(frond);
     }
     for(let n=0;n<3;n++)this.mesh(this.crown,new T.SphereGeometry(.16,7,5),bark,Math.cos(n*2.1)*.2,-.12,Math.sin(n*2.1)*.2);
@@ -153,6 +157,10 @@ export class OasisMonster {
       }
     });
     for(const group of [this.upper,this.lower,this.palm,this.grill,...this.roasts])this.batch(group);
+    // Reuse the finished, metric-textured tree without joining the chop choreography.
+    this.scenicPalm=this.palm.clone(true);this.scenicPalm.position.set(-5,0,-3.5);
+    this.scenicPalm.rotation.y=0;this.root.add(this.scenicPalm);
+    this.scenicPalm.traverse(o=>{if(o instanceof T.Mesh&&o.name==='palm-frond')this.fronds.push(o);});
     const outlined:T.Mesh[]=[];
     for(const group of [this.plant,...this.flowers])group.traverse(o=>{if(o instanceof T.Mesh)outlined.push(o);});
     for(const mesh of outlined)this.art.outlineMesh(mesh);
@@ -213,17 +221,17 @@ export class OasisMonster {
       petal.rotation.z=-.8*(1-b.bloom)+b.grow*(.45+(n%3)*.35);
       petal.rotation.x=b.grow*Math.sin(n*2.4)*.7;
     });
-    this.fronds.forEach((frond,n)=>frond.rotation.z=frond.userData.baseTilt+Math.sin(t*1.1+n*.8)*.04);
+    this.fronds.forEach((frond,n)=>frond.rotation.set(0,frond.userData.azimuth,frond.userData.baseTilt+Math.sin(t*1.1+(n%8)*.8)*.04));
     this.leaves.forEach((leaf,n)=>leaf.rotation.z=Math.sin(n*2.4)*.7+Math.sin(t*2+n)*.06);
     // Fall around the trunk base, directly into the cooking area. Gravity accelerates it.
     const fall=b.palm*b.palm;
-    this.palm.visible=b.palm<1;this.palm.position.set(.5,0,4.3);
+    this.palm.visible=b.palm<1;this.palm.position.set(-1,0,4.3);
     this.palm.rotation.z=-fall*Math.PI/2;this.palm.rotation.y=0;
     const impactAge=b.time-PALM_END;
     this.impactDust.forEach((p,n)=>{
       const u=Math.max(0,impactAge),angle=n*2.399;
       p.visible=impactAge>=0&&impactAge<.38;
-      p.position.set(.7+(n%6)*.55+Math.cos(angle)*u*1.5,.1+Math.sin(Math.min(1,u/.38)*Math.PI)*(.18+(n%3)*.09),4.3+Math.sin(angle)*u*1.5);
+      p.position.set(-.8+(n%6)*.75+Math.cos(angle)*u*1.5,.1+Math.sin(Math.min(1,u/.38)*Math.PI)*(.18+(n%3)*.09),4.3+Math.sin(angle)*u*1.5);
       p.scale.setScalar(Math.max(.01,1-u/.38));
       p.rotation.set(n+u*3,n,0);
     });
@@ -236,7 +244,7 @@ export class OasisMonster {
     this.vine(1,6.3,.7,3.5,t+2);
     // Cock the vine, then whip across the trunk; release as the tree falls.
     const wind=Math.sin(b.chop*Math.PI),strike=b.chop,release=b.palm;
-    this.vine(2,T.MathUtils.lerp(3.4-3.1*strike,3.4,release),T.MathUtils.lerp(1.2+wind*1.5,1.2,release),T.MathUtils.lerp(4.3-wind*.8,4.3,release),t+4);
+    this.vine(2,T.MathUtils.lerp(3.4-4.6*strike,3.4,release),T.MathUtils.lerp(1.2+wind*1.5,1.2,release),T.MathUtils.lerp(4.3-wind*.8,4.3,release),t+4);
     this.pollen.forEach((p,n)=>{
       p.visible=b.grow>0&&b.grow<1;
       const angle=n*2.4+b.grow*7;

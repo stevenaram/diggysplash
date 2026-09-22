@@ -60,10 +60,10 @@ export function palmFrond(length:number){
   const pos:number[]=[],uv:number[]=[];
   const point=(u:number,side:number,width:number)=>new T.Vector3(u*length,.55*Math.sin(u*Math.PI)-.8*u*u-Math.abs(side)*.12,side*width);
   const tri=(a:T.Vector3,b:T.Vector3,c:T.Vector3)=>{for(const p of [a,b,c]){pos.push(p.x,p.y,p.z);uv.push(p.x/2,p.z/2);}};
-  for(let n=0;n<13;n++){
-    const u=.06+n*.068,width=.36*Math.sin(Math.PI*(u*.85+.08))*(1-u*.55);
+  for(let n=0;n<11;n++){
+    const u=.06+n*.081,width=.46*Math.sin(Math.PI*(u*.85+.08))*(1-u*.55);
     for(const side of [-1,1]){
-      const a=point(u,0,0),b=point(u+.045,0,0),tip=point(Math.min(1,u+.19),side,width);
+      const a=point(u,0,0),b=point(u+.065,0,0),tip=point(Math.min(1,u+.19),side,width);
       const mid=point(u+.1,side,width*.8);mid.y+=.05;
       tri(a,mid,tip);tri(a,tip,b);
     }
