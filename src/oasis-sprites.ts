@@ -4,7 +4,7 @@ import type { World } from './world';
 import { PixelSprites } from './pixel-sprites';
 import { OasisMonster, PLANT_X, PLANT_Z } from './oasis-monster';
 import { swallowPose } from './swallow-pose';
-import { oasisBeats, oasisCuesBetween, PALM_END, SNATCH_START, ESCAPE_X, ESCAPE_Z, EMOTE_START } from './oasis-timeline';
+import { oasisBeats, oasisCuesBetween, PALM_END, SNATCH_START, ESCAPE_X, ESCAPE_Z, EMOTE_START, escapePosition } from './oasis-timeline';
 
 type Walker = { sprite: T.Sprite; kind: 'sheep' | 'shepherd'; start: T.Vector3; end: T.Vector3; phase: number };
 /** Stage-one cast and choreography. Sprite frames retain the shared 32px/tile scale. */
@@ -116,12 +116,12 @@ export class OasisSprites extends PixelSprites {
       a.sprite.material=this.material(a.kind,frame,a.kind==='sheep');
       a.sprite.userData.frame=frame;
       if(a.kind==='shepherd'){
-        a.sprite.position.x=T.MathUtils.lerp(a.start.x,ESCAPE_X,beat.flee);
-        a.sprite.position.z=T.MathUtils.lerp(a.start.z,ESCAPE_Z,beat.flee)+Math.sin(beat.flee*Math.PI)*.85;
+        const escape=escapePosition(beat.flee,a.start.x,a.start.z);
+        a.sprite.position.x=escape.x;a.sprite.position.z=escape.z;
         let shepherdFrame=frame;
         if(beat.look)shepherdFrame=6;
         else if(beat.flee>0&&beat.time<=SNATCH_START){
-          shepherdFrame=14+Math.floor(time*13)%2;
+          shepherdFrame=(beat.flee<.2?10:14)+Math.floor(time*13)%2;
           a.sprite.position.y=.04+Math.abs(Math.sin(time*24))*.13;
         }
         a.sprite.material=this.material('shepherd',shepherdFrame);

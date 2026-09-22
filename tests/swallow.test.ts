@@ -25,3 +25,11 @@ test('shepherd notices, reacts, and escapes before the fast snatch',async()=>{
   assert.equal(swallowPose(SNATCH_START).approach,0);
   assert.equal(swallowPose(SNATCH_START+.34).approach,1);
 });
+
+
+test('escape reaches the southern lane before passing the palm canopy',async()=>{
+  const {escapePosition,ESCAPE_X,ESCAPE_Z}=await import('../src/oasis-timeline');
+  assert.deepEqual(escapePosition(0),{x:3.2,z:3.8});
+  for(let t=0;t<=1;t+=.01){const p=escapePosition(t);if(p.x<1&&p.x>-3)assert.ok(p.z>=7);}
+  const end=escapePosition(1);assert.ok(Math.abs(end.x-ESCAPE_X)<1e-9);assert.equal(end.z,ESCAPE_Z);
+});

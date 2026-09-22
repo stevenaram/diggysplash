@@ -4,7 +4,7 @@ export const LOOK_START=4;
 export const EMOTE_START=LOOK_START+.2;
 export const RUN_START=EMOTE_START+.4;
 export const SNATCH_START=7;
-export const ESCAPE_X=-5.3, ESCAPE_Z=6.2;
+export const ESCAPE_X=-5.3, ESCAPE_Z=7.1;
 export const PALM_DURATION = .87;
 export const PALM_HIT=8.42;
 export const PALM_END = 8.2 + PALM_DURATION;
@@ -15,6 +15,13 @@ export const ramp = (time:number, start:number, duration:number) => {
   const t=Math.max(0,Math.min(1,(time-start)/duration));
   return t*t*(3-2*t);
 };
+/** Duck into the clear southern lane before sprinting past the palm. */
+export function escapePosition(progress:number,startX=3.2,startZ=3.8){
+  return {
+    x:startX+(ESCAPE_X-startX)*ramp(progress,.12,.88),
+    z:startZ+(ESCAPE_Z-startZ)*ramp(progress,0,.36),
+  };
+}
 export function oasisBeats(progress:number) {
   const time=Math.max(0,Math.min(1,progress))*OASIS_DURATION;
   return {
