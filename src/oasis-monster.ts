@@ -5,6 +5,7 @@ import { oasisBeats } from './oasis-timeline';
 import { MonsterArt, palmFrond } from './monster-art';
 import { LivingVine } from './living-vine';
 import { metricUV } from './metric-uv';
+import { swallowPose } from './swallow-pose';
 export const PLANT_X=4.6, PLANT_Z=-3.15;
 
 /** Pooled, unlit geometry. No per-frame meshes, textures, lights or particle allocations. */
@@ -185,12 +186,15 @@ export class OasisMonster {
     const b=oasisBeats(progress),reduced=this.world.reduced,t=reduced?0:time;
     this.plant.visible=b.grow>0;
     this.plant.scale.setScalar(Math.max(.001,b.grow));
-    this.head.rotation.z=Math.sin(t*1.8)*.035;
-    this.head.position.y=3.8+Math.sin(t*2)*.045;
-    const gulp=b.time>6.5&&b.time<8.1?Math.sin(Math.PI*b.swallow):0;
-    this.throat.scale.y=.5+gulp*.5;
-    const opening=b.time<5?.35+b.grow*.25:.38+gulp*1.05;
+    const swallow=swallowPose(b.time);
+    // Aim the mouth at the billboard plane, not through the actor's hat and feet.
+    this.head.rotation.x=T.MathUtils.lerp(-.42,-Math.PI/3,swallow.align);
+    this.head.rotation.z=Math.sin(t*1.8)*.035*(1-swallow.align);
+    this.head.position.y=3.8+Math.sin(t*2)*.045*(1-swallow.align);
+    this.throat.scale.y=.5+.5*swallow.align*(1-swallow.close);
+    const opening=b.time<5?.35+b.grow*.25:swallow.opening;
     this.upper.rotation.x=-opening;this.lower.rotation.x=opening;
+    this.upper.position.y=swallow.lift;this.lower.position.y=-swallow.lift;
     this.blossomMaterial.color.setRGB(1-b.grow*.25,1-b.grow*.55,1-b.grow*.1);
     this.petalMaterial.color.setRGB(1-b.grow*.15,1-b.grow*.4,1-b.grow*.04);
     this.flowers.forEach((flower,n)=>{

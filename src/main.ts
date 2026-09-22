@@ -1,3 +1,4 @@
+import { OASIS_DURATION } from "./oasis-timeline";
 import { showFirstDigHint } from "./tutorial";
 import { creatureSound, stopCreatureSounds, type CreatureCue } from "./creature-sound";
 import "@fontsource/outfit/latin-600.css";
@@ -476,6 +477,16 @@ if (import.meta.env.DEV)
           gates: world.story?.gates.map((g) => g.position.y),
         };
       },
+      previewOasis(seconds:number){
+        if(!world.story?.oasisSprites)return;
+        cancelAnimationFrame(world.frame);
+        world.story.progress=seconds/OASIS_DURATION;
+        world.story.oasisSprites.update(world.story.progress,seconds);
+        world.cameraTransition=undefined;
+        stopCreatureSounds();
+        world.renderer.render(world.scene,world.camera);
+      },
+      resumeAnimation(){world.last=0;world.animate(0);},
       levels,
       screen: (i: number) => world.screen(i),
     },

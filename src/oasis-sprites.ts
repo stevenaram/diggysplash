@@ -3,6 +3,7 @@ import { gridWorld, SIZE } from './game';
 import type { World } from './world';
 import { PixelSprites } from './pixel-sprites';
 import { OasisMonster, PLANT_X, PLANT_Z } from './oasis-monster';
+import { swallowPose } from './swallow-pose';
 import { oasisBeats, oasisCuesBetween, PALM_END } from './oasis-timeline';
 
 type Walker = { sprite: T.Sprite; kind: 'sheep' | 'shepherd'; start: T.Vector3; end: T.Vector3; phase: number };
@@ -16,9 +17,21 @@ export class OasisSprites extends PixelSprites {
   monster: OasisMonster;
   private previousBeatTime=0;
   private startingZoom=1;
+  private mouthEntry=new T.Vector3();
+  private mouthSeat=new T.Vector3();
+  private mouthCenter=new T.Vector3();
+  private mouthUp=new T.Vector3();
+  private mouthPlanes=[new T.Plane(),new T.Plane()];
+  private mouthMaterials=new Map<number,T.SpriteMaterial>();
   constructor(world: World) {
     super(world);
     this.monster = new OasisMonster(world);
+    world.renderer.localClippingEnabled=true;
+    for(const frame of [12,13]){
+      const material=this.material('shepherd',frame).clone();
+      material.clippingPlanes=this.mouthPlanes;
+      this.mouthMaterials.set(frame,material);
+    }
     for(let n=0;n<3;n++)this.flowers.push(this.add('flower',PLANT_X+(n-1)*1.05,PLANT_Z+.1+(n%2)*.12));
 
     world.game.level.tiles.forEach((t,i)=>{
@@ -82,6 +95,18 @@ export class OasisSprites extends PixelSprites {
     }
     this.previousBeatTime=beat.time;
     this.monster.update(progress,time);
+    const swallow=swallowPose(beat.time);
+    this.monster.head.updateWorldMatrix(true,false);
+    this.mouthEntry.set(0,-1.25,2.4).applyMatrix4(this.monster.head.matrixWorld);
+    this.mouthSeat.set(0,-1.25,.55).applyMatrix4(this.monster.head.matrixWorld);
+    this.mouthCenter.set(0,0,0).applyMatrix4(this.monster.head.matrixWorld);
+    this.mouthUp.set(0,1,0).transformDirection(this.monster.head.matrixWorld);
+    // The sprite is a flat card, so rear pixels must be constrained to the actual
+    // mouth aperture: otherwise its hat/boots poke out above/below the closing shell.
+    const aperture=swallow.close>0?Math.max(0,Math.sin(swallow.opening)*1.2+swallow.lift-.1):100;
+    const center=this.mouthUp.dot(this.mouthCenter);
+    this.mouthPlanes[0].normal.copy(this.mouthUp);this.mouthPlanes[0].constant=-center+aperture;
+    this.mouthPlanes[1].normal.copy(this.mouthUp).negate();this.mouthPlanes[1].constant=center+aperture;
     for(const a of this.walkers){
       a.sprite.position.copy(a.start);a.sprite.visible=true;a.sprite.scale.set(2,2.5,1);
       const frame=reduced?0:beat.flee>0&&beat.swallow<1?1+Math.floor(time*9+a.phase)%2:(time+a.phase*.71)%4.2>3.95?3:0;
@@ -95,14 +120,25 @@ export class OasisSprites extends PixelSprites {
           a.sprite.position.y=.04+Math.abs(Math.sin(time*16))*.12;
           a.sprite.material=this.material('shepherd',beat.flee>0?10+Math.floor(time*10)%2:9,beat.flee>0);
         }
-        if(beat.swallow>0){
-          a.sprite.position.set(T.MathUtils.lerp(-1.3,PLANT_X,beat.swallow),.04+Math.sin(beat.swallow*Math.PI)*2.3+beat.swallow*2.1,T.MathUtils.lerp(5.4,PLANT_Z+.35,beat.swallow));
-          a.sprite.material=this.material('shepherd',12+Math.floor(time*12)%2);
-          // Remains 32 px per tile throughout: depth occlusion carries him into the jaw.
-          a.sprite.visible=beat.swallow<1;
+        if(beat.time>6.6){
+          // First lift into a clear staging point in front of the open mouth.
+          // Then travel along its normal; keep the entire billboard at full scale.
+          const u=swallow.approach,v=1-u,end=this.mouthEntry;
+          a.sprite.position.set(
+            v*v*v*-1.3+3*v*v*u*-1.3+3*v*u*u*(end.x-1.2)+u*u*u*end.x,
+            v*v*v*.04+3*v*v*u*3.8+3*v*u*u*end.y+u*u*u*end.y,
+            v*v*v*5.4+3*v*v*u*5.4+3*v*u*u*end.z+u*u*u*end.z,
+          );
+          if(swallow.insert>0)a.sprite.position.lerpVectors(this.mouthEntry,this.mouthSeat,swallow.insert);
+          a.sprite.material=this.mouthMaterials.get(12+Math.floor(time*12)%2)!;
+          // Actual jaw geometry occludes him before visibility is retired.
+          a.sprite.visible=!swallow.hidden;
         }
-        if(beat.flee>0&&beat.swallow<1)this.monster.vine(0,a.sprite.position.x,a.sprite.position.y+.7,a.sprite.position.z,time);
-        a.sprite.userData.frame=beat.swallow>0?12+Math.floor(time*12)%2:beat.grow>.55?beat.flee>0?10+Math.floor(time*10)%2:9:frame;
+        if(beat.flee>0&&!swallow.hidden){
+          const release=T.MathUtils.smoothstep(swallow.insert,.35,1);
+          this.monster.vine(0,T.MathUtils.lerp(a.sprite.position.x-.7,1.3,release),T.MathUtils.lerp(a.sprite.position.y+.65,.8,release),T.MathUtils.lerp(a.sprite.position.z+.15,2.5,release),time);
+        }
+        a.sprite.userData.frame=beat.time>6.6?12+Math.floor(time*12)%2:beat.grow>.55?beat.flee>0?10+Math.floor(time*10)%2:9:frame;
       }else{
         const n=a.phase-1,travel=beat.sheep[n];
         a.sprite.position.set(T.MathUtils.lerp(a.start.x,2.5+(n-1)*1.12,travel),.04+Math.sin(travel*Math.PI)*2.6,T.MathUtils.lerp(a.start.z,4.3,travel));
@@ -121,5 +157,5 @@ export class OasisSprites extends PixelSprites {
     });
     this.grass.forEach(s=>{s.visible=beat.bloom>.5;s.material=this.material('grass',1);});
   }
-  override dispose(){super.dispose();this.monster.dispose();}
+  override dispose(){for(const m of this.mouthMaterials.values())m.dispose();super.dispose();this.monster.dispose();}
 }
