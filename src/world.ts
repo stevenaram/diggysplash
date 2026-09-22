@@ -321,6 +321,8 @@ export class World {
         tile.position.y = -0.3;
       if (["channel", "target", "basin"].includes(t))
         tile.material = this.mat(t === "basin" ? 0x94603b : 0x6a452d, "soil");
+      if(bridge && (t === "basin" || t === "target"))
+        tile.material=this.mat(0xd0d3d1,"stone");
       if (["source", "channel", "target", "basin", "aqueduct"].includes(t))
         this.addWater(i);
     }
@@ -474,7 +476,7 @@ export class World {
     const x=gridWorld(i%SIZE)+(city?1:-1)*TILE_SIZE/2, z=gridWorld(Math.floor(i/SIZE))-(city||bridge?0:TILE_SIZE);
     if(bridge){
       // A narrow stone race runs left-to-right beneath the paddles. Its left mouth is open.
-      this.box(this.root,x,-.43,z,3.85,.16,1.85,0x716555,"stone");
+      this.box(this.root,x,-.16,z,3.85,.03,1.85,0xd0d3d1,"stone");
       for(const edge of [-1,1])
         this.box(this.root,x,-.03,z+edge*.86,3.9,.32,.22,0xc5b696,"stone");
       this.box(this.root,x+1.88,-.03,z,.18,.32,1.8,0xb5a384,"stone");
