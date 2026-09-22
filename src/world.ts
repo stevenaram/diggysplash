@@ -1,3 +1,4 @@
+import {bakeColored} from './battle-mesh';
 import * as T from "three";
 import { reducedMotion } from "./motion";
 import { Game, SIZE, CELL_COUNT, TILE_SIZE, BORDER_WIDTH, BOARD_EXTENT, gridWorld } from "./game";
@@ -271,13 +272,12 @@ export class World {
     const bridge = this.game.level.story?.kind === "bridge";
     const half = BOARD_EXTENT / 2;
     if (bridge) {
-      // Three entire columns (x=0..6) form an uninterrupted black chasm.
-      this.box(this.root,-half/2,-1.5,0,half,2.4,BOARD_EXTENT,0x9b704f,"stone");
-      this.box(this.root,(half+6)/2,-1.5,-3.125,half-6,2.4,10.25,0x9b704f,"stone");
-      this.box(this.root,3,-5.5,0,6.3,.1,BOARD_EXTENT,0x17131f);
-      this.box(this.root,3,-2.8,-8.12,6,5.6,.12,0x17131f);
-      for(const x of [-.025,6.025])for(let n=0;n<5;n++)
-        this.box(this.root,x,-.65-n*1.2,0,.06,1.25,BOARD_EXTENT,[0x6d4e40,0x49343a,0x2c2230,0x17131f][Math.min(n,3)]);
+      // Half-tile margins leave a four-world-unit river between solid level banks.
+      this.box(this.root,(-half+1)/2,-1.5,0,half+1,2.4,BOARD_EXTENT,0x9b704f,"stone");
+      this.box(this.root,(half+5)/2,-1.5,0,half-5,2.4,BOARD_EXTENT,0x9b704f,"stone");
+      for(const x of [.5,5.5])this.box(this.root,x,-.09,0,1,.2,BOARD_EXTENT,0xe7c58d,"soil");
+      for(const x of [.99,5.01])for(let n=0;n<3;n++)
+        this.box(this.root,x,-.5-n*.8,0,.05,.82,BOARD_EXTENT,[0xa17a57,0x82664e,0x5d5547][n]);
     } else {
       this.box(this.root, 0, -0.82, 0, BOARD_EXTENT, 0.9, BOARD_EXTENT, 0xb97e55);
     }
@@ -487,8 +487,16 @@ export class World {
   bridgeMachine(i: number) {
     // Two reserved cells directly north of the inlet own the full mechanism footprint.
     const city=["city","harvest"].includes(this.game.level.story?.kind ?? "");
-    const x=gridWorld(i%SIZE)+(city?1:-1)*TILE_SIZE/2, z=gridWorld(Math.floor(i/SIZE))-(city?0:TILE_SIZE);
-    this.box(this.root,x,.06,z,3.8,.16,1.5,0x9c8d72,"stone");
+    const bridge=this.game.level.story?.kind === "bridge";
+    const x=gridWorld(i%SIZE)+(city?1:-1)*TILE_SIZE/2, z=gridWorld(Math.floor(i/SIZE))-(city||bridge?0:TILE_SIZE);
+    if(bridge){
+      // Recessed stone corners leave broad, legible water entrances on every side.
+      this.box(this.root,x,-.43,z,3.85,.16,1.85,0x716555,"stone");
+      for(const side of [-1,1])for(const end of [-1,1]){
+        this.box(this.root,x+side*1.72,-.02,z+end*.78,.48,.3,.3,0xc5b696,"stone");
+        this.box(this.root,x+side*1.87,-.02,z+end*.55,.18,.3,.65,0xb5a384,"stone");
+      }
+    }else this.box(this.root,x,.06,z,3.8,.16,1.5,0x9c8d72,"stone");
     for(const sign of [-1,1])
       this.box(this.root,x+sign*.76,1.02,z-.24,.24,1.88,.32,0x80533b,"wood");
     // Physical dimensions are doubled before UV generation: texels stay 1/32 tile.
@@ -509,11 +517,25 @@ export class World {
       const angle=k*Math.PI/4;
       const spoke=this.box(rotor,0,0,0,.22,3.16,.28,0xb6824d,"wood");
       spoke.rotation.z=angle;
-      const paddle=this.box(rotor,Math.sin(angle)*1.68,Math.cos(angle)*1.68,0,.6,.4,.6,0xa37145,"wood");
-      paddle.rotation.z=-angle;
+      if(bridge){
+        const bucket=new T.Group();bucket.position.set(Math.sin(angle)*1.68,Math.cos(angle)*1.68,0);bucket.rotation.z=-angle;rotor.add(bucket);
+        this.box(bucket,0,-.15,0,.62,.09,.65,0xa37145,"wood");
+        for(const side of [-1,1]){
+          this.box(bucket,side*.27,0,0,.08,.35,.65,0xb88854,"wood");
+          this.box(bucket,0,0,side*.285,.62,.35,.08,0x986d43,"wood");
+        }
+        const geometry=bakeColored(bucket);
+        for(const child of [...bucket.children]){if(child instanceof T.Mesh)child.geometry.dispose();child.removeFromParent();}
+        bucket.add(new T.Mesh(geometry,this.mat(0xffffff,'wood',true)));
+        const water=this.box(bucket,0,.04,0,.46,.035,.47,0x55d8d1);
+        water.name='bucket-water';water.userData.bucket=k;water.visible=false;
+      }else{
+        const paddle=this.box(rotor,Math.sin(angle)*1.68,Math.cos(angle)*1.68,0,.6,.4,.6,0xa37145,"wood");paddle.rotation.z=-angle;
+      }
     }
     const hub=this.cylinder(rotor,0,0,.22,.34,.32,0xf1c679);
     hub.rotation.x=Math.PI/2;
+    if(bridge)mount.traverse(o=>o.raycast=()=>{});
   }
   machine(i: number, n: number) {
     if(["bridge","city","harvest"].includes(this.game.level.story?.kind ?? "")) {this.bridgeMachine(i);return;}
@@ -753,7 +775,7 @@ export class World {
       this.camera,
     );
     const hits = this.ray
-      .intersectObjects(this.root.children, true)
+      .intersectObjects(this.game.level.story?.kind==="bridge"?this.tiles:this.root.children, true)
       .filter((hit) => {
         let o: T.Object3D | null = hit.object;
         while (o) {

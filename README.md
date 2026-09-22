@@ -24,7 +24,7 @@ The workflow builds with the `/diggysplash/` asset base required by the project 
 | Chapter | Minimum digs |
 | --- | --- |
 | Something in the water | 4 |
-| The way across | 9 |
+| The way across | 6 |
 | Welcome home | 11 |
 | Bread for everyone | 13 |
 | Caravan in the embers | 9 |
@@ -93,4 +93,4 @@ Stage one’s wilted flowers use four 28×36 billboard frames at the shared 32px
 
 The gameplay HUD shows only the shovel and remaining digs. Stage buttons use centered numbers in rounded squares, with corner checkmarks for completed stages. Automatic retry uses fading sand puffs and a fading notice, allowing the last particles to finish before the board reloads.
 
-Stage two now spans a three-column chasm. Its exact nine-dig route winds around rock and machinery reservations. A deterministic 11.8-second ending lowers the long bridge, starts the crossing, shakes the wheel loose, breaks the occupied deck into falling boards, tilts the far bank, then gives the last sheep a reaction and jump. Geometry remains 3D with metric pixel textures; the cast uses full-size directional and struggle sprites. Reduced motion shows the aftermath directly; retry/replay reconstructs all pieces.
+Stage two uses three canyon columns with half-tile margins, leaving a two-tile-wide rushing river between level banks. Its exact six-dig winding route fills a recessed stone wheel basin from an adjacent trench; rear cells remain diggable. A shared 3D palm matches stage one, and the shepherd has a separate four-frame walk. Water-filled wheel buckets spill during the runaway; the shortened bridge breaks above river splashes and drifting wreckage. The far-bank sheep stays clear of the bridge and jumps from solid ground. Retry/replay restores the entire scene; reduced motion shows the aftermath.

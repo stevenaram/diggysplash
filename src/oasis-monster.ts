@@ -2,7 +2,8 @@ import * as T from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { World } from './world';
 import { oasisBeats, PALM_END } from './oasis-timeline';
-import { MonsterArt, palmFrond } from './monster-art';
+import { buildPalm } from './palm-model';
+import { MonsterArt } from './monster-art';
 import { LivingVine } from './living-vine';
 import { metricUV } from './metric-uv';
 import { swallowPose } from './swallow-pose';
@@ -39,7 +40,7 @@ export class OasisMonster {
   constructor(public world:World) {
     world.root.add(this.root);
     this.green=this.art.material('skin');
-    const dark=this.art.material('skin'), pink=this.art.material('petal'), mouth=this.art.material('mouth'), ivory=this.art.material('tooth'), bark=this.art.material('bark'), palmLeaf=this.art.material('palm');
+    const dark=this.art.material('skin'), pink=this.art.material('petal'), mouth=this.art.material('mouth'), ivory=this.art.material('tooth'), bark=this.art.material('bark');
     this.blossomMaterial=this.art.material('blossom');
     dark.color.setHex(0x9ab69b);this.petalMaterial=pink;
     this.root.add(this.plant,this.palm,this.grill);
@@ -100,18 +101,8 @@ export class OasisMonster {
     for(let v=0;v<3;v++){
       const vine=new LivingVine(dark);this.root.add(vine.mesh);this.vines.push(vine);
     }
-    const trunk=new T.CatmullRomCurve3([new T.Vector3(0,0,0),new T.Vector3(-.08,1.4,0),new T.Vector3(-.3,3,-.2),new T.Vector3(-.45,4.4,-.45)]);
-    this.mesh(this.palm,new T.TubeGeometry(trunk,16,.22,8,false),bark,0,0,0);
-    this.palm.add(this.crown);this.crown.position.set(-.45,4.4,-.45);
-    // Broad lateral fans and short front fronds leave the trunk visible at 60° tilt.
-    for(let n=0;n<8;n++){
-      const angle=n*Math.PI/4,front=Math.sin(angle)<-.3;
-      const frond=this.mesh(this.crown,palmFrond(front?1.05:1.8+(n%2)*.2),palmLeaf,0,0,0);
-      frond.name='palm-frond';frond.userData.azimuth=angle;frond.rotation.y=angle;
-      frond.rotation.z=front?.3:n%2?.12:.02;
-      frond.userData.baseTilt=frond.rotation.z;this.fronds.push(frond);
-    }
-    for(let n=0;n<3;n++)this.mesh(this.crown,new T.SphereGeometry(.16,7,5),bark,Math.cos(n*2.1)*.2,-.12,Math.sin(n*2.1)*.2);
+    const palm=buildPalm(this.palm,this.art);
+    this.crown=palm.crown;this.fronds.push(...palm.fronds);
     this.grill.position.set(2.5,0,4.3);
     for(const x of [-1.9,1.9])for(const sign of [-1,1]){
       const leg=this.mesh(this.grill,new T.CylinderGeometry(.09,.12,1.8,6),bark,x,.8,sign*.22);leg.rotation.x=sign*.32;

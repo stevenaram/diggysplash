@@ -88,20 +88,20 @@ const oasis = board(
 const bridge = board(
   "bridge",
   "The way across",
-  "Power the bridge wheel.",
+  "Fill the wheel basin.",
   "That was the load-bearing wheel!",
   [
     "~..#|||_",
     "##..|||_",
-    "..._|||_",
-    "..__|||_",
-    "#.__|||_",
-    "...O|||_",
+    "..#.|||_",
+    "....|||_",
+    "..bO|||_",
+    "....|||_",
     "....|||_",
     "....|||_",
   ],
-  [1,2,10,18,17,25,33,41,42],
-  9,
+  [1,2,10,11,19,27],
+  6,
 );
 const city = board(
   "city",

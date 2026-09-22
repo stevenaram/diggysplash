@@ -1,15 +1,23 @@
+import {bakeColored} from './battle-mesh';
 import * as T from 'three';
 import {gridWorld,SIZE} from './game';
 import {PixelSprites} from './pixel-sprites';
 import type {World} from './world';
 import {bridgeBeats} from './bridge-timeline';
+import {buildPalm} from './palm-model';
+import {MonsterArt} from './monster-art';
+import {metricUV} from './metric-uv';
+import {BridgeRiver} from './bridge-river';
 import {ramp} from './oasis-timeline';
 
 /** A deterministic physical chain reaction, with full-size camera-facing actors. */
 export class BridgeSprites extends PixelSprites {
   cast:{sprite:T.Sprite;kind:'shepherd'|'sheep'}[]=[];
   deck=new T.Group();
-  ledge=new T.Group();
+  river:BridgeRiver;
+  palmArt=new MonsterArt();
+  fronds:T.Mesh[]=[];
+  buckets:T.Object3D[]=[];
   pieces:{mesh:T.Object3D;start:T.Vector3;n:number}[]=[];
   rubble:{mesh:T.Mesh;start:T.Vector3;n:number}[]=[];
   wheel:T.Group;
@@ -18,46 +26,46 @@ export class BridgeSprites extends PixelSprites {
   private previous=0;
   constructor(world:World){
     super(world);
-    this.add('palm',7,-5.5);
+    const palm=new T.Group();palm.position.set(6.7,0,-5.2);this.root.add(palm);
+    this.fronds=buildPalm(palm,this.palmArt).fronds;
+    palm.traverse(o=>{if(o instanceof T.Mesh){const old=o.geometry;o.geometry=metricUV(old);if(old!==o.geometry)old.dispose();}});
+    this.river=new BridgeRiver(world,this.root);
     for(const [i,t] of world.game.level.tiles.entries())if(t==='rock')this.add('rock',gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE)));
     for(const kind of ['shepherd','sheep','sheep'] as const)this.cast.push({sprite:this.add(kind,0,0),kind});
     this.alarm=this.add('alarm',7,5);
     this.wheel=world.root.getObjectByName('bridge-wheel-mount') as T.Group;
     this.wheelStart.copy(this.wheel.position);
-    this.deck.position.set(-.25,.15,5.05);this.root.add(this.deck);
+    this.wheel.traverse(o=>{if(o.name==='bucket-water')this.buckets.push(o);});
+    this.deck.position.set(.65,.15,5.05);this.root.add(this.deck);
     // Individual boards can break independently; rails stay outside the cast's silhouette.
-    for(let n=0;n<24;n++){
+    for(let n=0;n<17;n++){
       const board=world.box(this.deck,.14+n*.275,0,0,.25,.16,2.8,n%3?0xb88b59:0x9e7046,'wood');
       this.pieces.push({mesh:board,start:board.position.clone(),n});
     }
     for(const z of [-1.38,1.38]){
-      for(let n=0;n<7;n++){
-        const post=world.box(this.deck,.12+n*1.05,.35,z,.1,.8,.1,0x8c6446,'wood');
+      for(let n=0;n<5;n++){
+        const post=world.box(this.deck,.12+n*1.1,.35,z,.1,.8,.1,0x8c6446,'wood');
         this.pieces.push({mesh:post,start:post.position.clone(),n:n*3});
       }
-      for(let n=0;n<6;n++){
-        const rail=world.box(this.deck,.63+n*1.05,.65,z,1.06,.09,.09,0xc0a477,'wood');
+      for(let n=0;n<4;n++){
+        const rail=world.box(this.deck,.67+n*1.1,.65,z,1.11,.09,.09,0xc0a477,'wood');
         this.pieces.push({mesh:rail,start:rail.position.clone(),n:n*4});
       }
     }
-    for(const x of [-.45,6.45])for(const z of [3.5,6.6])world.box(this.root,x,.4,z,.28,.9,.28,0x967858,'stone');
-    // Stone lip is a physical hinged piece: it slants toward the chasm after impact.
-    this.ledge.position.set(7,-.09,5);this.root.add(this.ledge);
-    for(const i of [47,55,63])world.tiles[i].visible=false;
-    world.box(this.ledge,0,0,0,1.98,.25,6,0xd9b884,'stone');
-    world.box(this.ledge,0,-1.4,0,1.98,2.4,6,0x9b704f,'stone');
-    // Fractured banks recede into dark strata; no visible bottom, water, or floor grid.
-    for(const x of [-.08,6.08])for(let n=0;n<8;n++){
-      const shard=world.shaded(new T.DodecahedronGeometry(.36,0),n%2?0x805c45:0xa17753,'stone');
-      shard.position.set(x,-.4-(n%3)*.4,-7+n*2);shard.scale.set(.5,1.3,1.8);this.root.add(shard);
+    for(const x of [.55,5.45])for(const z of [3.5,6.6])world.box(this.root,x,.4,z,.28,.9,.28,0x967858,'stone');
+    // Both banks remain level throughout. Half-tile margins keep the cast clear of rails.
+    for(const x of [1.02,4.98])for(let n=0;n<8;n++){
+      const shard=world.shaded(new T.DodecahedronGeometry(.27,0),n%2?0x897656:0xa38b64,'stone');
+      shard.position.set(x,-.45-(n%3)*.35,-7+n*2);shard.scale.set(.45,1,1.3);this.root.add(shard);
     }
     for(let n=0;n<26;n++){
       const chunk=world.shaded(new T.DodecahedronGeometry(.1+(n%3)*.055,0),n%2?0xb68c5f:0x846046,'stone');
-      const start=new T.Vector3(n%2?6.1:-.1,.05,3.9+(n%7)*.36);
+      const start=new T.Vector3(n%2?4.95:1.05,.05,3.9+(n%7)*.36);
       this.root.add(chunk);this.rubble.push({mesh:chunk,start,n});
     }
-    // A short shaft identifies the wheel as the bridge's drive.
-    const shaft=world.cylinder(this.root,-.7,.7,3.4,.07,1.8,0x9e835b);shaft.rotation.z=Math.PI/2;
+    for(const {mesh} of this.pieces)if(mesh instanceof T.Mesh){
+      const old=mesh.geometry;mesh.geometry=bakeColored(mesh,[mesh]);old.dispose();mesh.material=world.mat(0xffffff,'wood',true);
+    }
     this.update(0,0);
   }
   update(progress:number,time:number){
@@ -85,8 +93,13 @@ export class BridgeSprites extends PixelSprites {
     this.wheel.visible=b.collapse<1;
     const rotor=this.wheel.getObjectByName('bridge-wheel-rotor');
     if(rotor)rotor.rotation.z=-b.runaway*9-t*(b.lower>.9?2:0);
-    this.ledge.rotation.z=b.tilt*.38;
-    this.ledge.position.y=-.09-b.tilt*.28;
+    this.fronds.forEach((f,n)=>f.rotation.set(0,f.userData.azimuth,f.userData.baseTilt+(reduced?0:Math.sin(time*1.1+n*.8)*.04)));
+    this.buckets.forEach((water,n)=>{
+      water.visible=progress>0&&b.collapse<1;
+      water.position.y=.02+Math.sin(time*(b.runaway>0?18:5)+n)*(.025+b.runaway*.06);
+      water.rotation.z=Math.sin(time*15+n)*b.runaway*.3;
+    });
+    this.river.update(time,t,this.wheel,b.runaway,reduced);
     this.rubble.forEach(p=>{
       const f=ramp(t,5.17+(p.n%7)*.07,1.9);
       p.mesh.visible=f>0&&f<1;
@@ -99,8 +112,8 @@ export class BridgeSprites extends PixelSprites {
       a.sprite.visible=true;a.sprite.scale.set(2,2.5,1);
       if(n<2){
         const walk=ramp(t,1.65+n*.3,2.75);
-        a.sprite.position.set(T.MathUtils.lerp(n?-6.5:-4.8,n?.8:2.2,walk),.2,T.MathUtils.lerp(n?6.7:6.2,5.3+n*.3,walk));
-        if(walk>0&&walk<1)frame=(n?1:14)+Math.floor(time*8)%2;
+        a.sprite.position.set(T.MathUtils.lerp(n?-6.5:-4.8,n?2:3.4,walk),.2,T.MathUtils.lerp(n?6.7:6.2,5.3+n*.3,walk));
+        if(walk>0&&walk<1)frame=n?1+Math.floor(time*8)%2:16+Math.floor(time*8)%4;
         if(t>5.05){
           frame=n?6+Math.floor(time*12)%3:12+Math.floor(time*12)%2;
           const fall=ramp(t,5.22+n*.1,1.45);
@@ -109,10 +122,11 @@ export class BridgeSprites extends PixelSprites {
           a.sprite.visible=fall<1;
         }
       }else{
-        a.sprite.position.set(7-b.tilt*.4,.2+b.tilt*.1,5.1);
+        a.sprite.position.set(7,.2,2.4);
         if(b.jump>0){
-          a.sprite.position.x=T.MathUtils.lerp(6.6,3.6,b.jump);
+          a.sprite.position.x=T.MathUtils.lerp(7,3.6,b.jump);
           a.sprite.position.y=.2+Math.sin(b.jump*Math.PI)*2-b.jump*b.jump*11;
+          a.sprite.position.z=T.MathUtils.lerp(2.4,3.7,b.jump);
           frame=6+Math.floor(time*12)%3;
           a.sprite.visible=b.jump<1;
         }
@@ -121,6 +135,7 @@ export class BridgeSprites extends PixelSprites {
       a.sprite.userData.frame=frame;
     }
     this.alarm.visible=b.alarm&&!reduced;
-    this.alarm.position.set(6.6,1.55,2.76);
+    this.alarm.position.set(7,1.55,.06);
   }
+  override dispose(){super.dispose();this.palmArt.dispose();this.river.dispose();}
 }

@@ -30,7 +30,7 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
-    assert.equal(minimumDigs(l), [4, 9, 11, 13, 9, 10, 11, 12][n]);
+    assert.equal(minimumDigs(l), [4, 6, 11, 13, 9, 10, 11, 12][n]);
     assert.equal(l.budget, minimumDigs(l));
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);

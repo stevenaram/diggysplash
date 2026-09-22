@@ -117,6 +117,22 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
       poly([[7,10],[9,3],[19,2],[22,9]],gold);rect(10,4,8,3,light);rect(8,8,14,2,'#947249');
       rect(22,14,2,3,'#6bcbd0');dot(23,12,'#b5efdf');
     }
+    if(frame>=16&&frame<=19){
+      pixels.fill(undefined);
+      const phase=frame-16,bob=phase%2,feet=[[-3,3],[0,1],[3,-3],[1,0]][phase];
+      for(const [n,x] of [11,18].entries()){
+        poly([[x,29+bob],[x+3,29+bob],[x+3+feet[n],36],[x+feet[n],36]],n?deep:ink);
+        rect(x-1+feet[n],36,6,2,ink);
+      }
+      poly([[11,22+bob],[20,22+bob],[22,32],[10,32]],'#366c68');
+      rect(12,24+bob,6,7,'#5b9f88');rect(12,24+bob,2,4,'#87b59a');rect(10,30,12,2,tan);
+      const arm=[1,0,-1,0][phase];rect(18+arm,25+bob,3,7,'#5b9f88');rect(18+arm,31+bob,3,3,'#efc496');
+      rect(26,15,2,23,tan);rect(24,12,5,2,gold);rect(23,14,2,4,gold);
+      oval(15,17+bob,6,6,'#81604d');poly([[10,13+bob],[16,13+bob],[16,23+bob],[10,22+bob],[10,19+bob],[8,18+bob],[10,16+bob]],'#efc496');
+      dot(10,17+bob,ink);rect(10,22+bob,3,1,'#765249');
+      oval(14,11+bob,12,3,tan);oval(13,10+bob,12,2,gold);
+      poly([[7,10+bob],[9,3+bob],[19,2+bob],[22,9+bob]],gold);rect(10,4+bob,8,3,light);rect(8,8+bob,14,2,'#947249');
+    }
   } else if(kind==='sheep') {
     const walk=frame===1||frame===2, step=frame===2?1:0, drink=frame===4||frame===5;
     rect(7,30,3,5+(walk?step:0),deep);rect(13,31,3,4-(walk?step:0),ink);rect(22,30,3,5-(walk?step:0),deep);
