@@ -120,7 +120,7 @@ export class BridgeSprites extends PixelSprites {
       if(n<2){
         const walk=ramp(t,1.65+n*.3,2.75);
         a.sprite.position.set(T.MathUtils.lerp(n?-6.5:-4.8,n?2:3.4,walk),.2,T.MathUtils.lerp(n?6.7:6.2,5.3+n*.3,walk));
-        if(walk>0&&walk<1)frame=n?1+Math.floor(time*8)%2:16+Math.floor(time*8)%4;
+        if(walk>0&&walk<1)frame=1+Math.floor(time*8)%2;
         if(t>5.05){
           frame=n?6+Math.floor(time*12)%3:12+Math.floor(time*12)%2;
           const fall=ravineFall(t,5.22+n*.1,2.7);
@@ -141,7 +141,7 @@ export class BridgeSprites extends PixelSprites {
           a.sprite.visible=fall.progress<1;
         }
       }
-      a.sprite.material=this.material(a.kind,reduced?0:frame,n===2||(n===0&&frame>=14));
+      a.sprite.material=this.material(a.kind,reduced?0:frame,n===2);
       a.sprite.userData.frame=frame;
     }
     this.alarm.visible=b.alarm&&!reduced;
