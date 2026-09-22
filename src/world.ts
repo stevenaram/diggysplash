@@ -1,7 +1,8 @@
+import {WaterEffects} from './water-effects';
 import {bakeColored} from './battle-mesh';
 import * as T from "three";
 import { reducedMotion } from "./motion";
-import { Game, SIZE, CELL_COUNT, TILE_SIZE, BORDER_WIDTH, BOARD_EXTENT, gridWorld } from "./game";
+import { Game, SIZE, CELL_COUNT, TILE_SIZE, BORDER_WIDTH, BOARD_EXTENT, gridWorld, connections } from "./game";
 import { SurfaceTextures, type Surface } from "./textures";
 import type { CreatureCue } from "./creature-sound";
 import { StoryScene } from "./story";
@@ -40,6 +41,7 @@ export class World {
   frame = 0;
   last = 0;
   wetAt = new Map<number, number>();
+  waterEffects!:WaterEffects;
   particles: { mesh: T.Mesh; v: T.Vector3; life: number; dust?:boolean; duration?:number }[] = [];
   onSettled = () => {};
   settled = false;
@@ -242,6 +244,7 @@ export class World {
     this.palms = [];
     this.markers = [];
     this.wetAt.clear();
+    this.waterEffects=new WaterEffects(this.root);
     this.particles = [];
     const bridge = this.game.level.story?.kind === "bridge";
     const half = BOARD_EXTENT / 2;
@@ -609,6 +612,13 @@ export class World {
     mesh.scale.set(TILE_SIZE, 1, TILE_SIZE);
     mesh.visible = false;
     mesh.userData.cell = i;
+    mesh.userData.origin=new T.Vector3(x,mesh.position.y,z);
+    mesh.userData.parent=-1;
+    mesh.userData.halfX=(elevated||pool) ? .985 : .72;
+    mesh.userData.halfZ=elevated ? .38 : pool ? .985 : .72;
+    mesh.userData.splashed=false;
+    const front=this.box(mesh,0,.025,0,.035,.012,.65,0xb6f4e2);
+    front.visible=false;mesh.userData.front=front;
     this.waters.set(i, mesh);
     if (!elevated && !pool)
       for (const [dx, dz] of [
@@ -689,17 +699,18 @@ export class World {
           );
       });
     }
-    let delay = 0;
     const ordered = [...this.game.wet].sort((a, b) => a[1] - b[1]);
-    for (const [i] of ordered)
-      if (!this.wetAt.has(i)) {
-        this.wetAt.set(i, this.elapsed + (this.reduced ? 0 : delay));
-        delay += 0.055;
-      }
+    for (const [i,depth] of ordered)if(!this.wetAt.has(i)){
+      const parent=connections(this.game.level,i).find(j=>(this.game.wet.get(j)??Infinity)<depth)??-1;
+      const start=this.game.level.sources.includes(i)?this.elapsed-.32:Math.max(this.elapsed,(this.wetAt.get(parent)??this.elapsed)+.22);
+      this.wetAt.set(i,this.reduced?this.elapsed-.32:start);
+      const water=this.waters.get(i);if(water){water.userData.parent=parent;water.userData.splashed=this.game.level.sources.includes(i);}
+    }
     for (const [i, m] of this.waters)
       if (!this.game.wet.has(i)) {
         m.visible = false;
         this.wetAt.delete(i);
+        m.userData.splashed=false;
       }
     this.hover.visible = false;
     this.onHover(null);
@@ -718,7 +729,7 @@ export class World {
   }
   burst(i: number, celebrate = false) {
     if (this.reduced) return;
-    if (this.story?.oasisSprites) { this.story.oasisSprites.burst(i); return; }
+    if(!celebrate){if(!this.game.wet.has(i))this.restoreDust(i);return;}
     for (let k = 0; k < (celebrate ? 45 : 8); k++) {
       const m = this.box(
         this.root,
@@ -880,24 +891,33 @@ export class World {
     for (const [i, m] of this.waters) {
       const at = this.wetAt.get(i);
       m.visible = at !== undefined && this.elapsed >= at;
-      if (at !== undefined && !m.visible) pending = true;
-      if (m.visible && !this.reduced)
-        m.position.y =
-          (this.game.level.tiles[i] === "aqueduct" ? (this.game.level.story?.kind === "city" ? 3.34 : 1.74) : -0.14) +
-          Math.sin(this.elapsed * 2 + i) * 0.006;
+      const fill=at===undefined?0:this.reduced?1:T.MathUtils.clamp((this.elapsed-at)/.3,0,1);
+      if(at!==undefined&&fill<1)pending=true;
+      const origin=m.userData.origin as T.Vector3,parent=m.userData.parent as number;
+      m.position.copy(origin);m.scale.set(TILE_SIZE,1,TILE_SIZE);
+      const dx=parent<0?0:Math.sign(i%SIZE-parent%SIZE),dz=parent<0?0:Math.sign(Math.floor(i/SIZE)-Math.floor(parent/SIZE));
+      const front=m.userData.front as T.Mesh;
+      front.visible=m.visible&&fill>0&&fill<1;
+      if(dx){m.scale.x=TILE_SIZE*Math.max(.001,fill);m.position.x-=dx*m.userData.halfX*(1-fill);front.position.set(dx*.35,.04,0);front.rotation.y=0;}
+      else if(dz){m.scale.z=TILE_SIZE*Math.max(.001,fill);m.position.z-=dz*m.userData.halfZ*(1-fill);front.position.set(0,.04,dz*.35);front.rotation.y=Math.PI/2;}
+      if(m.visible&&!this.reduced){
+        m.position.y+=Math.sin(this.elapsed*2+i)*.006-.075*(1-fill);
+        if(fill>.35&&!m.userData.splashed){this.waterEffects.splash(origin.x,origin.y,origin.z,this.elapsed);m.userData.splashed=true;}
+      }
       for (const arm of m.children)
         if (typeof arm.userData.neighbor === "number")
           arm.visible =
             this.wetAt.has(arm.userData.neighbor) &&
             this.elapsed >= this.wetAt.get(arm.userData.neighbor)!;
     }
+    this.waterEffects.update(this.elapsed,this.reduced);
     this.wheels.forEach((w, n) => {
       const active = this.waters.get(this.game.level.targets[n])?.visible;
       if(this.markers[n]) this.markers[n].material = this.mat(active ? 0x67d1bb : 0xe5a64e);
       if (active && !this.reduced && this.game.level.story?.kind !== "bridge") w.rotation.z -= dt * 1.3;
     });
     const active = this.game.level.targets.map(
-      (i) => !!this.waters.get(i)?.visible,
+      (i) => !!this.waters.get(i)?.visible && (this.reduced || this.elapsed-(this.wetAt.get(i)??Infinity)>=.3),
     );
     this.story?.update(dt, active, this.elapsed);
     if (this.game.won && !this.story?.done) pending = true;

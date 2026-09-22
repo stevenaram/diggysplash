@@ -1,3 +1,4 @@
+import {splashSound} from './splash-sound';
 import { BRIDGE_DURATION } from "./bridge-timeline";
 import { OASIS_DURATION } from "./oasis-timeline";
 import { showFirstDigHint } from "./tutorial";
@@ -67,6 +68,7 @@ function sound(
   try {
     audio ??= new AudioContext();
     void audio.resume();
+    if(kind === "dig" || kind === "water"){splashSound(audio);return;}
     if(['bloom','twist','roar','gasp','grab','gulp','uproot','sizzle'].includes(kind)){
       creatureSound(audio,kind as CreatureCue);return;
     }
@@ -123,9 +125,7 @@ function sound(
     const notes =
       kind === "win"
         ? [523, 659, 784, 1047]
-        : kind === "water"
-          ? [420, 620]
-          : kind === "undo"
+        : kind === "undo"
             ? [260]
             : kind === "machine"
               ? [90, 130, 90]
@@ -134,7 +134,7 @@ function sound(
       const osc = audio!.createOscillator(),
         gain = audio!.createGain(),
         t = audio!.currentTime + i * 0.09;
-      osc.type = kind === "dig" ? "triangle" : "sine";
+      osc.type = "sine";
       osc.frequency.setValueAtTime(hz, t);
       gain.gain.setValueAtTime(0, t);
       gain.gain.linearRampToValueAtTime(0.035, t + 0.012);
@@ -235,7 +235,7 @@ function autoRetry(){
       const cell=game.digs[game.digs.length-1];
       game.undo();world.sync();
       if(!world.reduced)world.restoreDust(cell);
-      sound("dig");update();
+      sound("undo");update();
       retryTimer=window.setTimeout(rewind,interval);
     }else {
       $("#retry-notice").classList.add("leaving");
@@ -346,6 +346,7 @@ if (import.meta.env.DEV)
       get game() {
         return game;
       },
+      get waterAnimation(){return [...world.waters].map(([i,m])=>({cell:i,visible:m.visible,scale:m.scale.toArray(),start:world.wetAt.get(i),parent:m.userData.parent}));},
       get renderStats() {
         return {
           ...world.renderer.info.render,
