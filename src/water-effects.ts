@@ -23,12 +23,23 @@ export class WaterEffects {
       const age=time-b.at,life=b.soil?.42:.48,visible=age>=0&&age<life;
       for(let j=0;j<12;j++){
         const a=j*2.399+n*.7,speed=.8+(j%3)*.25;
-        const r=b.soil?.15:0.12;
-        this.dummy.position.set(b.x+Math.cos(a)*(r+age*speed),b.y+age*(b.soil?2.8:3.2)-age*age*7.5,b.z+Math.sin(a)*(r+age*speed));
-        const scale=visible?Math.pow(Math.max(0,1-age/life),.7):0;
-        // Water jets briefly stretch upward; soil clods tumble in a scooping arc.
-        this.dummy.scale.set(scale*(b.soil?1.1:.65),scale*(b.soil?.8:2.8),scale*(b.soil?1:.65));
-        this.dummy.rotation.set(b.soil?a+age*8:Math.sin(a)*age*2,age*3,b.soil?a:Math.cos(a)*age*2);
+        if(b.soil){
+          // Three irregular pebbles per side, distributed around the trench lip.
+          const edge=Math.floor(j/3),along=(j%3-1)*.53+Math.sin(n+j)*.07;
+          const rim=.68+(j%2)*.06,out=age*(.22+(j%3)*.09);
+          const x=edge===0?-rim-out:edge===1?rim+out:along;
+          const z=edge===2?-rim-out:edge===3?rim+out:along;
+          this.dummy.position.set(b.x+x,Math.max(.015,b.y+.09+age*(1.6+(j%3)*.22)-age*age*6),b.z+z);
+          const fade=visible?Math.min(1,(life-age)/.12):0,size=.48+(j%4)*.13;
+          this.dummy.scale.set(size*fade,size*(.65+(j%3)*.12)*fade,size*(.8+(j%2)*.25)*fade);
+          this.dummy.rotation.set(a+age*9,j+age*5,a-age*7);
+        }else{
+          // Preserve the approved water jet motion and proportions exactly.
+          this.dummy.position.set(b.x+Math.cos(a)*(.12+age*speed),b.y+age*3.2-age*age*7.5,b.z+Math.sin(a)*(.12+age*speed));
+          const scale=visible?Math.pow(Math.max(0,1-age/life),.7):0;
+          this.dummy.scale.set(scale*.65,scale*2.8,scale*.65);
+          this.dummy.rotation.set(Math.sin(a)*age*2,age*3,Math.cos(a)*age*2);
+        }
         this.dummy.updateMatrix();this.drops.setMatrixAt(n*12+j,this.dummy.matrix);
         this.drops.setColorAt(n*12+j,b.soil?this.sand:this.water);
       }
