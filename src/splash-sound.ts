@@ -49,3 +49,13 @@ export function scoopSound(ctx:AudioContext){
   filter.type='lowpass';filter.frequency.value=850;gain.gain.value=.035;
   source.connect(filter).connect(gain).connect(ctx.destination);source.start(t);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
 }
+
+/** Short, subdued metal-on-stone tick for a rejected dig. */
+export function blockedSound(ctx:AudioContext){
+  const t=ctx.currentTime;
+  for(const hz of [1730,2810]){
+    const osc=ctx.createOscillator(),gain=ctx.createGain();osc.frequency.value=hz;
+    gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(.012,t+.002);gain.gain.exponentialRampToValueAtTime(.0001,t+.065);
+    osc.connect(gain).connect(ctx.destination);osc.start(t);osc.stop(t+.075);osc.onended=()=>{osc.disconnect();gain.disconnect();};
+  }
+}

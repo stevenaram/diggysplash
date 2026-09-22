@@ -1,5 +1,5 @@
 import {timberSound} from './timber-sound';
-import {splashSound,scoopSound} from './splash-sound';
+import {splashSound,scoopSound,blockedSound} from './splash-sound';
 import { BRIDGE_DURATION } from "./bridge-timeline";
 import { OASIS_DURATION } from "./oasis-timeline";
 import { showFirstDigHint } from "./tutorial";
@@ -63,12 +63,13 @@ let retryTimer=0;
 let retryGeneration=0;
 function sound(
   kind:
-    "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact" | "wood" | CreatureCue,
+    "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact" | "wood" | "blocked" | CreatureCue,
 ) {
   if (muted) return;
   try {
     audio ??= new AudioContext();
     void audio.resume();
+    if(kind === "blocked"){blockedSound(audio);return;}
     if(kind === "wood"){timberSound(audio);return;}
     if(kind === "dig"){scoopSound(audio);return;}
     if(kind === "water"){splashSound(audio);return;}
@@ -196,8 +197,8 @@ function showDigDrop(i: number) {
   window.setTimeout(() => drop.remove(), 2400);
 }
 function dig(i: number) {
-  if(retrying)return;
-  if (!game.dig(i)) return;
+  if(retrying||game.won)return;
+  if (!game.dig(i)){sound(world.tapBlocked(i));return;}
   showDigDrop(i);
   world.burst(i);
   world.sync();

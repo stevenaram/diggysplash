@@ -719,6 +719,11 @@ export class World {
     this.hover.visible = false;
     this.onHover(null);
   }
+  tapBlocked(i:number){
+    const water=this.waters.get(i),wet=!!water?.visible;
+    if(!this.reduced)this.waterEffects.tap(gridWorld(i%SIZE),wet?water!.position.y:this.game.level.tiles[i]==='rock'?.55:.12,gridWorld(Math.floor(i/SIZE)),this.elapsed,wet);
+    return wet?'water':'blocked';
+  }
   restoreDust(i:number){
     if(this.reduced)return;
     for(let n=0;n<7;n++){
@@ -787,6 +792,9 @@ export class World {
       if (typeof object.userData.cell === "number") return object.userData.cell;
       object = object.parent;
     }
+    // Noninteractive scenery can cover a tile; still let that tile give tap feedback.
+    const ground=this.ray.ray.intersectPlane(new T.Plane(new T.Vector3(0,1,0),0),new T.Vector3());
+    if(ground){const x=Math.floor((ground.x+SIZE*TILE_SIZE/2)/TILE_SIZE),z=Math.floor((ground.z+SIZE*TILE_SIZE/2)/TILE_SIZE);if(x>=0&&x<SIZE&&z>=0&&z<SIZE)return z*SIZE+x;}
     return -1;
   }
   highlight(i: number) {
