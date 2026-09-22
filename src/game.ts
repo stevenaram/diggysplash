@@ -23,7 +23,6 @@ export interface Level {
   budget: number;
   solution: number[];
   links?: [number, number][];
-  starThresholds?: { three: number; two: number };
   story?: {
     kind:
       | "oasis"
@@ -65,13 +64,6 @@ export function connections(level: Level, i: number): number[] {
   }
   return ground;
 }
-export function ratingForDigs(level: Level, used: number): number {
-  const thresholds = level.starThresholds ?? {
-    three: level.solution.length,
-    two: level.budget - 1,
-  };
-  return used <= thresholds.three ? 3 : used <= thresholds.two ? 2 : 1;
-}
 export class Game {
   digs: number[] = [];
   wet = new Map<number, number>();
@@ -87,9 +79,7 @@ export class Game {
   get won() {
     return this.active.every(Boolean);
   }
-  get stars() {
-    return this.won ? ratingForDigs(this.level, this.digs.length) : 0;
-  }
+
   get failed() {
     return this.remaining === 0 && !this.won;
   }

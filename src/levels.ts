@@ -20,7 +20,6 @@ function board(
   rows: string[],
   solution: number[],
   minimum: number,
-  extra: number,
 ): Level {
   if (rows.length !== SIZE || rows.some((row) => row.length !== SIZE))
     throw Error("Invalid 8 × 8 board");
@@ -40,8 +39,7 @@ function board(
     sources,
     targets,
     solution,
-    budget: minimum + extra,
-    starThresholds: { three: minimum, two: minimum + Math.ceil(extra / 2) },
+    budget: minimum,
     story: {
       kind,
       title,
@@ -86,7 +84,6 @@ const oasis = board(
   ],
   [25, 26, 27, 28],
   4,
-  4,
 );
 const bridge = board(
   "bridge",
@@ -105,7 +102,6 @@ const bridge = board(
   ],
   [17, 18, 26, 34, 35],
   5,
-  4,
 );
 const city = board(
   "city",
@@ -124,7 +120,6 @@ const city = board(
   ],
   [48,49,50,51,43,35,52,53,54,46,38],
   11,
-  5,
 );
 const harvest = board(
   "harvest",
@@ -145,7 +140,6 @@ const harvest = board(
   // equally short western approach costs two extra digs when feeding both mills.
   [40,32,24,25,26,27,35,43,44,45,37,38,30],
   13,
-  2,
 );
 const caravan = board(
   "caravan",
@@ -164,7 +158,6 @@ const caravan = board(
   ],
   [24, 16, 17, 10, 11, 12, 22, 30, 38],
   9,
-  5,
 );
 const temple = board(
   "temple",
@@ -183,7 +176,6 @@ const temple = board(
   ],
   [33, 25, 34, 35, 36, 29, 30, 38, 46, 54],
   10,
-  5,
 );
 const fortress = board(
   "fortress",
@@ -202,7 +194,6 @@ const fortress = board(
   ],
   [32, 24, 16, 17, 26, 27, 28, 29, 30, 38, 46],
   11,
-  5,
 );
 const battle = board(
   "battle",
@@ -221,7 +212,6 @@ const battle = board(
   ],
   [33, 25, 34, 17, 42, 35, 50, 36, 28, 29, 30, 38],
   12,
-  5,
 );
 export const levels = [
   oasis,

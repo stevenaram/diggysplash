@@ -9,7 +9,6 @@ import {
   CELL_COUNT,
   cell,
   minimumDigs,
-  ratingForDigs,
   connections,
   type Level,
   type Terrain,
@@ -32,13 +31,11 @@ test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
     assert.equal(minimumDigs(l), [4, 5, 11, 13, 9, 10, 11, 12][n]);
-    assert.equal(l.starThresholds!.three, minimumDigs(l));
-    assert.equal(l.budget - l.starThresholds!.three, n===3?2: n===0||n===1?4:5);
+    assert.equal(l.budget, minimumDigs(l));
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);
     assert.equal(g.won, true);
     assert.ok(g.remaining >= 0);
-    assert.equal(g.stars, 3);
   });
 });
 test("orthogonal flow connects dry trenches and never crosses a diagonal", () => {
@@ -98,36 +95,6 @@ test("one shared connected network powers all branches and existing channels", (
   }
 });
 
-test("star thresholds are inclusive and all successful routes earn at least one star", () => {
-  for (const level of levels) {
-    const { three, two } = level.starThresholds!;
-    assert.equal(ratingForDigs(level, three), 3);
-    assert.equal(ratingForDigs(level, three + 1), 2);
-    assert.equal(ratingForDigs(level, two), 2);
-    assert.equal(ratingForDigs(level, two + 1), 1);
-    assert.equal(ratingForDigs(level, level.budget), 1);
-  }
-});
-test("actual wins earn three, two, or one star from net digs after undo", () => {
-  const level = levels[0];
-  for (const [extra, stars] of [
-    [0, 3],
-    [2, 2],
-    [3, 1],
-    [4, 1],
-  ]) {
-    const game = new Game(level);
-    for (let x = 1; x <= extra; x++) game.dig(cell(x, 1));
-    level.solution.forEach((i) => game.dig(i));
-    assert.equal(game.won, true);
-    assert.equal(game.stars, stars);
-  }
-  const game = new Game(level);
-  game.dig(cell(1, 1));
-  game.undo();
-  level.solution.forEach((i) => game.dig(i));
-  assert.equal(game.stars, 3);
-});
 test("city wheels require separate ground branches and work in either order", () => {
   const level=levels[2], game=new Game(level);
   assert.equal(game.dig(cell(4,2)),false);
@@ -143,7 +110,6 @@ test("city wheels require separate ground branches and work in either order", ()
   assert.deepEqual(reverse.active,[false,true]);
   [43,35].forEach(i=>reverse.dig(i));
   assert.equal(reverse.won,true);
-  assert.equal(reverse.stars,3);
 });
 test("ravine blocks flow and cannot be dug; dry oasis fills without any gears", () => {
   const bridge = new Game(levels[1]);
@@ -156,11 +122,9 @@ test("ravine blocks flow and cannot be dug; dry oasis fills without any gears", 
 test("failure is reported only when the budget is exhausted without reaching the objective", () => {
   const game = new Game(levels[0]);
   assert.equal(game.failed, false);
-  assert.equal(game.stars, 0);
   for (let i = 0; i < CELL_COUNT && game.remaining > 0; i++)
     if (!game.level.solution.includes(i)) game.dig(i);
   assert.equal(game.failed, true);
-  assert.equal(game.stars, 0);
   game.undo();
   assert.equal(game.failed, false);
   assert.equal(game.remaining, 1);
@@ -175,7 +139,7 @@ test("the campaign escalates through five distinct consequences and a four-objec
   // Chapters 5–8 retain their original progression; chapter 4 is rebalanced separately.
   for (let n = 5; n < 8; n++)
     assert.ok(
-      levels[n].starThresholds!.three > levels[n - 1].starThresholds!.three,
+      levels[n].budget > levels[n - 1].budget,
     );
   assert.equal(levels[7].targets.length, 4);
   for (const level of levels.slice(3)) {
@@ -273,14 +237,10 @@ test("stage four rewards the shared eastern approach over the equally short west
   assert.deepEqual(efficient.active,[true,false]);
   level.solution.slice(5).forEach(i=>efficient.dig(i));
   assert.equal(efficient.won,true);
-  assert.equal(efficient.stars,3);
   const separate=new Game(level);
   [40,32,24,16,17].forEach(i=>separate.dig(i));
   assert.deepEqual(separate.active,[true,false]);
   [25,26,27,35,43,44,45,37,38,30].forEach(i=>separate.dig(i));
-  assert.equal(separate.won,true);
+  assert.equal(separate.won,false);
   assert.equal(separate.remaining,0);
-  assert.equal(separate.stars,1);
-  assert.ok(level.starThresholds!.three>levels[2].starThresholds!.three);
-  assert.ok(level.budget-level.starThresholds!.three<levels[2].budget-levels[2].starThresholds!.three);
 });

@@ -11,13 +11,11 @@ import { World } from "./world";
 import { toggleMotion } from "./motion";
 const icons = {
   motion: '<path d="m9 5 11 7-11 7Z"/><path d="M3 6h2M2 12h3M3 18h2"/>',
-  star: '<path d="m12 2 3 6.5 7 1-5 5 1.2 7-6.2-3.3-6.2 3.3 1.2-7-5-5 7-1Z"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   minus: '<path d="M5 12h14"/>',
   fit: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
   shovel:
     '<g transform="rotate(32 12 12)"><path d="M8 2h8v3a4 4 0 0 1-8 0Z" fill="#d7ac68"/><path d="M12 9v7" stroke="#a67542" stroke-width="3"/><path d="M7 15h10v4c0 2-3 4-5 5-2-1-5-3-5-5Z" fill="#8fa9a1"/><path d="M12 17v4" stroke="#e9f1db"/></g>',
-  undo: '<path d="M8 5 3 10l5 5M3 10h10a6 6 0 0 1 0 12" transform="translate(0 -2)"/>',
   restart: '<path d="M20 8a9 9 0 1 0 1 7M20 3v6h-6"/>',
   sound:
     '<path d="M11 4 6 8H3v8h3l5 4zM15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/>',
@@ -57,16 +55,10 @@ let battleNoise: AudioBuffer | undefined;
 let celebrated = false;
 let lastPowered = 0;
 let focused = game.level.solution[0];
-let bestStars: number[] = levels.map(() => 0);
-try {
-  const saved = JSON.parse(read("diggy-story-stars-thin-rim", "[]"));
-  if (Array.isArray(saved))
-    bestStars = bestStars.map((_, i) =>
-      Number.isInteger(saved[i]) ? Math.max(0, Math.min(3, saved[i])) : 0,
-    );
-} catch {
-  /* Older or unavailable storage is harmless. */
-}
+// Preserve existing completion saves; ratings no longer exist.
+let retrying=false;
+let retryTimer=0;
+let retryGeneration=0;
 function sound(
   kind:
     "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact" | CreatureCue,
@@ -157,13 +149,13 @@ function sound(
   }
 }
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
-<header><nav aria-label="Stages">${levels.map((_, n) => `<button class="stage" data-stage="${n}" aria-label="Stage ${n + 1}"><span>${n + 1}</span><small class="stage-stars" aria-hidden="true"></small></button>`).join("")}</nav>
+<header><nav aria-label="Stages">${levels.map((_, n) => `<button class="stage" data-stage="${n}" aria-label="Stage ${n + 1}"><span>${n + 1}</span><small class="stage-complete" aria-hidden="true"></small></button>`).join("")}</nav>
 </header>
 <main><div class="sun-disc" aria-hidden="true"></div>
-<div class="scene" tabindex="0" role="application" aria-label="Desert puzzle board. Click sand to dig. Drag to pan; scroll or pinch to zoom. Arrow keys select a tile, Enter digs, Z undoes."></div>
+<div class="scene" tabindex="0" role="application" aria-label="Desert puzzle board. Click sand to dig. Drag to pan; scroll or pinch to zoom. Arrow keys select a tile, Enter digs."></div>
 </main>
-<footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">14</strong><span class="budget">/ <span id="budget">14</span></span><div class="dig-pips" aria-hidden="true"></div></div><span class="divider"></span><div id="targets" aria-label="Water objectives"></div><span class="divider"></span><div class="actions"><button id="undo" class="icon-button" aria-label="Undo last dig" title="Undo · Z">${svg("undo")}</button><button id="restart" class="icon-button" aria-label="Restart stage" title="Restart · R">${svg("restart")}</button></div></div><div class="view-controls" role="group" aria-label="Camera controls"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">${svg("minus")}</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">${svg("plus")}</button><button id="overview" class="icon-button" aria-label="Show whole board" title="Show whole board">${svg("fit")}</button><button class="icon-button sound" aria-label="Mute sound">${svg("sound")}</button><button id="motion" class="icon-button" aria-label="Reduce animations">${svg("motion")}</button></div></footer>
-<dialog id="result" aria-labelledby="result-title" aria-describedby="result-message"><div class="result-chapter" id="result-chapter"></div><h2 id="result-title"></h2><p id="result-message" class="sr-only"></p><div class="result-stars" id="result-stars" aria-label="Stars earned"></div><div class="result-score" id="result-score"></div><div class="result-actions"><button id="result-primary" class="primary"></button><button id="result-secondary" class="secondary"></button></div></dialog>
+<footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">14</strong><span class="budget">/ <span id="budget">14</span></span><div class="dig-pips" aria-hidden="true"></div></div><span class="divider"></span><div id="targets" aria-label="Water objectives"></div></div><div class="view-controls" role="group" aria-label="Camera controls"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">${svg("minus")}</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">${svg("plus")}</button><button id="overview" class="icon-button" aria-label="Show whole board" title="Show whole board">${svg("fit")}</button><button class="icon-button sound" aria-label="Mute sound">${svg("sound")}</button><button id="motion" class="icon-button" aria-label="Reduce animations">${svg("motion")}</button></div></footer>
+<div id="retry-notice" role="status" aria-live="polite" hidden><strong>Out of digs</strong><span>Try again</span><div class="retry-track"><i></i></div></div><dialog id="result" aria-labelledby="result-title" aria-describedby="result-message"><div class="result-chapter" id="result-chapter"></div><h2 id="result-title"></h2><p id="result-message" class="sr-only"></p><div class="result-check" aria-hidden="true">${svg("check")}</div><div class="result-score" id="result-score"></div><div class="result-actions"><button id="result-primary" class="primary"></button><button id="result-secondary" class="secondary"></button></div></dialog>
 <div id="dig-tutorial" hidden role="img" aria-label="Dig the highlighted sand tile next to the water. Press Enter or tap it."><svg class="tutorial-tile" aria-hidden="true"><polygon /></svg><span class="tutorial-shovel" aria-hidden="true">${svg("shovel")}<i></i></span></div>
 <div id="status" class="sr-only" aria-live="polite"></div>`;
 const $ = <T extends HTMLElement>(q: string) => document.querySelector<T>(q)!;
@@ -179,7 +171,7 @@ try {
 }
 function updateTutorial(){
   const guide=$("#dig-tutorial"),i=game.level.solution[0];
-  guide.hidden=!showFirstDigHint(stage,completed,bestStars[0],game.digs,i,game.won);
+  guide.hidden=retrying||!showFirstDigHint(stage,completed,game.digs,i,game.won);
   if(guide.hidden)return;
   const p=world.screen(i),shovel=guide.querySelector<HTMLElement>(".tutorial-shovel")!;
   shovel.style.left=`${p.x}px`;shovel.style.top=`${p.y}px`;
@@ -187,14 +179,6 @@ function updateTutorial(){
   guide.querySelector("polygon")!.setAttribute("points",world.screenTile(i).map(p=>`${p.x},${p.y}`).join(" "));
 }
 world.onViewChanged=updateTutorial;
-function starMarkup(count: number) {
-  return [0, 1, 2]
-    .map(
-      (n) =>
-        `<span class="${n < count ? "earned" : "unearned"}">${svg("star")}</span>`,
-    )
-    .join("");
-}
 function showDigDrop(i: number) {
   const p = world.screen(i);
   const drop = document.createElement("div");
@@ -209,6 +193,7 @@ function showDigDrop(i: number) {
   window.setTimeout(() => drop.remove(), 2400);
 }
 function dig(i: number) {
+  if(retrying)return;
   const before = game.wet.size;
   if (!game.dig(i)) return;
   showDigDrop(i);
@@ -221,32 +206,39 @@ function closeResult() {
   if (result.open) result.close();
 }
 function showResult() {
-  const success = game.won;
-  $("#result-chapter").textContent =
-    `${String(stage + 1).padStart(2, "0")} / ${String(levels.length).padStart(2, "0")}`;
-  $("#result-title").textContent = success ? "Level complete" : "Level failed";
-  $("#result-message").textContent = success
-    ? game.level.story!.success
-    : "Out of digs. Try a shorter route.";
-  $("#result-stars").innerHTML = starMarkup(game.stars);
-  $("#result-stars").hidden = !success;
-  $("#result-stars").setAttribute("aria-label", `${game.stars} of 3 stars`);
-  $("#result-score").innerHTML =
-    `${svg("shovel")} <strong>${game.digs.length}</strong> / ${game.level.budget}<span>digs used</span>`;
-  $("#result-primary").innerHTML = success
-    ? stage === levels.length - 1
-      ? `Play again ${svg("restart")}`
-      : `Next level ${svg("arrow")}`
-    : `Retry ${svg("restart")}`;
-  $("#result-secondary").textContent = success
-    ? game.stars < 3
-      ? "Retry for more stars"
-      : "Replay level"
-    : "Undo last dig";
-  result.classList.toggle("failed", !success);
-  if (!result.open) {
-      result.showModal();
-  }
+  $("#result-chapter").textContent=`${stage+1} / ${levels.length}`;
+  $("#result-title").textContent="Level complete";
+  $("#result-message").textContent=game.level.story!.success;
+  $("#result-score").innerHTML="";
+  $("#result-primary").innerHTML=stage===levels.length-1?`Play again ${svg("restart")}`:`Next level ${svg("arrow")}`;
+  $("#result-secondary").textContent="Replay level";
+  if(!result.open)result.showModal();
+}
+function autoRetry(){
+  if(retrying)return;
+  retrying=true;
+  const generation=++retryGeneration;
+  stopCreatureSounds();
+  closeResult();
+  document.querySelectorAll(".dig-drop").forEach(drop=>drop.remove());
+  $("#retry-notice").hidden=false;
+  $("#dig-tutorial").hidden=true;
+  $("#app").classList.add("retrying");
+  sound("undo");
+  const interval=world.reduced?30:Math.min(160,1000/game.digs.length);
+  $("#retry-notice").style.setProperty("--retry-duration",`${(world.reduced?500:850)+interval*game.digs.length+220}ms`);
+  const rewind=()=>{
+    if(generation!==retryGeneration)return;
+    if(document.hidden){retryTimer=window.setTimeout(rewind,100);return;}
+    if(game.digs.length){
+      const cell=game.digs[game.digs.length-1];
+      game.undo();world.sync();
+      if(!world.reduced)world.burst(cell);
+      sound("dig");update();
+      retryTimer=window.setTimeout(rewind,interval);
+    }else retryTimer=window.setTimeout(()=>{if(generation===retryGeneration)load(stage);},220);
+  };
+  retryTimer=window.setTimeout(rewind,world.reduced?500:850);
 }
 const objectiveNames: Record<string, string[]> = {
   oasis: ["Watering hole"],
@@ -279,44 +271,44 @@ function update() {
         `<span class="target ${active ? "active" : ""}" role="img" title="${objectiveNames[game.level.story!.kind][n]}" aria-label="${objectiveNames[game.level.story!.kind][n]}: ${active ? "active" : "dry"}">${svg(active ? "check" : stage === 0 ? "drop" : "wheel")}</span>`,
     )
     .join("");
-  $<HTMLButtonElement>("#undo").disabled = !game.digs.length;
   $(".toolbar").classList.toggle("empty", game.failed && world.settled);
   document.querySelectorAll<HTMLButtonElement>(".stage").forEach((b, n) => {
     b.disabled = n > completed;
     b.classList.toggle("selected", n === stage);
     b.classList.toggle("done", n < completed);
     b.setAttribute("aria-current", n === stage ? "step" : "false");
-    b.setAttribute("aria-label", `Stage ${n + 1}, best ${bestStars[n]} stars`);
-    b.querySelector(".stage-stars")!.textContent =
-      "★".repeat(bestStars[n]) + "·".repeat(3 - bestStars[n]);
+    b.setAttribute("aria-label", `Stage ${n + 1}, ${n<completed?"complete":"incomplete"}`);
+    b.querySelector(".stage-complete")!.textContent = n<completed?"✓":"";
   });
   $(".sound").innerHTML = svg(muted ? "mute" : "sound");
   $(".sound").setAttribute("aria-label", muted ? "Enable sound" : "Mute sound");
   $(".sound").setAttribute("aria-pressed", String(muted));
   $("#status").textContent =
     world.settled && game.won
-      ? `${game.level.story!.success} Level complete. ${game.stars} stars.`
+      ? `${game.level.story!.success} Level complete. `
       : world.settled && game.failed
-        ? "Level failed. Out of digs. Retry or undo."
+        ? "Out of digs. Resetting the board."
         : `${game.remaining} digs remaining.`;
-  if (world.settled && (game.won || game.failed)) showResult();
+  if (world.settled && game.won && !retrying) showResult();
+  else if(world.settled&&game.failed&&!retrying)autoRetry();
   else closeResult();
 }
 world.onSettled = () => {
+  if(retrying)return;
   const powered = game.active.filter(Boolean).length;
   if (powered > lastPowered && stage > 0) sound("machine");
   lastPowered = powered;
   if (game.won && !celebrated) {
     celebrated = true;
     completed = Math.max(completed, stage + 1);
-    bestStars[stage] = Math.max(bestStars[stage], game.stars);
     save("diggy-completed", String(completed));
-    save("diggy-story-stars-thin-rim", JSON.stringify(bestStars));
     sound("win");
   }
   update();
 };
 function load(n: number) {
+  clearTimeout(retryTimer);retryGeneration++;retrying=false;
+  $("#retry-notice").hidden=true;$("#app").classList.remove("retrying");
   stopCreatureSounds();
   closeResult();
   document.querySelectorAll(".dig-drop").forEach(drop => drop.remove());
@@ -330,22 +322,11 @@ function load(n: number) {
   world.framePuzzle();
   update();
 }
-function undo() {
-  stopCreatureSounds();
-  closeResult();
-  game.undo();
-  celebrated = false;
-  world.sync();
-  sound("undo");
-  update();
-}
 $("#motion").onclick = () => { toggleMotion(); if(world.reduced)stopCreatureSounds(); update(); };
 matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", update);
-$("#undo").onclick = undo;
-$("#restart").onclick = () => load(stage);
 $("#result-primary").onclick = () =>
   load(game.won ? (stage === levels.length - 1 ? 0 : stage + 1) : stage);
-$("#result-secondary").onclick = () => (game.won ? load(stage) : undo());
+$("#result-secondary").onclick = () => load(stage);
 result.addEventListener("cancel", (e) => e.preventDefault());
 $("#zoom-in").onclick = () => world.zoomBy(1.25);
 $("#zoom-out").onclick = () => world.zoomBy(0.8);
@@ -393,11 +374,6 @@ host.addEventListener("keydown", (e) => {
     e.preventDefault();
     dig(focused);
   }
-});
-window.addEventListener("keydown", (e) => {
-  if (e.ctrlKey || e.metaKey || e.altKey) return;
-  if (e.key.toLowerCase() === "z") undo();
-  if (e.key.toLowerCase() === "r") load(stage);
 });
 world.onBattleSound = sound;
 world.onCreatureSound = sound;

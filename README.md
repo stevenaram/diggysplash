@@ -19,33 +19,33 @@ Every push to `main` runs the tests, builds the game, and deploys to GitHub Page
 
 The workflow builds with the `/diggysplash/` asset base required by the project URL. Normal local builds retain the root base. The existing ChatGPT Sites deployment remains separate and is not updated by this workflow.
 
-## Chapters and scoring
+## Chapters and completion
 
-| Chapter               | Water's consequence                                                                                    | Dig budget | Three stars | Two stars  | One star   |
-| --------------------- | ------------------------------------------------------------------------------------------------------ | ---------- | ----------- | ---------- | ---------- |
-| Something in the water | Water the north-bank flowers; a plant monster grows and stages a cartoon cookout. No gears.                                                  | 8          | ≤ 4 digs    | 5–6 digs   | 7–8 digs   |
-| The way across        | Power one wheel; the drawbridge lowers and the shepherd crosses to the lost sheep.                     | 9          | ≤ 5 digs    | 6–7 digs   | 8–9 digs   |
-| Welcome home          | Feed one wheel; a raised aqueduct supplies the second. Both portcullises rise and the villagers enter. | 11         | ≤ 6 digs    | 7–9 digs   | 10–11 digs |
-| Bread for everyone    | Restart two mills; golden wheat grows and bread appears.                                               | 12 | ≤ 7 digs | 8–10 digs | 11–12 digs |
-| Caravan in the embers | Three pumps extinguish burning wagons independently.                                                   | 14 | ≤ 9 digs | 10–12 digs | 13–14 digs |
-| The sleeping sun      | Awaken three shrines; a floating sun beacon lights the desert.                                         | 15 | ≤ 10 digs | 11–13 digs | 14–15 digs |
-| Before the storm      | Raise the wall, fill the cistern, and open the refuge gate; escort the convoy inside.                  | 16 | ≤ 11 digs | 12–14 digs | 15–16 digs |
-| The battle of Sunfall | Four water-powered trebuchets break the palisade, scatter the red army, and smash its siege engines.   | 17 | ≤ 12 digs | 13–15 digs | 16–17 digs |
+| Chapter | Minimum digs |
+| --- | --- |
+| Something in the water | 4 |
+| The way across | 5 |
+| Welcome home | 11 |
+| Bread for everyone | 13 |
+| Caravan in the embers | 9 |
+| The sleeping sun | 10 |
+| Before the storm | 11 |
+| The battle of Sunfall | 12 |
 
 Objectives have no numbered order. Thin sealed pipes visibly connect the later wheels to their machinery; these are delivery pipes, not extra puzzle channels. Each device reacts to its own water supply, while the final celebration waits for the whole level.
 
-Tiles span two world units. The map contains exactly 64 cells, and its surrounding lip is only 0.25 world units wide. Scenery no longer occupies an extra ring of tiles: paved, non-diggable cells inside the map provide mills and shrine terraces, caravan assembly areas, the refuge road, artillery positions, and opposing army formations. Chapters seven and eight reserve two northern rows for defenses; later stages also have a southern story lane and eastern machinery strip. The puzzle routes avoid these areas, and their minimum costs were recomputed with the offline solver. Chapter unlocks and mute preferences persist; medals have a new save key because the later puzzles changed.
+Tiles span two world units. The map contains exactly 64 cells, and its surrounding lip is only 0.25 world units wide. Scenery no longer occupies an extra ring of tiles: paved, non-diggable cells inside the map provide mills and shrine terraces, caravan assembly areas, the refuge road, artillery positions, and opposing army formations. Chapters seven and eight reserve two northern rows for defenses; later stages also have a southern story lane and eastern machinery strip. The puzzle routes avoid these areas, and their minimum costs were recomputed with the offline solver. Chapter completion and mute preferences persist.
 
-Three-star thresholds are verified minimum routes. Scores count the trenches currently dug: undo refunds the dig. The best star rating for each chapter persists and cannot be lowered by a worse replay. Winning on the final dig still succeeds. A failure result appears only after the last water animation settles.
+Each budget equals the verified minimum route cost. Levels are complete or incomplete; there are no ratings. Winning on the final dig succeeds. Otherwise, after water settles, a brief “Out of digs” cue appears, trenches rewind in reverse order, and the level resets automatically. Digging is locked during the rewind; changing stages cancels it. Reduced motion uses a shorter reset.
 
 ## Controls
 
 - Click or tap sand to dig; a shovel and the updated remaining count rise from each successfully dug tile. Hover only highlights valid sand. Dark soil beds and cut banks distinguish trenches from untouched sand, even when water is flowing.
 - Water travels through orthogonal ground connections. Elevated aqueduct sections use explicit links and cannot receive water from a trench underneath them.
 - Drag to pan, scroll or pinch to zoom; the corner-frame button shows the board. The fixed camera uses 60° tilt, 0° orbit, and 0° roll. The whole island fits the available width in portrait or height in landscape, with headroom for scenery. Stage buttons and toolbars move to side rails in landscape. Resizing and the frame button restore this fit.
-- Undo and restart are free. `Z` undoes; `R` restarts. Focus the board, use arrow keys to select a tile, and Enter or Space to dig.
-- Watch each consequence before the completion card appears. Continue, replay for a better score, or retry/undo a failed attempt. Numbered chapter buttons revisit unlocked levels.
-- Sound preference, chapter unlocks, and best stars are saved locally. In-progress trenches are not.
+- There are no undo or restart controls. Focus the board, use arrow keys to select a tile, and Enter or Space to dig.
+- Watch each consequence before the completion card appears. Continue or replay a completed level; failed attempts retry automatically. Numbered chapter buttons revisit unlocked levels.
+- Sound preference, chapter completion are saved locally. In-progress trenches are not.
 
 ## Before the storm
 
@@ -59,7 +59,7 @@ The sixty-four soldiers use instanced body/head/leg geometry. Painted box faces 
 
 ## Implementation
 
-- `src/game.ts` and `src/levels.ts`: pure puzzle state, flood fill, aqueduct connections, star ratings, fixed 8 × 8 layouts, and exact node-weighted Steiner-tree verification.
+- `src/game.ts` and `src/levels.ts`: pure puzzle state, flood fill, aqueduct connections, completion, fixed 8 × 8 layouts, and exact node-weighted Steiner-tree verification.
 - `src/world.ts`, `src/story.ts`, and `src/campaign.ts`: full-resolution antialiased perspective rendering, generated characters and architecture, dark trench geometry, water flow, bridge/gate animation, character paths, and smooth camera framing.
 - `src/battle-state.ts`, `src/battle.ts`, `src/battle-army.ts`, `src/battle-effects.ts`, and `src/battle-mesh.ts`: deterministic artillery timelines, instanced formations, pooled impact effects, and reusable painted geometry.
 - `src/main.ts`: objectives, post-dig feedback, accessible result dialogs, local progress, keyboard controls, and synthesized audio.
@@ -87,6 +87,6 @@ The reserved north bank holds flowers that bloom and twist into a 3D plant. Its 
 
 The 18.88-second timeline drives growth, grabs, the palm, cooking, camera pan/zoom, and eight synthesized sound types. Camera angles remain 60° tilt, 0° orbit, 0° roll. Undo/restart resets the scene and stops its sounds; reduced motion presents the final tableau. No external art or audio assets are required.
 
-First-time players get a text-free shovel cue over stage one’s first solution tile. It follows camera movement, disappears after that dig, and stays off once completion or stars have been saved. The north-bank flowers are enlarged in geometry before texture mapping; decorative pebbles are removed and the camp props stay on reserved tiles.
+First-time players get a text-free shovel cue over stage one’s first solution tile. It follows camera movement, disappears after that dig, and stays off once completion has been saved. The north-bank flowers are enlarged in geometry before texture mapping; decorative pebbles are removed and the camp props stay on reserved tiles.
 
 Stage one’s wilted flowers use four 28×36 billboard frames at the shared 32px/tile density, handing off to 3D petals as the creature grows. The palm transfer lasts 1.68 seconds (60% of its original 2.8 seconds), with subsequent action and sound cues shifted forward together.
