@@ -84,7 +84,7 @@ export class CitySprites extends PixelSprites{
     for(const dz of [-.7,.7]){
       for(const dx of [-.66,.66])box(flume,dx,.43,dz,.28,.86,.3,0xdce0cf,'stone');
       for(let k=0;k<7;k++){
-        const a=k*Math.PI/6,stone=box(flume,Math.cos(a)*.64,.48+Math.sin(a)*.44,dz,.30,.24,.35,0xe7e9d8,'stone');stone.rotation.z=a-Math.PI/2;
+        const a=k*Math.PI/6,stone=box(flume,Math.cos(a)*.64,.34+Math.sin(a)*.32,dz,.30,.24,.35,0xe7e9d8,'stone');stone.rotation.z=a-Math.PI/2;
       }
     }
     box(flume,0,.91,0,1.7,.18,2.1,0x909b92,'stone');

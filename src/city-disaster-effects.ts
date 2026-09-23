@@ -12,6 +12,7 @@ export class CityDisasterEffects{
   private dummy=new T.Object3D();
   private streams:T.Mesh[]=[];
   private plume:T.Mesh[]=[];
+  private runoffDrops:T.Mesh[]=[];
   constructor(private world:World){
     world.root.add(this.root);
     this.flood=this.surface(false);this.basin=this.surface(true);
@@ -35,17 +36,24 @@ export class CityDisasterEffects{
     ]);
     const vertices:number[]=[],colors:number[]=[],indices:number[]=[];
     for(let row=0;row<=32;row++){
-      const point=curve.getPoint(row/32);
+      const progress=row/32,tip=T.MathUtils.smoothstep(progress,.70,1);
+      const point=curve.getPoint(progress);
       for(let col=0;col<=8;col++){
-        vertices.push(point.x+(col/8-.5)*1.3,point.y,point.z);
-        const color=new T.Color(col%3===0?0x65cec7:0x55c7c2);colors.push(color.r,color.g,color.b);
+        const across=col/8-.5;
+        vertices.push(point.x+across*1.3*(1-tip*.65),point.y,point.z+tip*(.16*Math.sin(col*2.1)-across*across*.65));
+        const color=new T.Color(col%3===0?0x65cec7:0x55c7c2);colors.push(color.r,color.g,color.b,1-T.MathUtils.smoothstep(progress,.76,1));
         if(row<32&&col<8){const i=row*9+col;indices.push(i,i+9,i+1,i+1,i+9,i+10);}
       }
     }
-    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.setIndex(indices);
-    const material=new T.MeshBasicMaterial({vertexColors:true,side:T.DoubleSide});
+    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,4));geometry.setIndex(indices);
+    const material=new T.MeshBasicMaterial({vertexColors:true,side:T.DoubleSide,transparent:true,depthWrite:false});
     const runoff=new T.Mesh(geometry,material);runoff.userData.ownedMaterial=material;
     this.root.add(runoff);this.streams.push(runoff);
+    for(let n=0;n<12;n++){
+      const mat=new T.MeshBasicMaterial({color:n%3?0x55c7c2:0x9be0d5,transparent:true,depthWrite:false});
+      const drop=new T.Mesh(new T.BoxGeometry(.0625,.0625,.125),mat);drop.userData.ownedMaterial=mat;
+      this.root.add(drop);this.runoffDrops.push(drop);
+    }
   }
   private surface(earth:boolean){
     const segments=earth?32:64,rings=earth?6:9,positions:number[]=[],colors:number[]=[],indices:number[]=[];
@@ -85,6 +93,13 @@ export class CityDisasterEffects{
     positions.needsUpdate=true;
     this.basin.visible=p.collapse>0;this.basin.scale.set(p.collapse,1,p.collapse);
     this.streams.forEach(m=>{m.visible=p.surge>0;});
+    this.runoffDrops.forEach((drop,n)=>{
+      const age=this.world.reduced?.4:(moving*.85+n/12)%1;
+      drop.visible=p.surge>0;
+      drop.position.set(3.65-age*.85+Math.sin(n*2.399)*.3,.24+Math.sin(age*Math.PI)*.11,2.8+age*.85);
+      drop.rotation.set(age*.7,n,age*.3);drop.scale.setScalar(.6+Math.sin(age*Math.PI)*.4);
+      (drop.material as T.MeshBasicMaterial).opacity=(1-age)*p.surge*.8;
+    });
     for(let n=0;n<140;n++){
       const a=n*2.399+moving*.13,r=n<70?1:((n*17)%67)/67;
       const radius=(n<70?rough(a):1)*(p.collapse*.76+(1-p.collapse*.76)*r);
