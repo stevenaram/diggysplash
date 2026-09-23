@@ -35,11 +35,14 @@ export class CityDisasterEffects{
   }
   private surface(earth:boolean){
     const segments=earth?32:64,rings=earth?6:9,positions:number[]=[],colors:number[]=[],indices:number[]=[];
-    const palette=earth?[0x1f353b,0x34464a,0x665d49,0x93764f,0xb38a5d,0xd0aa77]:[0x258c98,0x2e9da7,0x39a9ae,0x41b4b6,0x48bdba,0x51c3bd,0x59c8c0,0x65cec4,0x85dbcb];
+    const palette=earth?[0x1f353b,0x34464a,0x34464a,0x665d49,0xa18157,0xd0aa77]:[0x258c98,0x2e9da7,0x39a9ae,0x41b4b6,0x48bdba,0x51c3bd,0x59c8c0,0x65cec4,0x85dbcb];
     for(let r=0;r<rings;r++)for(let n=0;n<=segments;n++){
       const a=n/segments*Math.PI*2+(earth?Math.sin(r*1.4)*.13:0),f=r/(rings-1),irregular=rough(a);
       const radius=f;
-      positions.push(Math.cos(a)*radius*irregular*6.7,earth?.075+Math.pow(f,3)*.15:.25,Math.sin(a)*radius*irregular*3.25);
+      // Expand northward and across the town, but retain a sand lip inside all board edges.
+      const x=Math.cos(a)*radius*irregular*(earth?7.6:6.7);
+      const z=Math.sin(a)*radius*irregular*(earth?4.35:3.25);
+      positions.push(earth?T.MathUtils.clamp(x,-7.75,7.75):x,earth?.075+Math.pow(f,3)*.15:.25,earth?T.MathUtils.clamp(z,-4.15,4.4):z);
       const c=new T.Color(palette[r]);c.multiplyScalar(1+Math.sin(n*2.3+r)*.045);colors.push(c.r,c.g,c.b);
       if(r<rings-1&&n<segments){const i=r*(segments+1)+n;indices.push(i,i+1,i+segments+1,i+1,i+segments+2,i+segments+1);}
     }
@@ -51,7 +54,7 @@ export class CityDisasterEffects{
     }
     // Indices wind downwards; the painted surface is intentionally double-sided.
     const material=new T.MeshBasicMaterial({vertexColors:true,side:T.DoubleSide});
-    const mesh=new T.Mesh(g,material);mesh.userData.ownedMaterial=material;mesh.position.z=4.25;return mesh;
+    const mesh=new T.Mesh(g,material);mesh.userData.ownedMaterial=material;mesh.position.z=earth?3.35:4.25;return mesh;
   }
   update(seconds:number,time:number){
     const p=cityPose(seconds),moving=this.world.reduced?0:time;

@@ -289,7 +289,7 @@ export class CitySprites extends PixelSprites{
     this.dust.instanceMatrix.needsUpdate=true;
     for(const [i,start]of this.floorStarts){
       const tile=w.tiles[i],x=start.x,z=start.z;
-      const distance=Math.sqrt(x*x/40+(z-4.1)*(z-4.1)/12);
+      const distance=Math.sqrt(x*x/55+(z-3.35)*(z-3.35)/18);
       const fall=ease((t-4.9-distance*1.7)/2.4);
       if(progress===0)continue;
       const edge=distance>1.05;
