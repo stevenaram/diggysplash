@@ -64,7 +64,7 @@ export class World {
   constructor(
     public host: HTMLElement,
     public game: Game,
-    public onDig: (i: number) => void,
+    public onDig: (i: number,point?:{x:number;y:number}) => void,
   ) {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.setClearColor(0x000000, 0);
@@ -101,7 +101,7 @@ export class World {
       this.pointers.delete(e.pointerId);
       if (known && !this.gesture && this.pointers.size === 0) {
         const i = this.pick(e.clientX, e.clientY);
-        if (i >= 0) this.onDig(i);
+        if (i >= 0) this.onDig(i,{x:e.clientX,y:e.clientY});
       }
       if (host.hasPointerCapture(e.pointerId))
         host.releasePointerCapture(e.pointerId);
@@ -719,9 +719,16 @@ export class World {
     this.hover.visible = false;
     this.onHover(null);
   }
-  tapBlocked(i:number){
+  tapBlocked(i:number,point?:{x:number;y:number}){
     const water=this.waters.get(i),wet=!!water?.visible;
-    if(!this.reduced)this.waterEffects.tap(gridWorld(i%SIZE),wet?water!.position.y:this.game.level.tiles[i]==='rock'?.55:.12,gridWorld(Math.floor(i/SIZE)),this.elapsed,wet);
+    const y=wet?water!.position.y:this.game.level.tiles[i]==='rock'?.55:.12;
+    const origin=new T.Vector3(gridWorld(i%SIZE),y,gridWorld(Math.floor(i/SIZE)));
+    if(point){
+      const r=this.host.getBoundingClientRect();
+      this.ray.setFromCamera(new T.Vector2((point.x-r.left)/r.width*2-1,-(point.y-r.top)/r.height*2+1),this.camera);
+      this.ray.ray.intersectPlane(new T.Plane(new T.Vector3(0,1,0),-y),origin);
+    }
+    if(!this.reduced)this.waterEffects.tap(origin.x,origin.y,origin.z,this.elapsed,wet);
     return wet?'water':'blocked';
   }
   restoreDust(i:number){

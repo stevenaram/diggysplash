@@ -196,9 +196,9 @@ function showDigDrop(i: number) {
   drop.addEventListener("animationend", () => drop.remove(), { once: true });
   window.setTimeout(() => drop.remove(), 2400);
 }
-function dig(i: number) {
+function dig(i: number,point?:{x:number;y:number}) {
   if(retrying||game.won)return;
-  if (!game.dig(i)){sound(world.tapBlocked(i));return;}
+  if (!game.dig(i)){sound(world.tapBlocked(i,point));return;}
   showDigDrop(i);
   world.burst(i);
   world.sync();
