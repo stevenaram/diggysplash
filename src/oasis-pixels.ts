@@ -1,14 +1,15 @@
 /** Original pixel drawings, deliberately rasterized without antialiasing. */
-export type PixelKind = 'horse' | 'black-horse' | 'highwayman' | 'shepherd-down' | 'thirst' | 'sad' | 'smirk' | 'campfire' | 'pumpkin-bite' | 'produce' | 'farmer-full' | 'farmer-down' | 'wolf' | 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower' | 'jug' | 'camp-rug' | 'alarm';
+export type PixelKind = 'torch' | 'bones' | 'horse' | 'black-horse' | 'highwayman' | 'shepherd-down' | 'thirst' | 'sad' | 'smirk' | 'campfire' | 'pumpkin-bite' | 'produce' | 'farmer-full' | 'farmer-down' | 'wolf' | 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower' | 'jug' | 'camp-rug' | 'alarm';
 /** Every source pixel occupies 1/32 of a tile; small props get small drawings. */
 export const PIXEL_SIZES: Record<PixelKind, readonly [number, number]> = {
-  horse:[56,48], 'black-horse':[56,48], highwayman:[32,40], 'shepherd-down':[48,32], thirst:[14,20], sad:[18,18], smirk:[18,18], campfire:[24,32],
+  torch:[12,24], bones:[40,24], horse:[56,48], 'black-horse':[56,48], highwayman:[32,40], 'shepherd-down':[48,32], thirst:[14,20], sad:[18,18], smirk:[18,18], campfire:[24,32],
   'pumpkin-bite':[14,14], produce:[24,28], 'farmer-full':[64,48], 'farmer-down':[64,64], wolf:[48,32],
   alarm:[14,20], villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
   grass: [10, 12], basket: [16, 16], blanket: [22, 12], heart: [12, 12],
   pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20], flower:[28,36], jug:[16,24], 'camp-rug':[48,24],
 };
 export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
+  if(kind==='highwayman'||kind==='shepherd-down')return drawCaravanPerson(kind,frame);
   if(kind==='farmer-full'||kind==='farmer-down')return drawFarmFarmer(kind,frame);
   const [w, h] = PIXEL_SIZES[kind];
   const pixels: (string | undefined)[] = Array(w*h);
@@ -18,26 +19,41 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const poly = (points:number[][],c:string) => {for(let y=0;y<h;y++)for(let x=0;x<w;x++){let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++){const a=points[i],b=points[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;}if(inside)dot(x,y,c);}};
   const ink='#494353', deep='#706052', tan='#aa805b', gold='#d6ac67', light='#f0d294';
   if(kind==='horse'||kind==='black-horse'){
-    const dark=kind==='black-horse',coat=dark?'#424653':'#ac774e',shine=dark?'#697080':'#d0a06d',mane=dark?'#292e3d':'#684c3f',step=frame%4,drink=frame>=4;
-    poly([[10,21],[3,16],[1,20],[6,31],[11,31]],mane);
-    oval(25,26,16,9,ink);oval(25,25,15,8,coat);oval(20,22,9,4,shine);
-    for(const [x,phase]of [[14,0],[21,2],[31,1],[37,3]]){const move=[-2,0,2,0][(step+phase)%4];rect(x+move,30,3,12,coat);rect(x+move-1,41,5,3,mane);}
-    const hy=drink?31+step%2:9;
-    poly([[32,25],[34,hy+2],[38,hy-2],[42,hy],[45,27]],coat);
-    poly([[32,24],[32,hy+3],[36,hy-3],[39,hy-2],[37,hy+8]],mane);
-    poly([[38,hy],[38,hy-7],[41,hy-2],[45,hy-6],[46,hy+2]],coat);
-    oval(43,hy+6,7,6,coat);poly([[43,hy+5],[53,hy+7],[54,hy+12],[45,hy+13]],shine);
-    rect(43,hy+3,2,2,ink);rect(51,hy+9,2,2,mane);rect(43,hy+10,10,1,'#765b49');
-    rect(36,hy+9,2,12,'#dbc9a0');rect(35,hy+18,6,2,'#dbc9a0');
-    if(dark){poly([[35,hy+1],[48,hy+1],[48,hy+6],[40,hy+7]],'#30333e');dot(44,hy+4,'#e0ac63');}
-  } else if(kind==='highwayman'){
-    rect(10,32,4,6,ink);rect(20,32,4,6,ink);poly([[9,20],[24,20],[29,35],[6,35]],'#414653');poly([[12,22],[18,23],[17,34],[9,32]],'#6a6470');
-    oval(16,14,8,9,ink);oval(16,13,6,7,'#8c6654');poly([[8,8],[11,2],[22,2],[25,10]],'#424653');rect(8,15,17,8,'#444955');rect(11,13,3,2,'#f1d29b');rect(19,13,3,2,'#f1d29b');
-    rect(7,23,3,8,'#8c6654');rect(23,22,3,8,'#8c6654');rect(10,30,14,2,'#a78355');dot(17,30,'#e9c77e');if(frame>0){poly(frame===1?[[25,22],[28,9],[30,8],[30,21]]:[[23,22],[31,17],[31,20],[25,25]],'#d6ddd6');rect(24,23,6,2,'#c5a66d');}
-  } else if(kind==='shepherd-down'){
-    oval(28,20,13,7,'#366c68');oval(26,18,10,5,'#5b9f88');rect(38,19,7,4,ink);rect(37,25,8,3,ink);
-    oval(12,18,7,7,'#efc496');for(const x of [8,14]){dot(x,17,ink);dot(x+2,17,ink);dot(x+1,18,ink);dot(x,19,ink);dot(x+2,19,ink);}
-    oval(10,10,10,3,'#d6ac67');rect(4,3,12,7,'#d6ac67');rect(6,4,7,3,'#f0d294');
+    const dark=kind==='black-horse',coat=dark?'#505766':'#b47e52',shade=dark?'#353c4c':'#895d45',shine=dark?'#78818b':'#d5a16b',cream=dark?'#a5abb0':'#ebc99a',mane=dark?'#252c39':'#5e443b';
+    const walk=frame>=1&&frame<=8,drink=frame>=9&&frame<=16,step=(frame-1+8)%8;
+    const bob=walk?[0,0,-1,-1,0,0,1,1][step]:0;
+    // Articulated knees and lifted hooves, with far legs drawn behind the barrel.
+    const leg=(x:number,phase:number,far:boolean)=>{
+      const k=(step+phase)%8,dx=walk?[-4,-2,1,4,4,1,-2,-4][k]:0,lift=walk?[0,2,4,3,0,0,0,0][k]:0;
+      poly([[x-2,28+bob],[x+2,28+bob],[x+dx+1,35-lift],[x+dx,44-lift],[x+dx-3,44-lift],[x+dx-3,35-lift]],ink);
+      poly([[x-1,29+bob],[x+1,29+bob],[x+dx,35-lift],[x+dx-1,41-lift],[x+dx-2,41-lift],[x+dx-2,35-lift]],far?shade:coat);
+      rect(x+dx-3,41-lift,3,2,far?shade:cream);rect(x+dx-4,43-lift,5,2,mane);
+    };
+    leg(20,4,true);leg(36,0,true);
+    poly([[12,23+bob],[7,21+bob],[5,25],[5,33],[2+(step%3),37],[7,36],[10,29],[14,28]],mane);
+    oval(25,25+bob,16,9,ink);oval(25,24+bob,15,8,shade);oval(25,23+bob,14,7,coat);
+    oval(20,21+bob,8,4,shine);oval(35,25+bob,5,6,coat);poly([[14,26+bob],[18,29+bob],[31,29+bob],[35,27+bob],[31,31+bob],[19,31+bob]],shade);
+    leg(14,0,false);leg(33,4,false);
+    const hy=drink?25+([0,1,2,2,1,0,-1,0][(frame-9)%8]):7+bob;
+    poly([[31,27+bob],[32,17+bob],[36,hy+1],[39,hy-2],[43,hy+1],[44,hy+10],[40,28+bob]],ink);
+    poly([[33,25+bob],[34,17+bob],[38,hy],[41,hy+1],[42,hy+10],[38,27+bob]],coat);
+    poly([[33,21+bob],[34,hy+1],[38,hy-2],[38,hy+5],[36,hy+8],[37,hy+11],[34,hy+14]],mane);
+    poly([[38,hy+2],[37,hy-6],[40,hy-5],[42,hy],[45,hy-5],[47,hy-4],[46,hy+4]],ink);
+    poly([[39,hy],[39,hy-4],[41,hy],[45,hy-3],[44,hy+3]],shine);
+    poly([[39,hy],[46,hy],[48,hy+5],[54,hy+8],[54,hy+13],[50,hy+15],[43,hy+12],[40,hy+7]],ink);
+    poly([[40,hy+1],[45,hy+1],[47,hy+6],[53,hy+9],[52,hy+13],[49,hy+13],[43,hy+10],[41,hy+6]],coat);
+    poly([[44,hy+2],[46,hy+5],[49,hy+8],[47,hy+10],[44,hy+7]],cream);
+    poly([[48,hy+9],[53,hy+9],[52,hy+13],[48,hy+12]],shine);
+    rect(43,hy+4,3,2,ink);dot(43,hy+4,'#fff0ce');dot(51,hy+10,mane);rect(49,hy+13,3,1,shade);
+    // A narrow leather halter follows the muzzle rather than obscuring the eye.
+    poly([[42,hy+7],[44,hy+7],[49,hy+13],[47,hy+13]],dark?'#9a7860':'#735847');dot(45,hy+9,'#e5c684');
+    if(frame===18){rect(43,hy+4,3,2,coat);rect(43,hy+5,3,1,ink);}
+  } else if(kind==='torch'){
+    poly([[4,22],[6,23],[10,7],[7,6]],'#75523e');poly([[5,12],[2,7],[5,8],[6,0],[9,5],[11,3],[10,10]],'#d97740');poly([[6,9],[6,4],[9,7],[8,11]],'#ffe0a1');
+  } else if(kind==='bones'){
+    oval(19,19,18,3,'#756858');
+    for(const [x,y] of [[4,16],[17,18],[27,16]]){poly([[x,y],[x+2,y-2],[x+8,y+3],[x+7,y+5]],'#e5d6b2');oval(x,y,2,2,'#e5d6b2');oval(x+8,y+4,2,2,'#e5d6b2');}
+    oval(13,12,5,5,'#f0e2bf');rect(9,11,3,3,'#665c54');rect(14,11,3,3,'#665c54');rect(11,16,4,2,'#d4c5a5');
   } else if(kind==='thirst'){
     poly([[7,1],[2,9],[1,13],[3,17],[7,19],[11,17],[13,13],[12,9]],ink);poly([[7,3],[3,10],[3,14],[7,17],[10,15],[11,12]],'#7fc6cd');rect(4,10,2,4,'#d7f0df');
   } else if(kind==='sad'||kind==='smirk'){
@@ -304,4 +320,30 @@ function drawFarmFarmer(kind:'farmer-full'|'farmer-down',frame:number):HTMLCanva
   oval(32-rx+2,32,3,3,'#efc496');oval(32+rx-2,bite?29:33,3,3,'#efc496');
   if(bite){c.fillStyle='#765249';c.fillRect(30,29,5,2);}
   return canvas;
+}
+
+/** Reuse the actual shepherd pixels so costume, head and body proportions cannot drift. */
+function drawCaravanPerson(kind:'highwayman'|'shepherd-down',frame:number):HTMLCanvasElement {
+ const source=drawPixel('shepherd',kind==='shepherd-down'?0:frame>=8?7+frame%2:frame>=4?1+frame%2:0);
+ const canvas=document.createElement('canvas');[canvas.width,canvas.height]=PIXEL_SIZES[kind];
+ const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=false;
+ if(kind==='shepherd-down'){
+  // A quarter-turn preserves every source pixel and the full-sized hat and tunic.
+  ctx.translate(4,31);ctx.rotate(-Math.PI/2);ctx.drawImage(source,0,0);return canvas;
+ }
+ ctx.drawImage(source,0,0);ctx.clearRect(24,12,8,28);
+ const data=ctx.getImageData(0,0,32,40),map:Record<string,number[]>={
+  '54,108,104':[55,61,74],'91,159,136':[88,96,106],'135,181,154':[130,139,143],
+  '214,172,103':[100,91,91],'240,210,148':[160,144,123],'170,128,91':[105,79,65],
+ };
+ for(let i=0;i<data.data.length;i+=4){const c=map[`${data.data[i]},${data.data[i+1]},${data.data[i+2]}`];if(c)data.data.set(c,i);}
+ ctx.putImageData(data,0,0);
+ const r=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
+ // Same broad hat, face and outfit as the shepherd, with a dark scarf and red sash.
+ r(10,8,13,2,'#783f45');if(frame<8){r(10,20,13,5,'#353947');r(12,21,9,1,'#596170');}
+ if(frame<8){r(11,17,4,1,'#494353');r(19,17,3,1,'#494353');}r(10,30,13,2,'#8d5050');r(16,30,3,2,'#c6a36b');
+ r(6,23,2,6,'#783f45');r(5,26,2,5,'#a4665c');
+ if(frame===1||frame===2){r(25,frame===1?14:23,2,11,'#d2dcdb');r(24,frame===1?24:32,5,2,'#c5a66d');r(26,frame===1?15:24,1,8,'#f3edcd');}
+ if(frame===3){r(23,19,3,8,'#efc496');r(24,17,3,4,'#efc496');}
+ return canvas;
 }
