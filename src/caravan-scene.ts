@@ -75,7 +75,7 @@ export class CaravanScene extends PixelSprites{
    const raidX=-5+n*5,raidZ=2.2;
    dark.position.set(p.escape>0?T.MathUtils.lerp(raidX,lead.x,ease((t-19)/1.2)):T.MathUtils.lerp(10+n,raidX,p.ambush),.04,p.escape>0?T.MathUtils.lerp(raidZ,lead.z+(n-1)*.8,ease((t-19)/1.2)):raidZ);
    const raidWalk=p.ambush>0&&p.ambush<1||p.escape>0;
-   this.pose(dark,'black-horse',raidWalk?1+Math.floor(motion*10+n*2)%8:Math.floor(motion*.4+n)%5===0?18:0,lead.angle<-Math.PI/2&&p.escape>0);
+   this.pose(dark,'black-horse',raidWalk?1+Math.floor(motion*10+n*2)%8:Math.floor(motion*.4+n)%5===0?18:0,p.escape===0||lead.angle<-Math.PI/2);
    dark.visible=p.ambush>0&&Math.abs(dark.position.x)<9.5;
    this.pose(raider,'highwayman',n===2&&t>=16.9&&t<17.4?3:t>11.8&&t<13?1+Math.floor(motion*8)%2:t>=16&&t<18.5?8+Math.floor(motion*7+n)%4:t>=13.5&&t<16?4+Math.floor(motion*7+n)%4:0);
    raider.position.copy(dark.position);raider.position.x-=.2;raider.position.y=1.25;raider.visible=dark.visible;
