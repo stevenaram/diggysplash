@@ -223,9 +223,11 @@ function showResult() {
   $("#result-secondary").textContent="Replay level";
   if(!result.open)result.showModal();
 }
-function autoRetry(){
+function autoRetry(manual=false){
   if(retrying)return;
   retrying=true;
+  $("#retry-notice strong").textContent=manual?"Resetting":"Out of digs";
+  $<HTMLButtonElement>("#restart-level").disabled=true;
   const generation=++retryGeneration;
   stopCreatureSounds();
   closeResult();
@@ -266,7 +268,7 @@ function update() {
     b.querySelector(".stage-complete")!.textContent = n<completed?"✓":"";
   });
   $("#status").textContent =
-    world.settled && game.won
+    retrying ? "Resetting the board. Try again." : world.settled && game.won
       ? `${game.level.story!.success} Level complete. `
       : world.settled && game.failed
         ? "Out of digs. Resetting the board."
@@ -290,6 +292,7 @@ world.onSettled = () => {
 };
 function load(n: number) {
   clearTimeout(retryTimer);retryGeneration++;retrying=false;
+  $<HTMLButtonElement>("#restart-level").disabled=false;
   $("#retry-notice").hidden=true;$("#app").classList.remove("retrying");
   stopCreatureSounds();
   closeResult();
@@ -345,7 +348,7 @@ host.addEventListener("keydown", (e) => {
     dig(focused);
   }
 });
-$("#restart-level").onclick = () => {load(stage);};
+$("#restart-level").onclick = () => {autoRetry(true);};
 const muteButton=document.querySelector<HTMLButtonElement>('#sound-toggle')!;
 function renderMute(){
   muteButton.innerHTML=svg(muted?'mute':'sound');
