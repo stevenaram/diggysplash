@@ -8,7 +8,7 @@ import type {World} from './world';
 export class CaravanScene extends PixelSprites{
  private wagons:ReturnType<typeof coveredWagon>[]=[];
  private horses:T.Sprite[]=[];private people:T.Sprite[]=[];private raiders:T.Sprite[]=[];private darkHorses:T.Sprite[]=[];
- private bones:T.Sprite[]=[];private torch!:T.Sprite;private smiles:T.Sprite[]=[];private sadness:T.Sprite[]=[];private fires:T.Sprite[]=[];
+ private bones:T.Sprite[]=[];private torch!:T.Sprite;private smiles:T.Sprite[]=[];private fires:T.Sprite[]=[];
  private ropes:T.Line[]=[];private previous=0;
  private readonly starts=[-5,1,5];
  constructor(world:World){
@@ -26,7 +26,7 @@ export class CaravanScene extends PixelSprites{
    this.horses.push(this.add('horse',x-1.25,-1.8));this.people.push(this.add('shepherd',x+.6,-3.2));
    this.bones.push(this.add('bones',3.1+n*.7,6.8+n*.08));
    this.darkHorses.push(this.add('black-horse',8,-3));this.raiders.push(this.add('highwayman',8,-3));
-   this.smiles.push(this.add('smirk',8,-3));this.sadness.push(this.add('sad',8,-3));
+   this.smiles.push(this.add('smirk',8,-3));
    this.fires.push(this.add('campfire',3.1+n*.7,6.85+n*.08));
   }
   this.torch=this.add('torch',0,0);
@@ -64,7 +64,7 @@ export class CaravanScene extends PixelSprites{
    horse.visible=Math.abs(horse.position.x)<9.5;
    const person=this.people[n],escort=new T.Vector3(-5+n*5,.04,-3.2);
    if(p.defeat===0){person.position.set(T.MathUtils.lerp(this.starts[n]+.6,escort.x,p.hitch),.04,T.MathUtils.lerp(-3.2,escort.z,p.hitch));this.pose(person,'shepherd',t>11?9:walking?1+Math.floor(motion*6+n)%2:0);}
-   else {person.position.set(T.MathUtils.lerp(-5+n*5,3.8+(n-1)*.48,p.pile),.04+n*p.pile*.1,T.MathUtils.lerp(-3.2,6.6+n*.14,p.pile));this.pose(person,'shepherd-down');}
+   else {person.position.set(T.MathUtils.lerp(-5+n*5,3.8+(n-1)*.48,p.pile),.04+n*p.pile*.1,T.MathUtils.lerp(-3.2+1.7*p.defeat,6.6+n*.14,p.pile));this.pose(person,'shepherd-down');}
    person.visible=t<20.2;
    // The body keeps the same artwork and native pixel size all the way to the pile.
    if(p.defeat>0&&p.defeat<1){this.pose(person,'shepherd',9);person.material.rotation=-p.defeat*Math.PI/2;}else person.material.rotation=0;
@@ -81,11 +81,10 @@ export class CaravanScene extends PixelSprites{
    raider.position.copy(dark.position);raider.position.x-=.2;raider.position.y=1.25;raider.visible=dark.visible;
    if(t>=11.6&&t<19){
     const approach=ease((t-11.6)/.5),retreat=ease((t-16)/2.5);
-    const action=new T.Vector3(T.MathUtils.lerp(-5+n*5,2.6+(n-1)*1.6,p.pile),.04,T.MathUtils.lerp(-2.85,5.5,p.pile));
+    const action=new T.Vector3(T.MathUtils.lerp(-4.25+n*5,2.6+(n-1)*1.6,p.pile),.04,T.MathUtils.lerp(-2.85,5.5,p.pile));
     raider.position.lerp(action,approach*(1-retreat));
    }
    const smile=this.smiles[n];smile.position.copy(raider.position);smile.position.y=raider.position.y+4.0;smile.visible=t>15.5&&t<16.8;
-   const sad=this.sadness[n];sad.position.copy(horse.position);sad.position.y=4.4;sad.visible=p.escape>0&&horse.visible;
    const front=this.wagons[2].root.localToWorld(new T.Vector3(1.5,.85,0));this.root.worldToLocal(front);
    this.rope(2+n,front,new T.Vector3(horse.position.x-.9,.8,horse.position.z),p.hitch>.95&&horse.visible&&this.wagons[2].root.visible);
    this.rope(5+n,new T.Vector3(dark.position.x,.9,dark.position.z),new T.Vector3(horse.position.x+.8,.9,horse.position.z),p.escape>0&&dark.visible&&horse.visible);

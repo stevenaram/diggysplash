@@ -19,35 +19,53 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const poly = (points:number[][],c:string) => {for(let y=0;y<h;y++)for(let x=0;x<w;x++){let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++){const a=points[i],b=points[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;}if(inside)dot(x,y,c);}};
   const ink='#494353', deep='#706052', tan='#aa805b', gold='#d6ac67', light='#f0d294';
   if(kind==='horse'||kind==='black-horse'){
-    const dark=kind==='black-horse',coat=dark?'#505766':'#b47e52',shade=dark?'#353c4c':'#895d45',shine=dark?'#78818b':'#d5a16b',cream=dark?'#a5abb0':'#ebc99a',mane=dark?'#252c39':'#5e443b';
-    const walk=frame>=1&&frame<=8,drink=frame>=9&&frame<=16,step=(frame-1+8)%8;
-    const bob=walk?[0,0,-1,-1,0,0,1,1][step]:0;
-    // Articulated knees and lifted hooves, with far legs drawn behind the barrel.
-    const leg=(x:number,phase:number,far:boolean)=>{
-      const k=(step+phase)%8,dx=walk?[-4,-2,1,4,4,1,-2,-4][k]:0,lift=walk?[0,2,4,3,0,0,0,0][k]:0;
-      poly([[x-2,28+bob],[x+2,28+bob],[x+dx+1,35-lift],[x+dx,44-lift],[x+dx-3,44-lift],[x+dx-3,35-lift]],ink);
-      poly([[x-1,29+bob],[x+1,29+bob],[x+dx,35-lift],[x+dx-1,41-lift],[x+dx-2,41-lift],[x+dx-2,35-lift]],far?shade:coat);
-      rect(x+dx-3,41-lift,3,2,far?shade:cream);rect(x+dx-4,43-lift,5,2,mane);
+    // Broad pixel clusters, a curved neck and a tapered muzzle. No noisy dithering.
+    const dark=kind==='black-horse';
+    const edge=dark?'#30323e':'#514039',low=dark?'#424553':'#89583f',coat=dark?'#626777':'#bd8858',
+      lit=dark?'#858b95':'#dbad76',cream=dark?'#b1b6b3':'#f1d7aa',hair=dark?'#292c36':'#624535';
+    const walk=frame>=1&&frame<=8,drink=frame>=9&&frame<=16,k=(frame+7)%8;
+    const bob=walk?[0,0,-1,-1,0,0,-1,-1][k]:0;
+    const leg=(x:number,phase:number,back:boolean)=>{
+      const f=(k+phase)%8,dx=walk?[-3,-2,0,3,4,2,0,-2][f]:0,up=walk?[0,1,3,3,1,0,0,0][f]:0;
+      poly([[x-2,29+bob],[x+2,29+bob],[x+1+dx/2,36-up],[x+dx+1,44-up],[x+dx-4,44-up],[x+dx-4,42-up],[x-2+dx/2,35-up]],edge);
+      poly([[x-1,30+bob],[x+1,30+bob],[x+dx/2,36-up],[x+dx,41-up],[x+dx-2,41-up],[x-1+dx/2,35-up]],back?low:coat);
+      if(!back)rect(x+dx-2,39-up,2,3,cream);
+      rect(x+dx-4,43-up,5,2,edge);
     };
-    leg(20,4,true);leg(36,0,true);
-    poly([[12,23+bob],[7,21+bob],[5,25],[5,33],[2+(step%3),37],[7,36],[10,29],[14,28]],mane);
-    oval(25,25+bob,16,9,ink);oval(25,24+bob,15,8,shade);oval(25,23+bob,14,7,coat);
-    oval(20,21+bob,8,4,shine);oval(35,25+bob,5,6,coat);poly([[14,26+bob],[18,29+bob],[31,29+bob],[35,27+bob],[31,31+bob],[19,31+bob]],shade);
-    leg(14,0,false);leg(33,4,false);
-    const hy=drink?25+([0,1,2,2,1,0,-1,0][(frame-9)%8]):7+bob;
-    poly([[31,27+bob],[32,17+bob],[36,hy+1],[39,hy-2],[43,hy+1],[44,hy+10],[40,28+bob]],ink);
-    poly([[33,25+bob],[34,17+bob],[38,hy],[41,hy+1],[42,hy+10],[38,27+bob]],coat);
-    poly([[33,21+bob],[34,hy+1],[38,hy-2],[38,hy+5],[36,hy+8],[37,hy+11],[34,hy+14]],mane);
-    poly([[38,hy+2],[37,hy-6],[40,hy-5],[42,hy],[45,hy-5],[47,hy-4],[46,hy+4]],ink);
-    poly([[39,hy],[39,hy-4],[41,hy],[45,hy-3],[44,hy+3]],shine);
-    poly([[39,hy],[46,hy],[48,hy+5],[54,hy+8],[54,hy+13],[50,hy+15],[43,hy+12],[40,hy+7]],ink);
-    poly([[40,hy+1],[45,hy+1],[47,hy+6],[53,hy+9],[52,hy+13],[49,hy+13],[43,hy+10],[41,hy+6]],coat);
-    poly([[44,hy+2],[46,hy+5],[49,hy+8],[47,hy+10],[44,hy+7]],cream);
-    poly([[48,hy+9],[53,hy+9],[52,hy+13],[48,hy+12]],shine);
-    rect(43,hy+4,3,2,ink);dot(43,hy+4,'#fff0ce');dot(51,hy+10,mane);rect(49,hy+13,3,1,shade);
-    // A narrow leather halter follows the muzzle rather than obscuring the eye.
-    poly([[42,hy+7],[44,hy+7],[49,hy+13],[47,hy+13]],dark?'#9a7860':'#735847');dot(45,hy+9,'#e5c684');
-    if(frame===18){rect(43,hy+4,3,2,coat);rect(43,hy+5,3,1,ink);}
+    leg(20,4,true);leg(35,0,true);
+    // Tail has a quiet two-position swish; its outline stays one pixel thick.
+    poly([[13,22+bob],[8,22+bob],[5,26],[5,33],[2+(frame%2),36],[6,36],[9,32],[10,26],[14,26]],edge);
+    poly([[9,24],[7,27],[7,32],[5,34],[7,33],[9,29],[11,25]],hair);
+    // One continuous rump/barrel/shoulder silhouette avoids pasted-on oval anatomy.
+    poly([[10,23+bob],[13,20+bob],[19,19+bob],[27,21+bob],[34,20+bob],[39,24+bob],[40,29+bob],[36,34+bob],[20,34+bob],[14,32+bob],[10,28+bob]],edge);
+    poly([[11,24+bob],[14,21+bob],[19,20+bob],[27,22+bob],[34,21+bob],[38,25+bob],[38,30+bob],[35,33+bob],[20,33+bob],[14,30+bob],[11,27+bob]],coat);
+    poly([[13,24+bob],[15,22+bob],[20,22+bob],[26,24+bob],[33,23+bob],[35,25+bob],[31,27+bob],[21,27+bob],[16,26+bob]],lit);
+    poly([[14,29+bob],[21,31+bob],[30,31+bob],[36,28+bob],[35,32+bob],[21,33+bob],[16,31+bob]],low);
+    leg(15,0,false);leg(33,4,false);
+    const sip=drink?[0,0,1,1,2,1,1,0][(frame-9)%8]:0;
+    if(drink){
+      // Fold the neck forward from the shoulder, never telescope a vertical neck down.
+      poly([[32,22],[36,21],[40,25],[44,31+sip],[45,36+sip],[40,38+sip],[36,31],[32,29]],edge);
+      poly([[34,23],[37,23],[40,28],[43,32+sip],[43,36+sip],[40,36+sip],[37,30],[34,28]],coat);
+      poly([[33,22],[36,22],[40,27],[42,32+sip],[40,33+sip],[37,27],[33,25]],hair);
+    }else{
+      poly([[31,27+bob],[32,19+bob],[34,13+bob],[38,9+bob],[43,10+bob],[44,16+bob],[41,21+bob],[39,29+bob],[35,32+bob]],edge);
+      poly([[33,27+bob],[34,19+bob],[36,14+bob],[39,11+bob],[42,12+bob],[42,16+bob],[39,22+bob],[38,28+bob],[35,30+bob]],coat);
+      poly([[36,17+bob],[39,13+bob],[41,13+bob],[40,17+bob],[37,23+bob],[35,26+bob]],lit);
+      poly([[32,23+bob],[33,17+bob],[35,12+bob],[38,9+bob],[40,9+bob],[38,13+bob],[36,16+bob],[35,22+bob]],hair);
+    }
+    const hy=drink?26+sip:8+bob;
+    // Small upright ears, rounded brow, cheek, and long soft nose read as a horse.
+    poly([[39,hy+4],[38,hy-2],[40,hy-3],[42,hy+1],[44,hy-2],[46,hy-2],[46,hy+4]],edge);
+    rect(40,hy-1,1,4,lit);rect(44,hy,1,3,coat);
+    poly([[39,hy+1],[45,hy+1],[48,hy+4],[48,hy+7],[53,hy+10],[54,hy+13],[52,hy+16],[48,hy+16],[44,hy+12],[40,hy+10],[38,hy+6]],edge);
+    poly([[40,hy+2],[44,hy+2],[47,hy+5],[46,hy+8],[52,hy+11],[53,hy+13],[51,hy+15],[48,hy+14],[44,hy+10],[41,hy+9],[39,hy+6]],coat);
+    poly([[41,hy+2],[44,hy+3],[45,hy+5],[43,hy+6],[40,hy+5]],lit);
+    poly([[45,hy+6],[47,hy+8],[50,hy+11],[48,hy+12],[45,hy+9]],cream);
+    poly([[49,hy+11],[52,hy+11],[52,hy+14],[49,hy+14],[47,hy+12]],lit);
+    rect(43,hy+6,2,2,edge);dot(43,hy+6,'#f4e8ce');dot(51,hy+12,low);rect(49,hy+15,3,1,low);
+    poly([[40,hy+2],[43,hy+1],[45,hy+3],[43,hy+4],[41,hy+3]],hair);
+    if(frame===18){rect(43,hy+6,2,2,coat);rect(43,hy+7,2,1,edge);}
   } else if(kind==='torch'){
     poly([[4,22],[6,23],[10,7],[7,6]],'#75523e');poly([[5,12],[2,7],[5,8],[6,0],[9,5],[11,3],[10,10]],'#d97740');poly([[6,9],[6,4],[9,7],[8,11]],'#ffe0a1');
   } else if(kind==='bones'){
@@ -290,7 +308,7 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
   const ctx=canvas.getContext('2d')!;
   // One-pixel, colored silhouette outline. Interior pixels remain crisp clusters.
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(!pixels[y*w+x]&&[[x-1,y],[x+1,y],[x,y-1],[x,y+1]].some(([a,b])=>a>=0&&b>=0&&a<w&&b<h&&pixels[b*w+a])){ctx.fillStyle=ink;ctx.fillRect(x,y,1,1);}
+  if(kind!=='horse'&&kind!=='black-horse')for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(!pixels[y*w+x]&&[[x-1,y],[x+1,y],[x,y-1],[x,y+1]].some(([a,b])=>a>=0&&b>=0&&a<w&&b<h&&pixels[b*w+a])){ctx.fillStyle=ink;ctx.fillRect(x,y,1,1);}
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const c=pixels[y*w+x];if(c){ctx.fillStyle=c;ctx.fillRect(x,y,1,1);}}
   return canvas;
 }
@@ -328,7 +346,13 @@ function drawCaravanPerson(kind:'highwayman'|'shepherd-down',frame:number):HTMLC
  const canvas=document.createElement('canvas');[canvas.width,canvas.height]=PIXEL_SIZES[kind];
  const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=false;
  if(kind==='shepherd-down'){
-  // A quarter-turn preserves every source pixel and the full-sized hat and tunic.
+  const c=source.getContext('2d')!;
+  c.clearRect(24,12,8,28); // Dropped crook: no upright tool in the lifeless pose.
+  c.fillStyle='#efc496';c.fillRect(11,17,11,4);
+  c.fillStyle='#494353';
+  for(const x of [11,18])for(const [dx,dy]of [[0,0],[2,0],[1,1],[0,2],[2,2]])c.fillRect(x+dx,17+dy,1,1);
+  c.fillRect(15,23,4,1);
+  // A quarter-turn preserves native density and the full-sized hat and tunic.
   ctx.translate(4,31);ctx.rotate(-Math.PI/2);ctx.drawImage(source,0,0);return canvas;
  }
  ctx.drawImage(source,0,0);ctx.clearRect(24,12,8,28);
