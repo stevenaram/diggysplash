@@ -138,7 +138,7 @@ export class CitySprites extends PixelSprites{
       const a=k*2.399,crack=box(this.root,Math.cos(a)*2,.07,4+Math.sin(a)*1.8,.07,.025,1.4+(k%3)*.45,0x493e33);crack.rotation.y=a;this.cracks.push(crack);
     }
     this.root.add(this.surgeFeed);
-    for(const [x,z,width,depth] of [[-5,-5.8,1,2.4],[-3,-5,5,1.1],[-1,-4,1.1,3],[2,-3,7,1.1],[5,-1,1.3,5]]){
+    for(const [x,z,width,depth] of [[-5,-5.8,1,2.4],[-3,-5,5,1.1],[-1,-4,1.1,3],[2,-3,7,1.1]]){
       box(this.surgeFeed,x,z<=-1?1.32:.17,z,width,.045,depth,0x55c7c2,'water');
     }
     this.debris=this.pool(100,0xc79c6c,.17);
@@ -241,6 +241,8 @@ export class CitySprites extends PixelSprites{
     const jet=p.burst;
     this.effects.update(t,time);
     this.surgeFeed.visible=p.surge>0;this.surgeFeed.scale.y=1;
+    // Retire the elevated support tile with the broken flume, before runoff crosses it.
+    w.tiles[30].visible=p.collapse<.8;
     this.cracks.forEach((c,n)=>{c.visible=p.crack>0&&p.collapse<.8;c.scale.z=p.crack;c.scale.x=1+Math.sin(n)*p.crack;});
     for(const [n,r] of this.ruins.entries()){
       const fall=cityStructureFall(t,r.root.userData.category,r.delay),sink=fall*fall;

@@ -26,12 +26,26 @@ export class CityDisasterEffects{
     }
     const geo=new T.BoxGeometry(.10,.035,.19),mat=new T.MeshBasicMaterial({color:0xc7f0df});
     this.foam=new T.InstancedMesh(geo,mat,140);this.foam.userData.ownedMaterial=mat;this.foam.frustumCulled=false;this.root.add(this.foam);
-    // Broad, curved lake runoff; each strip follows the same falling surface.
-    for(let n=0;n<5;n++){
-      const x=5+(n-2)*.29;
-      const curve=new T.CatmullRomCurve3([new T.Vector3(x,1.21,-2.2),new T.Vector3(x,1.0,-.8),new T.Vector3(x-.4,.27,1.4),new T.Vector3(x-1.8,.22,3.3)]);
-      const m=new T.Mesh(new T.TubeGeometry(curve,18,.24,5,false),world.mat(n%2?0x72d4c7:0x36a9ae));this.root.add(m);this.streams.push(m);
+    // One joined sheet leaves the terrace at the feed's exact height and edge.
+    // Separate tubes intersected the old flat overhang and exposed their end caps.
+    const curve=new T.CatmullRomCurve3([
+      new T.Vector3(5,1.3425,-2.45),new T.Vector3(5,1.31,-1.7),
+      new T.Vector3(4.95,.92,-.55),new T.Vector3(4.65,.34,1.2),
+      new T.Vector3(3.2,.22,3.3),
+    ]);
+    const vertices:number[]=[],colors:number[]=[],indices:number[]=[];
+    for(let row=0;row<=32;row++){
+      const point=curve.getPoint(row/32);
+      for(let col=0;col<=8;col++){
+        vertices.push(point.x+(col/8-.5)*1.3,point.y,point.z);
+        const color=new T.Color(col%3===0?0x65cec7:0x55c7c2);colors.push(color.r,color.g,color.b);
+        if(row<32&&col<8){const i=row*9+col;indices.push(i,i+9,i+1,i+1,i+9,i+10);}
+      }
     }
+    const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.setIndex(indices);
+    const material=new T.MeshBasicMaterial({vertexColors:true,side:T.DoubleSide});
+    const runoff=new T.Mesh(geometry,material);runoff.userData.ownedMaterial=material;
+    this.root.add(runoff);this.streams.push(runoff);
   }
   private surface(earth:boolean){
     const segments=earth?32:64,rings=earth?6:9,positions:number[]=[],colors:number[]=[],indices:number[]=[];
@@ -70,7 +84,7 @@ export class CityDisasterEffects{
     }
     positions.needsUpdate=true;
     this.basin.visible=p.collapse>0;this.basin.scale.set(p.collapse,1,p.collapse);
-    this.streams.forEach((m,n)=>{m.visible=p.surge>0;m.scale.x=1+(p.surge-1)*.06;m.position.y=(1-p.surge)*-.4+Math.sin(moving*8+n)*.025;});
+    this.streams.forEach(m=>{m.visible=p.surge>0;});
     for(let n=0;n<140;n++){
       const a=n*2.399+moving*.13,r=n<70?1:((n*17)%67)/67;
       const radius=(n<70?rough(a):1)*(p.collapse*.76+(1-p.collapse*.76)*r);
