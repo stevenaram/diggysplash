@@ -993,3 +993,10 @@ footer .toolbar {gap:14px;}
 #sound-toggle svg {width:24px;height:24px;}
 #sound-toggle[aria-pressed="true"] {color:#9a7161;background:#e5d9c977;}
 #sound-toggle:focus-visible {outline:3px solid #597a65;outline-offset:3px;}
+
+/* Persistent restart sits with the count, away from playable tiles. */
+#restart-level {width:48px;height:48px;min-width:48px;padding:11px;border:1px solid #978b6b55;border-radius:13px;background:#fff8e8;color:#59705d;box-shadow:0 2px 0 #978b6b22;touch-action:manipulation;}
+#restart-level svg {width:24px;height:24px;}
+#restart-level:hover {background:#f4ecd7;}
+#restart-level:active {transform:translateY(1px);box-shadow:none;}
+#restart-level:focus-visible {outline:3px solid #597a65;outline-offset:3px;}

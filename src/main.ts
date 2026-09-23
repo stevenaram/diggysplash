@@ -164,7 +164,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
 <main><div class="sun-disc" aria-hidden="true"></div>
 <div class="scene" tabindex="0" role="application" aria-label="Desert puzzle board. Click sand to dig. Pinch to magnify the page. Arrow keys select a tile, Enter digs."></div>
 </main>
-<footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">4</strong></div><button id="sound-toggle" class="icon-button" type="button" aria-label="Mute sound"></button></div></footer>
+<footer><div class="toolbar"><div class="dig-meter" aria-label="Digs remaining">${svg("shovel")}<strong id="remaining">4</strong></div><button id="restart-level" class="icon-button" type="button" aria-label="Restart level" title="Restart level">${svg("restart")}</button><button id="sound-toggle" class="icon-button" type="button" aria-label="Mute sound"></button></div></footer>
 <div id="retry-notice" role="status" aria-live="polite" hidden><strong>Out of digs</strong><span>Try again</span><div class="retry-track"><i></i></div></div><dialog id="result" aria-labelledby="result-title" aria-describedby="result-message"><div class="result-chapter" id="result-chapter"></div><h2 id="result-title"></h2><p id="result-message" class="sr-only"></p><div class="result-check" aria-hidden="true">${svg("check")}</div><div class="result-score" id="result-score"></div><div class="result-actions"><button id="result-primary" class="primary"></button><button id="result-secondary" class="secondary"></button></div></dialog>
 <div id="dig-tutorial" hidden role="img" aria-label="Dig the highlighted sand tile next to the water. Press Enter or tap it."><svg class="tutorial-tile" aria-hidden="true"><polygon /></svg><span class="tutorial-shovel" aria-hidden="true">${svg("shovel")}<i></i></span></div>
 <div id="status" class="sr-only" aria-live="polite"></div>`;
@@ -345,6 +345,7 @@ host.addEventListener("keydown", (e) => {
     dig(focused);
   }
 });
+$("#restart-level").onclick = () => {load(stage);};
 const muteButton=document.querySelector<HTMLButtonElement>('#sound-toggle')!;
 function renderMute(){
   muteButton.innerHTML=svg(muted?'mute':'sound');
