@@ -5,8 +5,9 @@ import {buildPalm,placePalmOnTile} from './palm-model';
 import {MonsterArt} from './monster-art';
 import {metricUV} from './metric-uv';
 import {CityWaterfall} from './city-waterfall';
+import {CityDisasterEffects} from './city-disaster-effects';
 import {bakeColored} from './battle-mesh';
-import {CITY_DURATION,CITY_CUES,cityPose,cityEase as ease} from './city-timeline';
+import {CITY_DURATION,CITY_CUES,cityPose,cityStructureFall,cityEase as ease} from './city-timeline';
 import type {World} from './world';
 
 type Ruin={root:T.Group;start:T.Vector3;delay:number;tilt:number};
@@ -21,12 +22,8 @@ export class CitySprites extends PixelSprites{
   private lake:T.Mesh;
   private lakeGlints:T.Mesh[]=[];
   private alarms:T.Sprite[]=[];
-  private flood:T.Mesh;
-  private hole=new T.Group();
+  private effects:CityDisasterEffects;
   private well=new T.Group();
-  private jet=new T.Group();
-  private torrent=new T.Group();
-  private foam:T.Mesh[]=[];
   private cracks:T.Mesh[]=[];
   private debris:T.InstancedMesh;
   private spray:T.InstancedMesh;
@@ -39,7 +36,6 @@ export class CitySprites extends PixelSprites{
   private stream:T.Mesh;
   private lakeFall:CityWaterfall;
   private outletFall:CityWaterfall;
-  private surgeFall:CityWaterfall;
   constructor(world:World){
     super(world);
     const w=world,box=w.box.bind(w);
@@ -121,7 +117,7 @@ export class CitySprites extends PixelSprites{
     this.house(-6,7.35,0xe8c698,3.1,2.9,1.0);
     this.house(5.6,7.35,0xe4bf8d,3.1,3.15,1.0);
     // Well mouth is unmistakable, with an open western and northern approach.
-    this.well=this.structure(-3,5,.04);
+    this.well=this.structure(-3,5,.04);this.well.userData.category="well";
     const pit=new T.Mesh(new T.CylinderGeometry(.73,.73,.04,16),w.mat(0x333f43));pit.position.y=.1;this.well.add(pit);
     for(let row=0;row<3;row++)for(let k=0;k<12;k++){
       const a=(k+(row%2)*.5)*Math.PI/6;
@@ -137,25 +133,9 @@ export class CitySprites extends PixelSprites{
       this.people.push({sprite,start:sprite.position.clone(),scale:sprite.scale.clone()});
       this.alarms.push(this.add('alarm',x,z));
     }
-    this.flood=this.ellipse(0x48bdbb,7.3,3.8,.12);this.flood.position.z=4.2;this.root.add(this.flood);
-    for(let k=0;k<4;k++){
-      const rim=this.ellipse([0x9c7250,0x785638,0x473731,0x20262b][k],6.9-k*.42,3.8-k*.26,.16+k*.012);this.hole.add(rim);
-    }
-    this.hole.position.z=4.1;this.root.add(this.hole);
+    this.effects=new CityDisasterEffects(w);
     for(let k=0;k<10;k++){
       const a=k*2.399,crack=box(this.root,Math.cos(a)*2,.07,4+Math.sin(a)*1.8,.07,.025,1.4+(k%3)*.45,0x493e33);crack.rotation.y=a;this.cracks.push(crack);
-    }
-    this.jet.position.set(-3,.55,5);this.root.add(this.jet);
-    for(let k=0;k<5;k++){
-      const spout=box(this.jet,(k-2)*.12,2.1,0,.18,4.2,.25,k%2?0xafece0:0x58cfc9);spout.rotation.z=(k-2)*.11;
-    }
-    this.surgeFall=new CityWaterfall(w,this.root,[new T.Vector3(5,1.3,-2.1),new T.Vector3(5,1.2,-1.5),new T.Vector3(5,.65,-.3),new T.Vector3(5,.18,1.2)],1.8);
-    this.torrent.position.set(4.8,.18,-2);this.root.add(this.torrent);
-    for(let k=0;k<9;k++){
-      const ribbon=box(this.torrent,(k-4)*.33,0,k*.28,.42,.08,8-k*.4,k%2?0x8bdfd4:0x3eaeb2,'water');ribbon.rotation.y=(k-4)*.025;
-    }
-    for(let k=0;k<18;k++){
-      const f=box(this.root,0,.28,0,.28+(k%3)*.17,.035,.07,0xbbede0);this.foam.push(f);
     }
     this.root.add(this.surgeFeed);
     for(const [x,z,width,depth] of [[-5,-5.8,1,2.4],[-3,-5,5,1.1],[-1,-4,1.1,3],[2,-3,7,1.1],[5,-1,1.3,5]]){
@@ -163,7 +143,7 @@ export class CitySprites extends PixelSprites{
     }
     this.debris=this.pool(100,0xc79c6c,.17);
     const debrisColors=[0xc7aa7c,0x9b704e,0xe2c49c,0x619d91,0xc97b61];
-    for(let n=0;n<100;n++)this.debris.setColorAt(n,new T.Color(debrisColors[n%5]));
+    for(let n=0;n<100;n++)this.debris.setColorAt(n,new T.Color(debrisColors[n%3]));
     this.debris.instanceColor!.needsUpdate=true;
     // Bake architecture by texture: retain painted faces/metric UVs with few draw calls.
     for(const r of this.ruins)this.batch(r.root);
@@ -179,6 +159,18 @@ export class CitySprites extends PixelSprites{
       }else for(let k=0;k<4;k++)box(rubble,(k%2)*.4,.12+Math.floor(k/2)*.18,0,.38,.18,.4,0xcbb38e,'stone');
       this.batch(rubble);
     }
+    // Recognizable wreckage: a broken house facade, a folded market roof, and fallen battlements.
+    const facade=new T.Group();facade.position.set(5.3,.18,5.5);facade.rotation.set(-.75,.35,.18);this.wrecks.add(facade);
+    box(facade,0,.7,0,2.1,1.4,.3,0xd5b488,'plaster');
+    box(facade,.35,.8,.18,.48,.55,.05,0x537e79);
+    box(facade,-.55,.47,.18,.54,.9,.06,0x75533e,'wood');
+    for(let k=0;k<4;k++)box(facade,-.8+k*.48,1.45,0,.4,.17,.4,0xead0a0,'stone');this.batch(facade);
+    const roof=new T.Group();roof.position.set(-5.2,.26,3.3);roof.rotation.set(.23,-.45,-.18);this.wrecks.add(roof);
+    for(let k=0;k<8;k++){const strip=box(roof,-1+k*.28,0,0,.28,.10,1.6,k%2?0xe4c798:0xb96f57,'wood');strip.rotation.x=(k%3)*.09;}
+    box(roof,-.7,.22,.1,.11,.7,.11,0x80533b,'wood');this.batch(roof);
+    const wall=new T.Group();wall.position.set(1.8,.18,1.35);wall.rotation.set(.4,-.25,-.1);this.wrecks.add(wall);
+    box(wall,0,.3,0,2.6,.6,.7,0xc5ab80,'stone');
+    for(let k=0;k<4;k++)box(wall,-1+k*.65,.7,0,.4,.25,.65,0xe0c698,'stone');this.batch(wall);
     this.update(0,0);
   }
   private batch(root:T.Group){
@@ -207,7 +199,7 @@ export class CitySprites extends PixelSprites{
     this.ruins.push({root,start:root.position.clone(),delay,tilt:(this.ruins.length%2?1:-1)*.8});return root;
   }
   private house(x:number,z:number,color:number,width:number,height:number,depth=1.3){
-    const w=this.world,g=this.structure(x,z,.1+this.ruins.length*.012);
+    const w=this.world,g=this.structure(x,z,.1+this.ruins.length*.012);g.userData.category="house";
     w.box(g,0,height/2,0,width,height,depth,color,'plaster');
     w.box(g,0,height+.09,0,width+.18,.18,depth+.2,0xf1dab2,'stone');
     w.box(g,0,height+.21,0,width-.24,.1,depth-.2,0xa78260,'stone');
@@ -219,7 +211,7 @@ export class CitySprites extends PixelSprites{
     for(let k=0;k<3;k++)w.box(g,width*.25-.13+k*.13,height*.62,depth/2+.07,.035,.6,.035,0xe6c294,'wood');
   }
   private stall(x:number,z:number,color:number){
-    const w=this.world,g=this.structure(x,z,.12+this.ruins.length*.01);
+    const w=this.world,g=this.structure(x,z,.12+this.ruins.length*.01);g.userData.category="stall";
     for(const dx of [-.9,.9])for(const dz of [-.6,.6])w.box(g,dx,.83,dz,.10,1.65,.1,0x80533b,'wood');
     w.box(g,0,.65,0,1.95,.17,1.2,0xb6824d,'wood');
     for(let k=0;k<8;k++){
@@ -236,7 +228,6 @@ export class CitySprites extends PixelSprites{
     this.previous=t;
     const delivered=!!w.waters.get(38)?.visible;
     this.lakeFall.update(time,p.drain<.9,w.reduced);
-    this.surgeFall.update(time,p.surge>.04,w.reduced);
     this.outletFall.update(time,delivered&&t<5.8,w.reduced);
     this.outletRing.visible=delivered&&progress===0;
     this.outletRing.scale.setScalar(1+Math.sin(time*4)*.12);
@@ -247,52 +238,44 @@ export class CitySprites extends PixelSprites{
     this.lakeGlints.forEach((g,n)=>{g.visible=p.drain<.9;g.scale.x=.7+Math.sin(time*1.3+n)*.3;});
     this.lake.scale.y=1;this.lake.position.y=1.24-p.drain*.025;
     this.lake.scale.set(2.55*(1-p.drain*.3),.61*(1-p.drain*.2),1);
-    const jet=p.burst;this.jet.visible=jet>0;this.jet.scale.set(1+jet*.25,jet*(1+(w.reduced?0:Math.sin(time*29)*.06)),1);
-    this.flood.position.x=-3*(1-p.flood);this.flood.position.z=5-.8*p.flood;
-    this.flood.visible=p.flood>0&&p.drain<1;this.flood.scale.set(7.3*p.flood*(1-p.drain),3.8*p.flood*(1-p.drain),1);
-    this.hole.visible=p.collapse>0;this.hole.scale.set(Math.max(.001,p.collapse),1,Math.max(.001,p.collapse));
+    const jet=p.burst;
+    this.effects.update(t,time);
     this.surgeFeed.visible=p.surge>0;this.surgeFeed.scale.y=1;
-    this.torrent.visible=p.surge>0;this.torrent.scale.set(p.surge,1,p.surge);
     this.cracks.forEach((c,n)=>{c.visible=p.crack>0&&p.collapse<.8;c.scale.z=p.crack;c.scale.x=1+Math.sin(n)*p.crack;});
     for(const [n,r] of this.ruins.entries()){
-      const fall=ease((t-4.2-r.delay*3)/2.5),sink=fall*fall;
+      const fall=cityStructureFall(t,r.root.userData.category,r.delay),sink=fall*fall;
       r.root.position.copy(r.start);
-      r.root.position.x*=1-fall*.38;r.root.position.z=T.MathUtils.lerp(r.start.z,4.1,fall*.4);
+      r.root.position.x*=1-fall*.18;r.root.position.z=T.MathUtils.lerp(r.start.z,4.1,fall*.23);
       r.root.position.y=-sink*6;
       r.root.rotation.set(fall*r.tilt,fall*(n%2?.3:-.25),-fall*r.tilt*.7);
-      r.root.scale.setScalar(1-fall*.75);r.root.visible=fall<1;
+      r.root.scale.setScalar(1);r.root.visible=fall<1;
       if(t>3&&t<4.7){r.root.position.x+=Math.sin(time*42+n)*p.crack*.035;}
     }
     if(t<4.2){this.well.rotation.z=Math.sin(time*35)*p.pressure*.025;}
-    this.wrecks.visible=p.aftermath>0;this.wrecks.scale.y=p.aftermath;
+    this.wrecks.visible=p.aftermath>0;this.wrecks.position.y=-.35*(1-p.aftermath);
     this.looseRocks.forEach(a=>{const fall=ease((t-4.5)/2);a.sprite.position.copy(a.start);a.sprite.position.y-=fall*5;a.sprite.visible=fall<1;});
     this.people.forEach((a,n)=>{
-      const flee=ease((t-1.1-n*.09)/2),fall=ease((t-4.6-n*.17)/1.5);
-      a.sprite.position.copy(a.start);a.sprite.position.x+=(n%2?1:-1)*flee*.6;a.sprite.position.z+=flee*.7;
+      const flee=ease((t-1.7-n*.09)/2.1),fall=ease((t-5.9-n*.24)/1.65);
+      a.sprite.position.copy(a.start);a.sprite.position.x+= (n===2?1.65:n===0?-.55:.15)*flee;a.sprite.position.z+=(n===2?-.35:.1)*flee;
       a.sprite.position.lerp(new T.Vector3(0,-5,4.1),fall);
-      a.sprite.scale.copy(a.scale).multiplyScalar(1-fall*.8);a.sprite.visible=fall<1;
-      const frame=w.reduced?0:t>1&&t<4.7?1+Math.floor(time*9+n)%2:Math.floor(time*.6+n)%7===0?3:0;
+      a.sprite.scale.copy(a.scale).multiplyScalar(1-fall*.3);a.sprite.visible=fall<1;
+      const frame=w.reduced?0:t>1&&t<6.5?1+Math.floor(time*9+n)%2:Math.floor(time*.6+n)%7===0?3:0;
       const alarm=this.alarms[n];alarm.position.copy(a.sprite.position);alarm.position.y+=2.4;alarm.visible=t>1+n*.09&&t<2.2+n*.09;
       a.sprite.userData.frame=frame;a.sprite.material=this.material(n%2?'shepherd':'villager',frame);
     });
-    this.foam.forEach((f,n)=>{
-      const q=(time*.55+n*.17)%1;
-      f.visible=p.flood>0&&p.drain<1;f.position.set(Math.sin(n*2.4)*6*p.flood,.27,1+q*6);
-      f.scale.setScalar((1-p.drain)*(1-Math.abs(q-.5)*2));
-    });
     for(let n=0;n<90;n++){
-      const age=(time+n*.071)%.7,a=n*2.399;
-      this.dummy.position.set(-3+Math.cos(a)*age*2.8,.9+age*7-age*age*10,5+Math.sin(a)*age*2.8);
-      this.dummy.scale.setScalar(jet*(1-age/.7));this.dummy.rotation.set(a,age*5,a);this.dummy.updateMatrix();this.spray.setMatrixAt(n,this.dummy.matrix);
+      const age=(time+n*.071)%.85,a=n*2.399;
+      this.dummy.position.set(-3+Math.cos(a)*(.4+age*1.7),3.6+age*1.9-age*age*6,5+Math.sin(a)*(.4+age*1.7));
+      this.dummy.scale.setScalar(jet*(1-age/.85));this.dummy.rotation.set(a,age*5,a);this.dummy.updateMatrix();this.spray.setMatrixAt(n,this.dummy.matrix);
     }
     this.spray.instanceMatrix.needsUpdate=true;
     for(let n=0;n<100;n++){
-      const age=Math.max(0,t-4.25-(n%7)*.13),a=n*2.399,r=2+(n%8)*.52;
-      const settled=p.aftermath>0,live=age>0&&age<2.1;
+      const age=Math.max(0,t-4.8-(n%9)*.32),a=n*2.399,r=4.5+(n%8)*.24;
+      const settled=p.aftermath>0,live=age>0&&age<1.7;
       const x=Math.cos(a)*r,z=4.1+Math.sin(a)*r*.52;
-      this.dummy.position.set(x,live?.4+age*(1.6+(n%3)*.5)-age*age*2.8:.26,z);
+      this.dummy.position.set(x,live?.4+age*(2.2+(n%3)*.5)-age*age*3.2:.26,z);
       this.dummy.rotation.set(n*.7+age*.5,n*2.1,n*.4);
-      const scale=settled?p.aftermath*(n%3===0?1.4:.75):live?1-age/2.1:0;
+      const scale=settled?p.aftermath*(n%3===0?2.1:1.25):live?(1-age/1.7)*1.8:0;
       this.dummy.scale.set(scale*(n%4===0?3:1),scale,scale*(n%4===0?.5:1));
       this.dummy.updateMatrix();this.debris.setMatrixAt(n,this.dummy.matrix);
     }
@@ -307,11 +290,12 @@ export class CitySprites extends PixelSprites{
     for(const [i,start]of this.floorStarts){
       const tile=w.tiles[i],x=start.x,z=start.z;
       const distance=Math.sqrt(x*x/40+(z-4.1)*(z-4.1)/12);
-      const fall=ease((t-4.6-distance*.8)/2.4);
+      const fall=ease((t-4.9-distance*1.7)/2.4);
       if(progress===0)continue;
-      tile.position.copy(start);tile.position.y-=fall*4;
-      tile.rotation.set(fall*(z-4.1)*.2,0,-fall*x*.1);tile.scale.y=1-fall*.8;
-      tile.visible=fall<1;
+      const edge=distance>1.05;
+      tile.position.copy(start);tile.position.y-=fall*(edge?.15:4);
+      tile.rotation.set(fall*(z-4.1)*(edge?.012:.2),0,-fall*x*(edge?.012:.1));tile.scale.y=1;
+      tile.visible=edge||fall<1;
       for(const bank of w.banks.get(i)??[])bank.visible=bank.visible&&fall<.1;
     }
     // The aftermath retains torn market fabric and masonry around the open sinkhole.

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {CITY_DURATION,cityPose,CITY_CUES} from '../src/city-timeline';
+import {CITY_DURATION,cityPose,CITY_CUES,cityStructureFall} from '../src/city-timeline';
 test('the well erupts before flooding, collapse, and the lake surge',()=>{
   assert.equal(cityPose(0).burst,0);
   assert.ok(cityPose(1.2).burst>.9);
@@ -27,4 +27,15 @@ test('the northern route and aqueduct share a raised plane above the village out
   for(const i of [9,10,11,19,20,21,22,30])assert.equal(city.elevations?.[i],1.15);
   for(const i of [38,37,36,35,43,42,50])assert.equal(city.elevations?.[i],0);
   for(const other of levels.filter((_,n)=>n!==2))assert.equal(other.elevations,undefined);
+});
+
+test('the market collapses in readable stages and settles before the ending',()=>{
+  assert.ok(cityStructureFall(5,'well',.1)>0);
+  assert.equal(cityStructureFall(5,'stall',.1),0);
+  assert.ok(cityStructureFall(6,'stall',.1)>0);
+  assert.equal(cityStructureFall(6,'house',.1),0);
+  assert.ok(cityStructureFall(6.6,'house',.1)>0);
+  assert.equal(cityStructureFall(6.6,undefined,.1),0);
+  for(const category of ['well','stall','house',undefined])assert.equal(cityStructureFall(10,category,.5),1);
+  assert.equal(cityPose(6).burst,0);
 });

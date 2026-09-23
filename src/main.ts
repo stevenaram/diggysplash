@@ -445,8 +445,11 @@ if (import.meta.env.DEV)
         world.renderer.render(world.scene,world.camera);
       },
       previewCity(seconds:number){
+        document.querySelectorAll(".dig-drop").forEach(drop=>drop.remove());
         if(!world.story?.citySprites)return;
         cancelAnimationFrame(world.frame);
+        world.waterEffects.reset();world.waterEffects.update(world.elapsed,world.reduced);
+        for(const [i,m]of world.waters)m.visible=world.game.wet.has(i);
         world.story.progress=seconds/CITY_DURATION;
         world.story.citySprites.update(world.story.progress,seconds);
         world.renderer.render(world.scene,world.camera);
