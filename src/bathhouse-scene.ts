@@ -1,3 +1,6 @@
+import {buildRoast} from './roast-model';
+import {MonsterArt} from './monster-art';
+import {metricUV} from './metric-uv';
 import * as T from 'three';
 import {PixelSprites} from './pixel-sprites';
 import {gridWorld,SIZE} from './game';
@@ -8,6 +11,7 @@ export function bathPose(t:number){return {fill:ease(t/3),enter:ease((t-3)/3),vo
 export function batherPose(t:number,n:number){return {pull:ease((t-10-n*.8)/2.8),eject:ease((t-15-n*.9)/1.6)};}
 /** Cutaway Roman-style bath: all action and its plumbing stay inside the board. */
 export class BathhouseScene extends PixelSprites {
+ private art=new MonsterArt();private roasts:T.Group[]=[];private waterCap:T.Mesh;private glints:T.Mesh[]=[];private heatSparks:T.Mesh[]=[];private heaterWasWet=false;
  private pool:T.Mesh;private funnel:T.Mesh;private swirl=new T.Group();private people:T.Sprite[]=[];
  private steam:T.Sprite[]=[];private relay:T.Mesh[]=[];private coalWater:T.Mesh;
  private heatMetal=new T.MeshBasicMaterial({color:0x82999b,vertexColors:true});private embers:T.Mesh[]=[];private inlet:T.Mesh[]=[];private valve:T.Mesh;
@@ -34,6 +38,8 @@ export class BathhouseScene extends PixelSprites {
   const surface=new T.Shape();surface.moveTo(-2.98,-3.65);surface.lineTo(2.98,-3.65);surface.lineTo(2.98,2.65);surface.lineTo(-2.98,2.65);surface.closePath();
   const hole=new T.Path();hole.absarc(0,0,.7,0,Math.PI*2,true);surface.holes.push(hole);
   this.pool=world.shaded(new T.ShapeGeometry(surface),0x40b8bb,'water');this.pool.rotation.x=-Math.PI/2;this.pool.position.set(4.3,.8,-4.6);this.root.add(this.pool);
+  this.waterCap=world.shaded(new T.CircleGeometry(.705,32),0x40b8bb,'water');this.waterCap.rotation.x=-Math.PI/2;this.root.add(this.waterCap);
+  for(let n=0;n<26;n++)this.glints.push(box(this.root,0,0,0,.2+(n%3)*.09,.012,.035,n%2?0x78d6cf:0x5fc5c6));
   const funnelMaterial=new T.MeshBasicMaterial({color:0x319ca6,side:T.DoubleSide});
   this.funnel=new T.Mesh(new T.CylinderGeometry(.7,.09,1.2,24,1,true),funnelMaterial);this.funnel.userData.ownedMaterial=funnelMaterial;this.funnel.position.set(4.3,.22,-4.6);this.root.add(this.funnel);
   this.root.add(this.swirl);this.swirl.position.set(4.3,.82,-4.6);
@@ -47,16 +53,21 @@ export class BathhouseScene extends PixelSprites {
   // Raised leftward relay, isolated from the sand underneath by explicit level links.
   for(const x of [-7,-5,-3,-1]){
    box(this.root,x,.36,-1,1.9,.18,.94,0x87988e,'stone');
-   for(const z of [-1.54,-.46])box(this.root,x,.62,z,1.96,.4,.15,0xe7e0c4,'stone');
+   box(this.root,x,.62,-.46,1.96,.4,.15,0xe7e0c4,'stone');
+   if(x!==-1)box(this.root,x,.91,-1.54,1.96,1.0,.23,0xe7e0c4,'stone');
+   else for(const dx of [-.78,.78])box(this.root,x+dx,.56,-1.65,.34,.32,.5,0xe7e0c4,'stone');
    const water=box(this.root,x,.5,-1,1.96,.045,.9,0x3bbabd,'water');this.relay.push(water);
    if(x!==-1)for(const dx of [-.65,.65])box(this.root,x+dx,.12,-1,.18,.45,.7,0xa5ada0,'stone');
   }
+  box(this.root,-7.93,.88,-1,.18,.95,1.25,0xe7e0c4,'stone');
+  // A wide, open north-facing notch is the only low intake in the high rear parapet.
+  for(const dx of [-.63,.63])box(this.root,-1+dx,.45,-1.97,.15,.25,.7,0xadc0b1,'stone');
   this.relay.push(box(this.root,-1,.49,-1.9,.95,.06,.85,0x3bbabd,'water'));
   this.relay.push(box(this.root,-7,.18,-.35,.95,.66,.09,0x3bbabd,'water'));
   this.relay.push(box(this.root,-7,-.12,.05,.95,.06,.8,0x3bbabd,'water'));
   for(const i of [24,27]){world.waters.get(i)!.visible=false;world.waters.get(i)!.geometry.scale(0,0,0);}
   // Intake and heater are unmistakable stone receivers; channels remain uncovered.
-  for(const z of [1,7]){
+  for(const z of [1]){
    box(this.root,1,-.23,z,1.8,.10,1.8,0x949f97,'stone');
    for(const dx of [-.88,.88])box(this.root,1+dx,.04,z,.14,.28,1.55,0xe0dac0,'stone');
    // Both ends stay open so the continuation north is readable.
@@ -67,18 +78,25 @@ export class BathhouseScene extends PixelSprites {
   this.inlet.push(box(this.root,1.07,.15,-.1,.72,.045,1.2,0x4ac2c3,'water'));
   this.inlet.push(box(this.root,1.35,.55,-.83,.7,.06,1.15,0x4ac2c3,'water'));
   this.valve=box(this.root,1.1,.35,-.45,.76,.6,.12,0x7e9796,'stone');
-  // A nine-stone heater sits directly under the outlet, with glowing embers underneath.
-  box(this.root,5.2,.16,3.15,4.2,.3,3.2,0x6c726a,'stone');
-  this.coalWater=box(this.root,5.2,.35,3.15,3.95,.045,3,0x43b6b9,'water');
-  for(let n=0;n<9;n++){
-   const x=4+(n%3)*1.15,z=2.15+Math.floor(n/3)*.96;
-   this.embers.push(box(this.root,x,.34,z,.9,.08,.75,0xe28a43));
-   const stone=world.shaded(new T.IcosahedronGeometry(.52,0),[0xb9523b,0xcc6543,0xb54835][n%3]);stone.scale.y=.75;stone.position.set(x,.7,z);this.root.add(stone);
+  // Twelve stones sit on one L-shaped hearth: the southwest stone IS the target tile.
+  box(this.root,5.2,.025,3.9,4.2,.15,4.6,0x6c726a,'stone');
+  box(this.root,4.15,.025,7,6.3,.15,1.8,0x6c726a,'stone');
+  this.coalWater=box(this.root,5.2,.13,3.9,4.05,.045,4.5,0x43b6b9,'water');
+  const footWater=box(this.root,4.15,.13,7,6.25,.045,1.75,0x43b6b9,'water');footWater.userData.heaterFeed=true;this.inlet.push(footWater);
+  const lipFloor=box(this.root,.55,-.045,7,.95,.10,1.78,0x6c726a,'stone');lipFloor.rotation.z=.22;
+  const lipWater=box(this.root,.55,.045,7,.95,.025,1.72,0x43b6b9,'water');lipWater.rotation.z=.22;lipWater.userData.heaterFeed=true;this.inlet.push(lipWater);
+  for(let n=0;n<12;n++){
+   const x=n<9?4+(n%3)*1.15:1+(n-9)*2.65,z=n<9?2.15+Math.floor(n/3)*1.4:7;
+   this.embers.push(box(this.root,x,.11,z,.9,.06,.75,0xe28a43));
+   const stone=world.shaded(new T.IcosahedronGeometry(.52,0),[0xb9523b,0xcc6543,0xb54835][n%3]);stone.scale.y=.75;stone.position.set(x,.48,z);this.root.add(stone);
+   const spark=world.shaded(new T.BoxGeometry(.0625,.0625,.0625),0xf2b066);spark.userData.origin=new T.Vector3(x,.7,z);this.root.add(spark);this.heatSparks.push(spark);
   }
-  // Water runs from the lower receiver along the open service channel to the stones.
-  for(const z of [6.68,7.32])box(this.root,2.25,.06,z,2.5,.25,.12,0xc3ccb6,'stone');
-  for(const x of [3.12,3.72])box(this.root,x,.06,5.1,.12,.25,3.8,0xc3ccb6,'stone');
-  const feedA=box(this.root,2.2,-.04,7,2.4,.03,.5,0x43b6b9,'water'),feedB=box(this.root,3.42,-.04,5.1,.45,.03,3.8,0x43b6b9,'water');feedA.userData.heaterFeed=feedB.userData.heaterFeed=true;this.inlet.push(feedA,feedB);
+  const food=new T.MeshBasicMaterial({color:0xcf8845,map:world.textures.world('soil')});const bark=this.art.material('bark');this.root.userData.roastMaterial=food;
+  for(let n=0;n<3;n++){
+   const roast=buildRoast(food,bark);roast.position.set(4+n*1.1,.85,2.3+n*.8);
+   roast.traverse(o=>{if(o instanceof T.Mesh){o.geometry.scale(o.scale.x,o.scale.y,o.scale.z);o.scale.setScalar(1);const old=o.geometry;o.geometry=metricUV(old);if(old!==o.geometry)old.dispose();}});
+   this.root.add(roast);this.roasts.push(roast);
+  }
   // A thick flanged metal duct warms visibly and vents into the bath.
   const pipe=(a:T.Vector3,b:T.Vector3)=>{const d=b.clone().sub(a),m=world.shaded(new T.CylinderGeometry(.18,.18,d.length(),10),0xffffff);m.material=this.heatMetal;m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());this.root.add(m);};
   pipe(new T.Vector3(7.25,.65,3.15),new T.Vector3(7.25,.65,-.8));pipe(new T.Vector3(7.25,.65,-.8),new T.Vector3(7.25,1.25,-.8));pipe(new T.Vector3(7.25,1.25,-.8),new T.Vector3(6.6,1.25,-1.3));
@@ -98,15 +116,21 @@ export class BathhouseScene extends PixelSprites {
   const t=progress*BATH_DURATION,p=bathPose(t),motion=this.world.reduced?0:time;
   this.relay.forEach(m=>m.visible=this.world.game.wet.has(27)&&this.world.game.wet.has(24));
   this.coalWater.visible=active[1];
+  if(active[1]&&!this.heaterWasWet&&!this.world.reduced)this.world.onBathSound('sizzle');
+  this.heaterWasWet=active[1];
+  this.heatSparks.forEach((m,n)=>{const a=(motion*.65+n*.37)%1;m.visible=!active[1]||t>18;m.position.copy(m.userData.origin);m.position.x+=Math.sin(n*2+a)*.13;m.position.y+=a*.7;m.scale.setScalar(Math.sin(a*Math.PI));});
   this.heatMetal.color.set(active[1]?0xbd5a43:0x82999b);
   this.embers.forEach((m,n)=>{m.visible=!active[1];m.scale.y=1+Math.sin(motion*2+n)*.12;});
   this.inlet.forEach(m=>m.visible=m.userData.heaterFeed?active[1]:active[0]);
   this.valve.position.y=active[1]?1.05:.35;
   const full=(active[0]?(.28+.72*p.fill):0)*(1-p.empty);this.pool.visible=full>.01;this.pool.position.y=.32+full*.48;
+  this.waterCap.visible=this.pool.visible&&p.vortex<.999;this.waterCap.position.set(4.3,this.pool.position.y+.002,-4.6);this.waterCap.scale.setScalar(1-p.vortex);
+  this.glints.forEach((m,n)=>{m.visible=this.pool.visible;m.position.set(1.55+(n%6)*.98+Math.sin(motion*.3+n)*.07,this.pool.position.y+.014,-6.7+Math.floor(n/6)*1.15);m.scale.x=.6+Math.sin(motion*.7+n)*.25;});
   this.funnel.visible=p.vortex>0&&full>.02;this.funnel.position.y=this.pool.position.y-.6;
-  this.swirl.visible=full>.05;this.swirl.position.y=this.pool.position.y+.025;this.swirl.rotation.y=-motion*(.15+p.vortex*1.5);this.swirl.scale.setScalar(1-p.empty*.5);
+  this.swirl.visible=full>.05&&p.vortex>0;this.swirl.position.y=this.pool.position.y+.025;this.swirl.rotation.y=-motion*(.15+p.vortex*1.5);this.swirl.scale.setScalar(1-p.empty*.5);
   this.swirl.children.forEach((m,n)=>{const u=((n%16)/16+motion*(.025+p.vortex*.14))%1,r=.72+(1-u)*1.8,a=Math.floor(n/16)*Math.PI*2/3+(1-u)*4.8;m.position.set(Math.cos(a)*r,-u*p.vortex*.1,Math.sin(a)*r);m.rotation.y=Math.PI/2-a;m.scale.setScalar(Math.sin(u*Math.PI)*.8+.2);});
-  this.steam.forEach((m,n)=>{const a=((motion*.22+n/16)%1),heater=n<6;m.visible=active[1];m.position.set((heater?5.2:6.6)+Math.sin(n*2.4)* (heater?1.2:.3)+a*.3,(heater?1:1.25)+a*2.1,(heater?3.15:-1.5)+Math.cos(n*2.4)*(heater?.9:.2));m.scale.setScalar(.5+a*.6);m.material.opacity=Math.sin(a*Math.PI)*.32*(heater?.8:1);});
+  this.steam.forEach((m,n)=>{const a=((motion*.22+n/16)%1),heater=n<6;m.visible=active[1];m.position.set((heater?5.2:6.6)+Math.sin(n*2.4)* (heater?1.2:.3)+a*.3,(heater?1:1.25)+a*2.1,(heater?3.15:-1.5)+Math.cos(n*2.4)*(heater?.9:.2));if(t>19&&heater){const roast=this.roasts[n%3];m.position.set(roast.position.x+Math.sin(n)*.15,roast.position.y+.3+a*1.8,roast.position.z);}
+  m.scale.setScalar(.5+a*.6);m.material.opacity=Math.sin(a*Math.PI)*.32*(heater?.8:1);});
   this.people.forEach((s,n)=>{
    const b=batherPose(t,n),startX=2.15+n*2.15,homeX=2.6+n*1.7,homeZ=-3.4-(n%2)*1.4;
    s.visible=true;s.scale.set(2,2.5,1);s.material=this.material('bather',p.enter>0&&p.enter<1?Math.floor(motion*6)%2:0);s.material.rotation=0;
@@ -115,10 +139,13 @@ export class BathhouseScene extends PixelSprites {
    if(b.pull>0){const a=n*2.1+b.pull*7,r=(1-b.pull)*1.8;s.position.set(4.3+Math.cos(a)*r,.45-b.pull*.35,-4.6+Math.sin(a)*r);s.scale.multiplyScalar(1-ease((b.pull-.55)/.45));}
    if(b.pull>=1)s.visible=false;
    if(t>=15+n*.9){s.visible=true;s.material=this.material('bather-down',4);s.scale.set(3,2,1);s.position.set(T.MathUtils.lerp(5.2,4.0+n*1.1,b.eject),.92+Math.sin(b.eject*Math.PI)*1.7,T.MathUtils.lerp(.65,2.3+n*.8,b.eject));}
+   const cooked=ease((t-(17.25+n*.9))/.55);this.roasts[n].visible=cooked>0;
+   if(cooked>0){s.visible=false;this.roasts[n].scale.setScalar(.8+.2*cooked);}
   });
   this.splash.forEach((m,n)=>{const person=Math.floor(n/10),age=t-(16.6+person*.9);m.visible=age>0&&age<.8;const a=n*2.4;m.position.set(4.0+person*1.1+Math.cos(a)*age*1.2,.9+age*1.8-age*age*3,2.3+person*.8+Math.sin(a)*age);m.scale.setScalar(Math.max(0,1-age/.8));});
   if(t<this.previous)this.previous=0;
   for(const [at,cue]of [[.2,'fill'],[3,'steam'],[9.8,'drain'],[16.6,'splat'],[17.5,'splat'],[18.4,'splat']] as const)if(!this.world.reduced&&this.previous<at&&t>=at)this.world.onBathSound(cue);
   this.previous=t;
  }
+ override dispose(){super.dispose();this.art.dispose();(this.root.userData.roastMaterial as T.Material).dispose();}
 }

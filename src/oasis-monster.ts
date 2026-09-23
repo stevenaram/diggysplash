@@ -1,3 +1,4 @@
+import {buildRoast} from './roast-model';
 import * as T from 'three';
 import {gridWorld} from './game';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -113,10 +114,7 @@ export class OasisMonster {
     this.mesh(this.spit,new T.CylinderGeometry(.12,.12,4.3,7),bark,0,0,0).rotation.z=Math.PI/2;
     const food=this.mat(0xcf8845,'soil');
     for(let n=0;n<3;n++){
-      const roast=new T.Group();roast.position.x=(n-1)*1.12;this.spit.add(roast);this.roasts.push(roast);
-      const body=this.mesh(roast,new T.SphereGeometry(.52,10,6),food,0,0,0);body.scale.set(.85,.75,1);
-      for(const x of [-.25,.25]){const drumstick=this.mesh(roast,new T.SphereGeometry(.19,6,4),food,x,-.3,.3);drumstick.scale.z=1.4;}
-      for(let k=0;k<3;k++){const score=this.mesh(roast,new T.BoxGeometry(.055,.04,.4),bark,-.2+k*.2,.36,0);score.rotation.y=.4;}
+      const roast=buildRoast(food,bark);roast.position.x=(n-1)*1.12;this.spit.add(roast);this.roasts.push(roast);
     }
     for(let n=0;n<5;n++){
       const log=this.mesh(this.grill,new T.CylinderGeometry(.14,.18,1.6,6),bark,(n-2)*.6,.18,0);log.rotation.x=Math.PI/2;log.rotation.z=(n%2-.5)*.3;

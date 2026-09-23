@@ -376,9 +376,11 @@ function drawCaravanPerson(kind:'highwayman'|'shepherd-down',frame:number):HTMLC
 /** Same face and native pixel scale as the shepherd, in a modest wrapped towel. */
 function drawBather(kind:'bather'|'bather-down',frame:number){
  const c=document.createElement('canvas');c.width=32;c.height=40;const x=c.getContext('2d')!;x.imageSmoothingEnabled=false;
- x.drawImage(drawPixel('shepherd',frame%2?1:0),0,0);x.clearRect(24,12,8,28);x.clearRect(6,24,20,16);
+ // Copy only the familiar head/hat; this canvas never contains the old shirt or boots.
+ x.drawImage(drawPixel('shepherd',0),0,0,32,22,0,0,32,22);x.clearRect(24,12,8,10);
  const r=(a:number,b:number,w:number,h:number,col:string)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
  // Bare chest and arms above a folded waist towel; original face and hat remain intact.
+ r(13,22,7,3,'#efc496');r(14,22,5,2,'#765249');
  r(10,24,13,6,'#bd8d69');r(11,24,11,5,'#efc496');r(12,24,4,3,'#f7d6aa');
  r(7,24,3,7,'#bd8d69');r(8,24,2,6,'#efc496');r(23,24,3,7,'#bd8d69');r(23,24,2,6,'#efc496');
  r(10,29,14,7,'#778d8b');r(11,29,12,6,'#ece6ce');r(12,30,4,5,'#fff3d7');r(20,30,2,5,'#b8c9bd');r(11,33,12,1,'#83a7a7');r(19,29,3,2,'#fff3d7');
