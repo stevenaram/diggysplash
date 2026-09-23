@@ -1,3 +1,4 @@
+import {bathSound} from './bathhouse-sound';
 import {caravanSound} from './caravan-sound';
 import {CARAVAN_DURATION} from './caravan-timeline';
 import {FARM_DURATION} from './farm-timeline';
@@ -368,6 +369,7 @@ world.onWater=()=>sound("water");
 world.onBattleSound = sound;
 world.onCitySound = sound;
 world.onFarmSound = sound;
+world.onBathSound=cue=>{if(!muted&&audio)bathSound(audio,cue);};
 world.onCaravanSound=cue=>{if(!muted&&audio)caravanSound(audio,cue);};
 world.onCreatureSound = sound;
 document.addEventListener("visibilitychange",()=>{if(document.hidden)stopCreatureSounds();});
@@ -453,6 +455,11 @@ if (import.meta.env.DEV)
         world.story.progress=seconds/OASIS_DURATION;
         world.story.oasisSprites.update(world.story.progress,seconds);
         stopCreatureSounds();
+        world.renderer.render(world.scene,world.camera);
+      },
+      previewBathhouse(seconds:number){
+        if(!world.story?.bathhouseScene)return;cancelAnimationFrame(world.frame);
+        world.story.bathhouseScene.update(seconds/24,[true,true],seconds);
         world.renderer.render(world.scene,world.camera);
       },
       previewCaravan(seconds:number){

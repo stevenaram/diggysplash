@@ -26,7 +26,7 @@ test('the northern route and aqueduct share a raised plane above the village out
   assert.equal(city.elevations?.length,64);
   for(const i of [9,10,11,19,20,21,22,30])assert.equal(city.elevations?.[i],1.15);
   for(const i of [38,37,36,35,43,42,50])assert.equal(city.elevations?.[i],0);
-  for(const other of levels.filter((_,n)=>n!==2))assert.equal(other.elevations,undefined);
+  for(const other of levels.filter((_,n)=>n!==2&&n!==5))assert.equal(other.elevations,undefined);
 });
 
 test('the market collapses in readable stages and settles before the ending',()=>{

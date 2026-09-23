@@ -33,6 +33,7 @@ export interface Level {
       | "harvest"
       | "caravan"
       | "temple"
+      | "bathhouse"
       | "fortress"
       | "battle";
     title: string;

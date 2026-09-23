@@ -153,24 +153,16 @@ const caravan = board(
   [49,41,33,57,58,59,51,52,53,45,36,37,38],
   13,
 );
-const temple = board(
-  "temple",
-  "The sleeping sun",
-  "Awaken three seals. Light the beacon.",
-  "The desert has a guiding light!",
-  [
-    "________",
-    "......._",
-    ".O.#..O_",
-    "...#=.._",
-    "~......_",
-    "...###._",
-    ".....O._",
-    "________",
-  ],
-  [33, 25, 34, 35, 36, 29, 30, 38, 46, 54],
-  10,
+const bathhouse = board(
+  "bathhouse", "Last bath", "Fill the bath and feed the steam room.", "Down the drain.",
+  ["~...____",".##.____",".#..____","a##a____","b.##O___","..#..___",".#...___","....O___"],
+  [1,2,3,11,19,40,48,56,57,58,59,52,44],
+  13,
 );
+// Isolated aqueduct endpoints: only the north intake accepts water, then the
+// opposite spillway becomes the starting point of the southern network.
+bathhouse.links=[[19,27],[27,24],[24,32]];
+bathhouse.elevations=Array.from({length:64},(_,i)=>i<24&&i%8<4?.6:0);
 const fortress = board(
   "fortress",
   "Before the storm",
@@ -213,7 +205,7 @@ export const levels = [
   city,
   harvest,
   caravan,
-  temple,
+  bathhouse,
   fortress,
   battle,
 ];

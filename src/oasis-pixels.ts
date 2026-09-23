@@ -1,14 +1,15 @@
 /** Original pixel drawings, deliberately rasterized without antialiasing. */
-export type PixelKind = 'torch' | 'bones' | 'horse' | 'black-horse' | 'highwayman' | 'shepherd-down' | 'thirst' | 'sad' | 'smirk' | 'campfire' | 'pumpkin-bite' | 'produce' | 'farmer-full' | 'farmer-down' | 'wolf' | 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower' | 'jug' | 'camp-rug' | 'alarm';
+export type PixelKind = 'bather' | 'bather-down' | 'torch' | 'bones' | 'horse' | 'black-horse' | 'highwayman' | 'shepherd-down' | 'thirst' | 'sad' | 'smirk' | 'campfire' | 'pumpkin-bite' | 'produce' | 'farmer-full' | 'farmer-down' | 'wolf' | 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower' | 'jug' | 'camp-rug' | 'alarm';
 /** Every source pixel occupies 1/32 of a tile; small props get small drawings. */
 export const PIXEL_SIZES: Record<PixelKind, readonly [number, number]> = {
-  torch:[12,24], bones:[40,24], horse:[56,48], 'black-horse':[56,48], highwayman:[32,40], 'shepherd-down':[48,32], thirst:[14,20], sad:[18,18], smirk:[18,18], campfire:[24,32],
+  bather:[32,40], 'bather-down':[48,32], torch:[12,24], bones:[40,24], horse:[56,48], 'black-horse':[56,48], highwayman:[32,40], 'shepherd-down':[48,32], thirst:[14,20], sad:[18,18], smirk:[18,18], campfire:[24,32],
   'pumpkin-bite':[14,14], produce:[24,28], 'farmer-full':[64,48], 'farmer-down':[64,64], wolf:[48,32],
   alarm:[14,20], villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
   grass: [10, 12], basket: [16, 16], blanket: [22, 12], heart: [12, 12],
   pebble: [8, 6], dust: [3, 3], wheat:[20,24], bread:[18,12], sack:[14,20], flower:[28,36], jug:[16,24], 'camp-rug':[48,24],
 };
 export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
+  if(kind==='bather'||kind==='bather-down')return drawBather(kind,frame);
   if(kind==='highwayman'||kind==='shepherd-down')return drawCaravanPerson(kind,frame);
   if(kind==='farmer-full'||kind==='farmer-down')return drawFarmFarmer(kind,frame);
   const [w, h] = PIXEL_SIZES[kind];
@@ -370,4 +371,15 @@ function drawCaravanPerson(kind:'highwayman'|'shepherd-down',frame:number):HTMLC
  if(frame===1||frame===2){r(25,frame===1?14:23,2,11,'#d2dcdb');r(24,frame===1?24:32,5,2,'#c5a66d');r(26,frame===1?15:24,1,8,'#f3edcd');}
  if(frame===3){r(23,19,3,8,'#efc496');r(24,17,3,4,'#efc496');}
  return canvas;
+}
+
+/** Same face and native pixel scale as the shepherd, in a modest wrapped towel. */
+function drawBather(kind:'bather'|'bather-down',frame:number){
+ const c=document.createElement('canvas');c.width=32;c.height=40;const x=c.getContext('2d')!;x.imageSmoothingEnabled=false;
+ x.drawImage(drawPixel('shepherd',frame%2?1:0),0,0);x.clearRect(0,0,32,14);x.clearRect(24,12,8,28);
+ const r=(a:number,b:number,w:number,h:number,col:string)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
+ r(11,10,10,3,'#785748');r(12,9,8,2,'#a17a52');r(10,23,14,12,'#697e83');r(11,23,12,11,'#e6e1c8');r(12,24,4,9,'#fff2d4');r(19,24,2,10,'#b4c2b5');r(11,31,12,2,'#779b9c');r(7,24,3,7,'#efc496');r(22,24,3,7,'#efc496');
+ if(frame>=4){r(11,17,11,4,'#efc496');for(const a of [11,18])for(const [dx,dy]of [[0,0],[2,0],[1,1],[0,2],[2,2]])r(a+dx,17+dy,1,1,'#494353');}
+ if(kind==='bather')return c;
+ const down=document.createElement('canvas');down.width=48;down.height=32;const d=down.getContext('2d')!;d.imageSmoothingEnabled=false;d.translate(4,31);d.rotate(-Math.PI/2);d.drawImage(c,0,0);return down;
 }
