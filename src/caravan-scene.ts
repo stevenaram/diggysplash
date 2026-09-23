@@ -9,7 +9,8 @@ export class CaravanScene extends PixelSprites{
  private wagons:ReturnType<typeof coveredWagon>[]=[];
  private horses:T.Sprite[]=[];private people:T.Sprite[]=[];private raiders:T.Sprite[]=[];private darkHorses:T.Sprite[]=[];
  private bones:T.Sprite[]=[];private torch!:T.Sprite;private smiles:T.Sprite[]=[];private fires:T.Sprite[]=[];
- private ropes:T.Line[]=[];private previous=0;
+ private smoke:T.Sprite[]=[];
+ private ropes:T.Line[]=[];private previous=0;private smokeStarted:number|null=null;
  private readonly starts=[-5,1,5];
  constructor(world:World){
   super(world);const box=world.box.bind(world);
@@ -28,6 +29,16 @@ export class CaravanScene extends PixelSprites{
    this.darkHorses.push(this.add('black-horse',8,-3));this.raiders.push(this.add('highwayman',8,-3));
    this.smiles.push(this.add('smirk',8,-3));
    this.fires.push(this.add('campfire',3.1+n*.7,6.85+n*.08));
+  }
+  // Shared 12px puff artwork; a fixed pool avoids allocations during the cinematic.
+  const smokeCanvas=document.createElement('canvas');smokeCanvas.width=smokeCanvas.height=12;
+  const ctx=smokeCanvas.getContext('2d')!;ctx.fillStyle='#ffffff';
+  for(const [x,y,w,h]of [[3,1,5,2],[1,3,9,5],[2,8,8,2],[4,10,4,1],[10,5,1,3]])ctx.fillRect(x,y,w,h);
+  const smokeTexture=new T.CanvasTexture(smokeCanvas);smokeTexture.magFilter=smokeTexture.minFilter=T.NearestFilter;smokeTexture.generateMipmaps=false;
+  this.root.userData.ownedTexture=smokeTexture;
+  for(let n=0;n<12;n++){
+   const material=new T.SpriteMaterial({map:smokeTexture,color:n%2?0x897e73:0xa69c8f,transparent:true,depthWrite:false,toneMapped:false});
+   const puff=new T.Sprite(material);puff.name='caravan-fire-smoke';puff.userData.ownedMaterial=material;puff.raycast=()=>{};this.root.add(puff);this.smoke.push(puff);
   }
   this.torch=this.add('torch',0,0);
   for(let n=0;n<8;n++){
@@ -88,6 +99,18 @@ export class CaravanScene extends PixelSprites{
    const front=this.wagons[2].root.localToWorld(new T.Vector3(1.5,.85,0));this.root.worldToLocal(front);
    this.rope(2+n,front,new T.Vector3(horse.position.x-.9,.8,horse.position.z),p.hitch>.95&&horse.visible&&this.wagons[2].root.visible);
    this.rope(5+n,new T.Vector3(dark.position.x,.9,dark.position.z),new T.Vector3(horse.position.x+.8,.9,horse.position.z),p.escape>0&&dark.visible&&horse.visible);
+  });
+  if(t<=17.8)this.smokeStarted=null;
+  else if(this.smokeStarted===null)this.smokeStarted=time-(t-17.8);
+  const smokeTime=this.smokeStarted===null?-1:time-this.smokeStarted;
+  this.smoke.forEach((puff,n)=>{
+   const life=2.7,start=n*.24,elapsed=smokeTime-start;
+   const age=this.world.reduced?.48:((elapsed%life)+life)%life/life;
+   puff.visible=smokeTime>0&&elapsed>=0;
+   const source=this.fires[n%3].position,embers=ease((t-22)/3);
+   puff.position.set(source.x+Math.sin(n*2.4+age*2)*(.12+age*.3)+age*.32,source.y+1.8-embers*.7+age*3,source.z-.15-age*.18);
+   puff.scale.setScalar((.65+age*.5)*(1-embers*.2));
+   puff.material.opacity=Math.sin(Math.PI*age)*.4*(1-embers*.35);
   });
   const flight=Math.max(0,Math.min(1,(t-17)/.8));
   // Throw from the departing right-hand raider, landing in the unobstructed foreground pile.
