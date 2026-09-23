@@ -128,7 +128,7 @@ export class CitySprites extends PixelSprites{
     box(this.well,.3,1.4,0,.045,.8,.045,0xc4a36c,'wood');
     w.cylinder(this.well,.3,1.02,0,.2,.25,0x9c7350,.24);
     // A handful of readable characters, all from the established 32px/unit bank.
-    for(const [n,x,z] of [[0,-6.3,3.05],[1,6.9,2.1],[2,.8,6.3]]){
+    for(const [n,x,z] of [[0,-4.05,3.25],[1,6.9,2.1],[2,.8,6.3]]){
       const sprite=this.add(n%2?'shepherd':'villager',x,z);
       this.people.push({sprite,start:sprite.position.clone(),scale:sprite.scale.clone()});
       this.alarms.push(this.add('alarm',x,z));
@@ -258,7 +258,7 @@ export class CitySprites extends PixelSprites{
     this.looseRocks.forEach(a=>{const fall=ease((t-4.5)/2);a.sprite.position.copy(a.start);a.sprite.position.y-=fall*5;a.sprite.visible=fall<1;});
     this.people.forEach((a,n)=>{
       const flee=ease((t-1.7-n*.09)/2.1),fall=ease((t-5.9-n*.24)/1.65);
-      a.sprite.position.copy(a.start);a.sprite.position.x+= (n===2?1.65:n===0?-.55:.15)*flee;a.sprite.position.z+=(n===2?-.35:.1)*flee;
+      a.sprite.position.copy(a.start);a.sprite.position.x+= (n===2?1.65:n===0?.35:.15)*flee;a.sprite.position.z+=(n===2?-.35:.1)*flee;
       a.sprite.position.lerp(new T.Vector3(0,-5,4.1),fall);
       a.sprite.scale.copy(a.scale).multiplyScalar(1-fall*.3);a.sprite.visible=fall<1;
       const frame=w.reduced?0:t>1&&t<6.5?1+Math.floor(time*9+n)%2:Math.floor(time*.6+n)%7===0?3:0;
