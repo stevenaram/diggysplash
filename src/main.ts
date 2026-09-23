@@ -1,3 +1,4 @@
+import {FARM_DURATION} from './farm-timeline';
 import {farmSound,type FarmCue} from './farm-sound';
 import {citySound,type CityCue} from './city-sound';
 import {CITY_DURATION} from './city-timeline';
@@ -450,7 +451,7 @@ if (import.meta.env.DEV)
       previewFarm(seconds:number){
         if(!world.story?.harvestScene)return;
         cancelAnimationFrame(world.frame);
-        world.story.harvestScene.update(2,[true,true],seconds/18,seconds);
+        world.story.harvestScene.update(2,[true,true],seconds/FARM_DURATION,seconds);
         world.renderer.render(world.scene,world.camera);
       },
       previewCity(seconds:number){

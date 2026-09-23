@@ -1,6 +1,7 @@
 import * as T from 'three';
 import {PixelSprites} from './pixel-sprites';
 import {gridWorld,SIZE} from './game';
+import {PIXEL_SIZES} from './oasis-pixels';
 import {FARM_DURATION,farmPose} from './farm-timeline';
 import type {World} from './world';
 
@@ -14,6 +15,8 @@ export class HarvestScene extends PixelSprites{
   private wolves:T.Sprite[]=[];
   private food:T.Sprite[]=[];
   private alarms:T.Sprite[]=[];
+  private readonly farmerX=[-5.5,-.55,2.65];
+  private crumbs:T.Mesh[]=[];
   constructor(world:World){
     super(world);
     const box=world.box.bind(world);
@@ -48,14 +51,17 @@ export class HarvestScene extends PixelSprites{
       if(x<7.5)for(const y of [.24,.55])box(this.root,x+.75,y,z,1.5,.10,.12,0xb49668,'wood');
     }
     for(const [x,z]of [[-7,7.0],[6.7,7.0]]){this.add('sack',x,z);this.add('basket',x+.55,z+.2);}
-    // Long communal table occupies the bottom reserved strip.
-    box(this.root,0,.48,7.35,8.3,.15,.85,0xab7850,'wood');
-    for(const x of [-3.6,0,3.6])box(this.root,x,.22,7.35,.2,.45,.6,0x78533c,'wood');
+    // Farmers stand along the field apron, close enough to eat crops directly.
     for(let n=0;n<3;n++){
-      const x=-3+n*3,farmer=this.add('villager',x,6.5);this.farmers.push(farmer);
-      const alarm=this.add('alarm',x,6.5);alarm.position.y=4.6;this.alarms.push(alarm);
-      for(let k=0;k<2;k++){const loaf=this.add('bread',x-.35+k*.7,7.25);loaf.position.y=.57;this.food.push(loaf);}
-      this.wolves.push(this.add('wolf',-7+n*.8,7));
+      const x=this.farmerX[n],farmer=this.add('villager',x,-4.35);this.farmers.push(farmer);
+      const alarm=this.add('alarm',x,-4.35);alarm.position.y=4.6;this.alarms.push(alarm);
+      const bite=this.add('pumpkin-bite',x,-4.35);this.food.push(bite);
+      this.wolves.push(this.add('wolf',-7+n*.8,-3.9));
+    }
+    // Small, pooled flecks accent each bite; nothing persists as a stain.
+    for(let n=0;n<18;n++){
+      const material=new T.MeshBasicMaterial({color:0xcf8450,transparent:true,depthWrite:false});
+      const crumb=new T.Mesh(new T.BoxGeometry(.0625,.0625,.0625),material);crumb.userData.ownedMaterial=material;this.root.add(crumb);this.crumbs.push(crumb);
     }
     world.game.level.tiles.forEach((t,i)=>{if(t==='rock')this.addTileRock(gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE)));});
     this.update(0,[false,false],0,0);
@@ -63,38 +69,51 @@ export class HarvestScene extends PixelSprites{
   update(dt:number,active:boolean[],progress:number,time:number){
     const t=progress*FARM_DURATION,p=farmPose(t),motion=this.world.reduced?0:time;
     if(t<this.previous)this.previous=0;
-    if(!this.world.reduced)for(const [at,cue]of [[2.5,'harvest-chime'],[4,'feast-pop'],[5,'feast-pop'],[8.7,'farm-fall'],[10,'wolf-call']] as const){if(this.previous<at&&t>=at)this.world.onFarmSound(cue);}
+    if(!this.world.reduced)for(const [at,cue]of [[2.5,'harvest-chime'],[4,'feast-pop'],[6,'feast-pop'],[8,'feast-pop'],[11,'farm-fall'],[12,'wolf-call']] as const){if(this.previous<at&&t>=at)this.world.onFarmSound(cue);}
     this.previous=t;
     this.power=this.power.map((v,n)=>!active[n]?0:Math.min(1,v+dt/2));
     this.fields.forEach((field,n)=>field.forEach((s,k)=>{
-      const grow=progress>0?p.grow:this.power[n];
+      const grow=Math.max(this.power[n],progress>0?p.grow:0);
+      s.visible=!(k>=6&&t>3+(k-6)*.95);
       s.material=this.material(s.userData.crop,grow>.8?2+Math.floor(motion*.9+k*.2)%2:grow>.12?1:0);
     }));
     this.channels.forEach((a,n)=>a.forEach(m=>m.visible=active[n]||progress>0));
-    this.food.forEach((s,n)=>{s.visible=p.grow>.9&&p.feast<.98;const bite=(Math.sin(motion*5+n)+1)*.5;
-      s.position.y=t>3?.6+bite*1.05:.57;s.position.z=t>3?7.25-bite*.65:7.25;});
+    this.food.forEach((s,n)=>{
+      const bite=(Math.sin(motion*7+n)+1)*.5;
+      s.visible=t>3+n*.15&&t<9;
+      s.material=this.material('pumpkin-bite',Math.floor(motion*5+n)%2);
+      s.position.set(this.farmerX[n]+.35,1.25+bite*.35,-4.65+bite*.2);
+    });
     this.farmers.forEach((s,n)=>{
-      const x=-3+n*3;
-      s.position.set(x,.04,6.5+p.feast*.2);
-      const down=p.fall>=1,full=p.full>.1;
+      const x=this.farmerX[n],eating=t>3&&t<9;
+      s.position.set(x,.04,-4.35-(eating?Math.sin(motion*7+n)*.035:0));
+      const down=t>=10,full=t>=3.7;
       const kind=down?'farmer-down':full?'farmer-full':'villager';
-      s.material=this.material(kind,p.feast>0&&p.fall===0?Math.floor(motion*5)%2:0);
-      s.scale.set((down?48:full?44:32)/16,(down?26:40)/16,1);
-      // Collapse into a bespoke horizontal sprite with crossed eyes, never a sleeping pose.
-      s.material.rotation=down?0:-p.fall*.85;
-      s.visible=p.eat<1;s.position.y=down?.04:.04+Math.sin(motion*8+n)*.025*p.feast*(1-p.full);
-      this.alarms[n].visible=t>7.4&&t<8.6;
+      const weight=Math.min(3,Math.max(0,Math.floor((t-3.7)/1.65)));
+      const frame=down?Math.min(5,Math.floor((t-10)/.27)):full?weight*2+(eating?Math.floor(motion*5+n)%2:0):0;
+      s.material=this.material(kind,frame);
+      const [width,height]=PIXEL_SIZES[kind];s.scale.set(width/16,height/16,1);
+      s.visible=t<17.1+n*.15;
+      this.alarms[n].visible=t>9.2&&t<10.4;
     });
     this.wolves.forEach((s,n)=>{
-      const arrival=T.MathUtils.smoothstep(t,10+n*.3,12.5+n*.3),exit=p.leave;
-      const target=-3+n*3;
-      s.visible=t>=10+n*.3;
-      s.position.set(T.MathUtils.lerp(-8.8,target,arrival)+exit*10,.06,6.75+Math.sin(motion*7+n)*.035*(1-p.eat));
-      const eating=t>13&&t<15.5;
-      s.material=this.material('wolf',eating?2+Math.floor(motion*7+n)%2:Math.floor(motion*7+n)%2);
-      // Brief head-down bites; the remains disappear without blood or exposed anatomy.
-      if(eating)s.position.z+=Math.sin(motion*9+n)*.055;
-      if(exit>.9)s.visible=false;
+      const arrival=T.MathUtils.smoothstep(t,12+n*.2,14+n*.2),target=this.farmerX[n];
+      const eating=t>14+n*.2&&t<17.5+n*.2,fat=t>=17.5+n*.2;
+      const wander=fat?Math.min(4,t-17.5-n*.2):0;
+      const sideways=Math.sin(wander*1.5+n*.3)*.25;
+      s.visible=t>=12+n*.2;
+      s.position.set(T.MathUtils.lerp(-8.8,target-.4,arrival)+(fat?sideways:0),.06,-3.9+(fat?Math.sin(wander*.8)*1.1:0));
+      const walkFrame=this.world.reduced||t>=22?0:Math.floor(motion*(fat?4:7)+n)%4;
+      s.material=this.material('wolf',fat?8+walkFrame:eating?4+walkFrame:walkFrame,fat&&Math.cos(wander*1.5+n*.3)<0);
+      if(eating)s.position.z+=Math.sin(motion*9+n)*.07;
+    });
+    this.crumbs.forEach((crumb,n)=>{
+      const actor=Math.floor(n/6),age=this.world.reduced?.5:(motion*2.8+(n%6)/6)%1;
+      const feeding=t>14+actor*.2&&t<17.5+actor*.2,eating=t>3&&t<9;
+      crumb.visible=feeding||eating;
+      const material=crumb.material as T.MeshBasicMaterial;
+      material.color.setHex(feeding?0xb96b5d:0xe4ad5c);material.opacity=(1-age)*.65;
+      crumb.position.set(this.farmerX[actor]+.4+Math.sin(n*2.399)*age*.3,(feeding?.4:1.25)+Math.sin(age*Math.PI)*.16-age*.2,-4.15+Math.cos(n*2.399)*age*.2);
     });
   }
 }
