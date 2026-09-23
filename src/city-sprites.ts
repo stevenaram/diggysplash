@@ -227,7 +227,7 @@ export class CitySprites extends PixelSprites{
     if(!w.reduced){for(const cue of CITY_CUES)if(this.previous<cue.at&&t>=cue.at)w.onCitySound(cue.cue);}
     this.previous=t;
     const delivered=!!w.waters.get(38)?.visible;
-    this.lakeFall.update(time,p.drain<.9,w.reduced);
+    this.lakeFall.update(time,true,w.reduced);
     this.outletFall.update(time,delivered&&t<5.8,w.reduced);
     this.outletRing.visible=delivered&&progress===0;
     this.outletRing.scale.setScalar(1+Math.sin(time*4)*.12);
@@ -235,12 +235,12 @@ export class CitySprites extends PixelSprites{
     this.stream.position.x=5+Math.sin(time*2)*.1;
     this.stream.position.z=-3.6+(w.reduced?.45:(time*.55)%1)*3.4;
     this.fronds.forEach((f,n)=>f.rotation.z=f.userData.baseTilt+(w.reduced?0:Math.sin(time*1.5+n)*.025));
-    this.lakeGlints.forEach((g,n)=>{g.visible=p.drain<.9;g.scale.x=.7+Math.sin(time*1.3+n)*.3;});
+    this.lakeGlints.forEach((g,n)=>{g.visible=true;g.scale.x=.7+Math.sin(time*1.3+n)*.3;});
     this.lake.scale.y=1;this.lake.position.y=1.24-p.drain*.025;
     this.lake.scale.set(2.55*(1-p.drain*.3),.61*(1-p.drain*.2),1);
     const jet=p.burst;
     this.effects.update(t,time);
-    this.surgeFeed.visible=p.surge>0;this.surgeFeed.scale.y=1;
+    this.surgeFeed.visible=p.runoff>0;this.surgeFeed.scale.y=1;
     // Retire the elevated support tile with the broken flume, before runoff crosses it.
     w.tiles[30].visible=p.collapse<.8;
     this.cracks.forEach((c,n)=>{c.visible=p.crack>0&&p.collapse<.8;c.scale.z=p.crack;c.scale.x=1+Math.sin(n)*p.crack;});

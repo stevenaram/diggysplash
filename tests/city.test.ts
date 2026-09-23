@@ -39,3 +39,11 @@ test('the market collapses in readable stages and settles before the ending',()=
   for(const category of ['well','stall','house',undefined])assert.equal(cityStructureFall(10,category,.5),1);
   assert.equal(cityPose(6).burst,0);
 });
+
+test('runoff continues feeding the crater pool after the flood drains and resets cleanly',()=>{
+  assert.equal(cityPose(0).runoff,0);
+  assert.equal(cityPose(7).runoff,0);
+  assert.equal(cityPose(CITY_DURATION).runoff,1);
+  assert.equal(cityPose(CITY_DURATION).drain,1);
+  assert.equal(cityPose(CITY_DURATION+10).runoff,1);
+});

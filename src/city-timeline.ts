@@ -8,6 +8,7 @@ export function cityPose(seconds:number){
     crack:cityEase((seconds-3)/1.1),
     collapse:cityEase((seconds-4.2)/4),
     surge:cityEase((seconds-7.4)/1.3)*(1-cityEase((seconds-10.4)/2)),
+    runoff:cityEase((seconds-7.4)/1.3),
     drain:cityEase((seconds-10)/3),
     aftermath:cityEase((seconds-11)/2),
   };

@@ -12,6 +12,8 @@ export class CityDisasterEffects{
   private dummy=new T.Object3D();
   private streams:T.Mesh[]=[];
   private plume:T.Mesh[]=[];
+  private pool=new T.Group();
+  private poolRipples:T.Mesh[]=[];
   private runoffDrops:T.Mesh[]=[];
   constructor(private world:World){
     world.root.add(this.root);
@@ -34,6 +36,25 @@ export class CityDisasterEffects{
       new T.Vector3(4.95,.92,-.55),new T.Vector3(4.65,.34,1.2),
       new T.Vector3(3.2,.22,3.3),
     ]);
+    // A low, irregular pool sits inside the dark crater floor, beneath the runoff.
+    this.root.add(this.pool);
+    const poolPositions:number[]=[.3,.115,3.35],poolColors:number[]=[];
+    const deep=new T.Color(0x256877),shore=new T.Color(0x3ca8aa);poolColors.push(deep.r,deep.g,deep.b);
+    const poolIndices:number[]=[];
+    for(let n=0;n<=64;n++){
+      const a=n/64*Math.PI*2,r=1+.035*Math.sin(a*7)+.025*Math.cos(a*11);
+      poolPositions.push(.3+Math.cos(a)*3.45*r,.115,3.35+Math.sin(a)*1.7*r);
+      poolColors.push(shore.r,shore.g,shore.b);
+      if(n<64)poolIndices.push(0,n+1,n+2);
+    }
+    const poolGeometry=new T.BufferGeometry();poolGeometry.setAttribute('position',new T.Float32BufferAttribute(poolPositions,3));poolGeometry.setAttribute('color',new T.Float32BufferAttribute(poolColors,3));poolGeometry.setIndex(poolIndices);
+    const poolMaterial=new T.MeshBasicMaterial({vertexColors:true,side:T.DoubleSide});
+    const poolMesh=new T.Mesh(poolGeometry,poolMaterial);poolMesh.userData.ownedMaterial=poolMaterial;this.pool.add(poolMesh);
+    for(let n=0;n<3;n++){
+      const material=new T.MeshBasicMaterial({color:0x9be0d5,transparent:true,depthWrite:false});
+      const ripple=new T.Mesh(new T.RingGeometry(.35,.38,24),material);ripple.userData.ownedMaterial=material;
+      ripple.rotation.x=-Math.PI/2;ripple.position.set(2.9,.13,3.45);this.pool.add(ripple);this.poolRipples.push(ripple);
+    }
     const vertices:number[]=[],colors:number[]=[],indices:number[]=[];
     for(let row=0;row<=32;row++){
       const progress=row/32,tip=T.MathUtils.smoothstep(progress,.70,1);
@@ -92,13 +113,18 @@ export class CityDisasterEffects{
     }
     positions.needsUpdate=true;
     this.basin.visible=p.collapse>0;this.basin.scale.set(p.collapse,1,p.collapse);
-    this.streams.forEach(m=>{m.visible=p.surge>0;});
+    this.pool.visible=p.runoff>0;this.pool.scale.set(p.runoff,1,p.runoff);
+    this.poolRipples.forEach((r,n)=>{
+      const age=this.world.reduced?.5:(moving*.65+n/3)%1;
+      r.scale.setScalar(.3+age*1.3);(r.material as T.MeshBasicMaterial).opacity=(1-age)*.4;
+    });
+    this.streams.forEach(m=>{m.visible=p.runoff>0;});
     this.runoffDrops.forEach((drop,n)=>{
       const age=this.world.reduced?.4:(moving*.85+n/12)%1;
-      drop.visible=p.surge>0;
+      drop.visible=p.runoff>0;
       drop.position.set(3.65-age*.85+Math.sin(n*2.399)*.3,.24+Math.sin(age*Math.PI)*.11,2.8+age*.85);
       drop.rotation.set(age*.7,n,age*.3);drop.scale.setScalar(.6+Math.sin(age*Math.PI)*.4);
-      (drop.material as T.MeshBasicMaterial).opacity=(1-age)*p.surge*.8;
+      (drop.material as T.MeshBasicMaterial).opacity=(1-age)*p.runoff*.8;
     });
     for(let n=0;n<140;n++){
       const a=n*2.399+moving*.13,r=n<70?1:((n*17)%67)/67;
