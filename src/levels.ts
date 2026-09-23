@@ -146,21 +146,12 @@ const harvest = board(
 );
 const caravan = board(
   "caravan",
-  "Caravan in the embers",
-  "Feed three pumps. Put out the fires.",
-  "The caravan is safe!",
-  [
-    "________",
-    "......._",
-    "..O#=O._",
-    "...#.#._",
-    "~....#._",
-    ".....#O_",
-    "......._",
-    "________",
-  ],
-  [24, 16, 17, 10, 11, 12, 22, 30, 38],
-  9,
+  "Highway robbery",
+  "Fill all three horse troughs.",
+  "Wrong turn, wrong company.",
+  ["________","________","________",".O.#O.O.","..#.....","..#.#...","~##...#.","........"],
+  [40,32,24,56,57,58,59,51,43,35,36,29],
+  12,
 );
 const temple = board(
   "temple",

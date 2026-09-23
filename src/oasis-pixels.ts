@@ -1,7 +1,8 @@
 /** Original pixel drawings, deliberately rasterized without antialiasing. */
-export type PixelKind = 'pumpkin-bite' | 'produce' | 'farmer-full' | 'farmer-down' | 'wolf' | 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower' | 'jug' | 'camp-rug' | 'alarm';
+export type PixelKind = 'horse' | 'black-horse' | 'highwayman' | 'shepherd-down' | 'thirst' | 'sad' | 'smirk' | 'campfire' | 'pumpkin-bite' | 'produce' | 'farmer-full' | 'farmer-down' | 'wolf' | 'villager' | 'shepherd' | 'sheep' | 'palm' | 'rock' | 'grass' | 'basket' | 'blanket' | 'heart' | 'pebble' | 'dust' | 'wheat' | 'bread' | 'sack' | 'flower' | 'jug' | 'camp-rug' | 'alarm';
 /** Every source pixel occupies 1/32 of a tile; small props get small drawings. */
 export const PIXEL_SIZES: Record<PixelKind, readonly [number, number]> = {
+  horse:[56,48], 'black-horse':[56,48], highwayman:[32,40], 'shepherd-down':[48,32], thirst:[14,20], sad:[18,18], smirk:[18,18], campfire:[24,32],
   'pumpkin-bite':[14,14], produce:[24,28], 'farmer-full':[64,48], 'farmer-down':[64,64], wolf:[48,32],
   alarm:[14,20], villager: [32, 40], shepherd: [32, 40], sheep: [32, 40], palm: [64, 72], rock: [32, 40],
   grass: [10, 12], basket: [16, 16], blanket: [22, 12], heart: [12, 12],
@@ -16,7 +17,37 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
   const oval = (x:number,y:number,rx:number,ry:number,c:string) => {for(let j=Math.floor(y-ry);j<=y+ry;j++)for(let i=Math.floor(x-rx);i<=x+rx;i++)if(((i-x)/rx)**2+((j-y)/ry)**2<=1)dot(i,j,c);};
   const poly = (points:number[][],c:string) => {for(let y=0;y<h;y++)for(let x=0;x<w;x++){let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++){const a=points[i],b=points[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;}if(inside)dot(x,y,c);}};
   const ink='#494353', deep='#706052', tan='#aa805b', gold='#d6ac67', light='#f0d294';
-  if(kind==='pumpkin-bite'){oval(7,8,6,5,'#884c35');oval(7,7,5,4,'#d5853f');oval(5,6,2,3,'#efb45b');rect(7,1,2,3,'#527449');if(frame%2){rect(10,4,4,4,'#00000000');}} else if(kind==='produce') {
+  if(kind==='horse'||kind==='black-horse'){
+    const dark=kind==='black-horse',coat=dark?'#424653':'#ac774e',shine=dark?'#697080':'#d0a06d',mane=dark?'#292e3d':'#684c3f',step=frame%4,drink=frame>=4;
+    poly([[10,21],[3,16],[1,20],[6,31],[11,31]],mane);
+    oval(25,26,16,9,ink);oval(25,25,15,8,coat);oval(20,22,9,4,shine);
+    for(const [x,phase]of [[14,0],[21,2],[31,1],[37,3]]){const move=[-2,0,2,0][(step+phase)%4];rect(x+move,30,3,12,coat);rect(x+move-1,41,5,3,mane);}
+    const hy=drink?31+step%2:9;
+    poly([[32,25],[34,hy+2],[38,hy-2],[42,hy],[45,27]],coat);
+    poly([[32,24],[32,hy+3],[36,hy-3],[39,hy-2],[37,hy+8]],mane);
+    poly([[38,hy],[38,hy-7],[41,hy-2],[45,hy-6],[46,hy+2]],coat);
+    oval(43,hy+6,7,6,coat);poly([[43,hy+5],[53,hy+7],[54,hy+12],[45,hy+13]],shine);
+    rect(43,hy+3,2,2,ink);rect(51,hy+9,2,2,mane);rect(43,hy+10,10,1,'#765b49');
+    rect(36,hy+9,2,12,'#dbc9a0');rect(35,hy+18,6,2,'#dbc9a0');
+    if(dark){poly([[35,hy+1],[48,hy+1],[48,hy+6],[40,hy+7]],'#30333e');dot(44,hy+4,'#e0ac63');}
+  } else if(kind==='highwayman'){
+    rect(10,32,4,6,ink);rect(20,32,4,6,ink);poly([[9,20],[24,20],[29,35],[6,35]],'#414653');poly([[12,22],[18,23],[17,34],[9,32]],'#6a6470');
+    oval(16,14,8,9,ink);oval(16,13,6,7,'#8c6654');poly([[8,8],[11,2],[22,2],[25,10]],'#424653');rect(8,15,17,8,'#444955');rect(11,13,3,2,'#f1d29b');rect(19,13,3,2,'#f1d29b');
+    rect(7,23,3,8,'#8c6654');rect(23,22,3,8,'#8c6654');rect(10,30,14,2,'#a78355');dot(17,30,'#e9c77e');if(frame>0){poly(frame===1?[[25,22],[28,9],[30,8],[30,21]]:[[23,22],[31,17],[31,20],[25,25]],'#d6ddd6');rect(24,23,6,2,'#c5a66d');}
+  } else if(kind==='shepherd-down'){
+    oval(28,20,13,7,'#366c68');oval(26,18,10,5,'#5b9f88');rect(38,19,7,4,ink);rect(37,25,8,3,ink);
+    oval(12,18,7,7,'#efc496');for(const x of [8,14]){dot(x,17,ink);dot(x+2,17,ink);dot(x+1,18,ink);dot(x,19,ink);dot(x+2,19,ink);}
+    oval(10,10,10,3,'#d6ac67');rect(4,3,12,7,'#d6ac67');rect(6,4,7,3,'#f0d294');
+  } else if(kind==='thirst'){
+    poly([[7,1],[2,9],[1,13],[3,17],[7,19],[11,17],[13,13],[12,9]],ink);poly([[7,3],[3,10],[3,14],[7,17],[10,15],[11,12]],'#7fc6cd');rect(4,10,2,4,'#d7f0df');
+  } else if(kind==='sad'||kind==='smirk'){
+    oval(9,9,8,8,ink);oval(9,8,7,7,'#f1d596');rect(5,6,2,2,ink);rect(11,6,2,2,ink);
+    if(kind==='sad'){poly([[5,13],[7,10],[11,10],[13,13],[10,12],[8,12]],ink);rect(12,8,2,4,'#75b9cc');}else{rect(5,10,8,2,ink);rect(7,12,5,1,ink);}
+  } else if(kind==='campfire'){
+    poly([[3,29],[20,23],[22,26],[5,32]],'#634a3d');poly([[2,25],[20,31],[22,28],[4,22]],'#916442');
+    poly([[3,25],[5,13],[9,17],[11,2+frame%3],[16,12],[20,9],[22,24],[16,29],[8,29]],'#c96339');
+    poly([[7,25],[9,16],[12,20],[14,10+frame%2],[18,24],[14,28]],'#f0b54e');poly([[10,25],[13,20],[15,25],[13,28]],'#ffe29a');
+  } else if(kind==='pumpkin-bite'){oval(7,8,6,5,'#884c35');oval(7,7,5,4,'#d5853f');oval(5,6,2,3,'#efb45b');rect(7,1,2,3,'#527449');if(frame%2){rect(10,4,4,4,'#00000000');}} else if(kind==='produce') {
     const ripe=frame>=2;
     rect(11,19,2,8,'#55784b');
     for(const [x,y]of [[6,22],[17,22],[8,17],[16,16]]){

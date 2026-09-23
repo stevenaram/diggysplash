@@ -1,3 +1,5 @@
+import {CaravanScene} from './caravan-scene';
+import {CARAVAN_DURATION} from './caravan-timeline';
 import * as T from "three";
 import {FARM_DURATION} from "./farm-timeline";
 import { HarvestScene } from "./harvest-scene";
@@ -32,6 +34,7 @@ export class StoryScene {
   bridgeSprites?: BridgeSprites;
   citySprites?: CitySprites;
   harvestScene?: HarvestScene;
+  caravanScene?:CaravanScene;
   progress = 0;
   done = false;
   actors: Actor[] = [];
@@ -47,8 +50,9 @@ export class StoryScene {
     if (kind === "oasis") this.oasisSprites = new OasisSprites(world);
     if (kind === "bridge") this.crossing();
     if (kind === "city") this.city();
+    if(kind === "caravan")this.caravanScene=new CaravanScene(world);
     if (kind === "harvest") this.harvestScene=new HarvestScene(world);
-    if (kind && !["oasis", "bridge", "city", "harvest"].includes(kind))
+    if (kind && !["oasis", "bridge", "city", "harvest", "caravan"].includes(kind))
       this.campaign = new CampaignScene(this);
     this.hearts.visible = false;
   }
@@ -366,7 +370,7 @@ export class StoryScene {
             this.progress +
               dt /
                 (this.campaign?.duration ??
-                  (this.harvestScene ? FARM_DURATION : this.oasisSprites ? OASIS_DURATION : this.world.game.level.story?.kind === "city" ? CITY_DURATION : this.world.game.level.story?.kind === "bridge" ? BRIDGE_DURATION : 4)),
+                  (this.caravanScene ? CARAVAN_DURATION : this.harvestScene ? FARM_DURATION : this.oasisSprites ? OASIS_DURATION : this.world.game.level.story?.kind === "city" ? CITY_DURATION : this.world.game.level.story?.kind === "bridge" ? BRIDGE_DURATION : 4)),
           );
       this.done = this.progress >= 1;
     }
@@ -381,6 +385,7 @@ export class StoryScene {
         -(1 - ease(this.progress / 0.35)) * Math.PI * 0.36;
     this.bridgeSprites?.update(this.progress,time);
     if(this.citySprites){this.citySprites.update(this.progress,time);return;}
+    if(this.caravanScene){this.caravanScene.update(this.progress,active,time);return;}
     this.harvestScene?.update(dt,active,this.progress,time);
     this.gates.forEach((g, n) => {
       const height = active[n] ? 3.85 : 0;

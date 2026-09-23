@@ -1,3 +1,5 @@
+import {caravanSound} from './caravan-sound';
+import {CARAVAN_DURATION} from './caravan-timeline';
 import {FARM_DURATION} from './farm-timeline';
 import {farmSound,type FarmCue} from './farm-sound';
 import {citySound,type CityCue} from './city-sound';
@@ -366,6 +368,7 @@ world.onWater=()=>sound("water");
 world.onBattleSound = sound;
 world.onCitySound = sound;
 world.onFarmSound = sound;
+world.onCaravanSound=cue=>{if(!muted&&audio)caravanSound(audio,cue);};
 world.onCreatureSound = sound;
 document.addEventListener("visibilitychange",()=>{if(document.hidden)stopCreatureSounds();});
 update();
@@ -450,6 +453,11 @@ if (import.meta.env.DEV)
         world.story.progress=seconds/OASIS_DURATION;
         world.story.oasisSprites.update(world.story.progress,seconds);
         stopCreatureSounds();
+        world.renderer.render(world.scene,world.camera);
+      },
+      previewCaravan(seconds:number){
+        if(!world.story?.caravanScene)return;cancelAnimationFrame(world.frame);
+        world.story.caravanScene.update(seconds/CARAVAN_DURATION,[true,true,true],seconds);
         world.renderer.render(world.scene,world.camera);
       },
       previewFarm(seconds:number){

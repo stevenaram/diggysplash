@@ -1,3 +1,4 @@
+import type {CaravanCue} from './caravan-sound';
 import type {FarmCue} from './farm-sound';
 import type {CityCue} from './city-sound';
 import {WaterEffects} from './water-effects';
@@ -26,6 +27,7 @@ export class World {
   scoopedAt=new Map<number,number>();
   onHover: (i: number | null) => void = () => {};
   onViewChanged = () => {};
+  onCaravanSound:(cue:CaravanCue)=>void=()=>{};
   onFarmSound:(cue:FarmCue)=>void=()=>{};
   onCitySound:(cue:CityCue)=>void=()=>{};
   onCreatureSound: (cue:CreatureCue)=>void = ()=>{};
@@ -132,7 +134,7 @@ export class World {
     this.animate(0);
   }
   mat(color: number, surface?: Surface, vertexColors = false) {
-    const metric=["bridge","city","harvest"].includes(this.game.level.story?.kind ?? "") && (surface === "wood" || surface === "stone" || surface === "plaster");
+    const metric=["bridge","city","harvest","caravan"].includes(this.game.level.story?.kind ?? "") && (surface === "wood" || surface === "stone" || surface === "plaster");
     const key = `${color}:${surface ?? "solid"}:${vertexColors}:${metric}`;
     if (!this.mats.has(key))
       this.mats.set(
@@ -148,7 +150,7 @@ export class World {
   }
   // Painted directional face colors give low-poly meshes volume without scene lights.
   shaded(geometry: T.BufferGeometry, color: number, surface?: Surface) {
-    if(["bridge","city","harvest"].includes(this.game.level.story?.kind ?? "")) {
+    if(["bridge","city","harvest","caravan"].includes(this.game.level.story?.kind ?? "")) {
       if(geometry instanceof T.CylinderGeometry) {
         surface="wood";
         const uv=geometry.getAttribute("uv"), p=geometry.parameters;
@@ -197,7 +199,7 @@ export class World {
       shade.clone().multiplyScalar(0.78),
     ];
     const geometry = new T.BoxGeometry(w, h, d);
-    if(["bridge","city","harvest"].includes(this.game.level.story?.kind ?? "") && (surface === "wood" || surface === "stone" || surface === "plaster")) {
+    if(["bridge","city","harvest","caravan"].includes(this.game.level.story?.kind ?? "") && (surface === "wood" || surface === "stone" || surface === "plaster")) {
       const uv=geometry.getAttribute("uv");
       // Each box face gets its real dimensions, never a full texture squeezed onto a beam.
       const spans=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
@@ -312,7 +314,7 @@ export class World {
       tile.userData.sandMaterial = tile.material;
       if (t === "building" && this.game.level.story?.kind !== "city")
         this.box(this.root, x, 0.012, z, 1.94, 0.025, 1.94, 0xcaae83);
-      if (t === "rock" && !["oasis", "bridge", "city", "harvest"].includes(this.game.level.story?.kind ?? "")) {
+      if (t === "rock" && !["oasis", "bridge", "city", "harvest", "caravan"].includes(this.game.level.story?.kind ?? "")) {
         const rock = this.shaded(
           new T.DodecahedronGeometry(0.52, 0),
           0xc4ad87,
@@ -340,7 +342,7 @@ export class World {
       if (["source", "channel", "target", "basin", "aqueduct"].includes(t))
         this.addWater(i);
     }
-    if (!["oasis","city","harvest"].includes(this.game.level.story?.kind ?? ""))
+    if (!["oasis","city","harvest","caravan"].includes(this.game.level.story?.kind ?? ""))
       this.game.level.targets.forEach((i, n) => this.machine(i, n));
     const sceneryStart = this.root.children.length;
     this.story = new StoryScene(this);
@@ -349,7 +351,7 @@ export class World {
         part.raycast = () => {};
       }),
     );
-    if (["oasis", "bridge", "city", "harvest"].includes(this.game.level.story?.kind ?? "")) { this.sync(); return; }
+    if (["oasis", "bridge", "city", "harvest", "caravan"].includes(this.game.level.story?.kind ?? "")) { this.sync(); return; }
     // Sparkle-like source landmarks rise above the oasis.
     const source = this.game.level.sources[0];
     const sx = gridWorld(source % SIZE),
@@ -539,7 +541,7 @@ export class World {
     if(bridge)mount.traverse(o=>o.raycast=()=>{});
   }
   machine(i: number, n: number) {
-    if(["bridge","city","harvest"].includes(this.game.level.story?.kind ?? "")) {this.bridgeMachine(i);return;}
+    if(["bridge","city","harvest","caravan"].includes(this.game.level.story?.kind ?? "")) {this.bridgeMachine(i);return;}
     const firstChild = this.root.children.length;
     const x = gridWorld(i % SIZE),
       z = gridWorld(Math.floor(i / SIZE));
@@ -992,6 +994,7 @@ export class World {
     this.story?.bridgeSprites?.dispose();
     this.story?.citySprites?.dispose();
     this.story?.harvestScene?.dispose();
+    this.story?.caravanScene?.dispose();
     this.scene.remove(this.root);
     this.root.traverse((o) => {
       if (o instanceof T.Mesh) o.geometry.dispose();

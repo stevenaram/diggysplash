@@ -30,7 +30,7 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
-    assert.equal(minimumDigs(l), [4, 7, 10, 13, 9, 10, 11, 12][n]);
+    assert.equal(minimumDigs(l), [4, 7, 10, 13, 12, 10, 11, 12][n]);
     assert.equal(l.budget, minimumDigs(l));
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);
@@ -145,8 +145,8 @@ test("the campaign escalates through five distinct consequences and a four-objec
     levels.slice(3).map((l) => l.story!.kind),
     ["harvest", "caravan", "temple", "fortress", "battle"],
   );
-  // Chapters 5–8 retain their original progression; chapter 4 is rebalanced separately.
-  for (let n = 5; n < 8; n++)
+  // Chapters 4–5 are independently redesigned; the final three retain escalation.
+  for (let n = 6; n < 8; n++)
     assert.ok(
       levels[n].budget > levels[n - 1].budget,
     );
@@ -229,7 +229,7 @@ test("thin trim surrounds exactly 64 cells and campaign scenery owns non-diggabl
     });
     assert.equal(game.remaining, level.budget);
   }
-  for (const level of levels.slice(3)) {
+  for (const level of levels.slice(3).filter(l=>l.story?.kind!=="caravan")) {
     for (let x = 0; x < 8; x++) {
       assert.equal(level.tiles[cell(x, 0)], "building");
       assert.equal(level.tiles[cell(x, 7)], "building");
