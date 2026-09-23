@@ -19,3 +19,12 @@ test('the reduced-motion/end pose is settled wreckage, and reset has no effects'
   for(let t=0;t<CITY_DURATION;t+=.017)for(const value of Object.values(cityPose(t)))assert.ok(value>=0&&value<=1);
   assert.equal(CITY_CUES.filter(c=>c.cue==='collapse').length,1);
 });
+
+test('the northern route and aqueduct share a raised plane above the village outlet',async()=>{
+  const {levels}=await import('../src/levels');
+  const city=levels[2];
+  assert.equal(city.elevations?.length,64);
+  for(const i of [9,10,11,19,20,21,22,30])assert.equal(city.elevations?.[i],1.15);
+  for(const i of [38,37,36,35,43,42,50])assert.equal(city.elevations?.[i],0);
+  for(const other of levels.filter((_,n)=>n!==2))assert.equal(other.elevations,undefined);
+});

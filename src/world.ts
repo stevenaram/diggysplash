@@ -237,6 +237,7 @@ export class World {
     parent.add(m);
     return m;
   }
+  elevation(i:number){return this.game.level.elevations?.[i]??0;}
   build() {
     this.disposeRoot();
     this.root = new T.Group();
@@ -266,6 +267,12 @@ export class World {
       }
     } else {
       this.box(this.root, 0, -0.82, 0, BOARD_EXTENT, 0.9, BOARD_EXTENT, 0xb97e55);
+    }
+    if(this.game.level.story?.kind === "city"){
+      this.box(this.root,0,.15,-5,16,1.2,6,0xc3a071,"soil");
+      this.box(this.root,-1.925,.58,-2.08,12.15,1.12,.18,0xc3a071,"soil");
+      this.box(this.root,6.925,.58,-2.08,2.15,1.12,.18,0xc3a071,"soil");
+      for(const x of [-8,8])this.box(this.root,x,.58,-5,.15,1.12,6,0xc3a071,"soil");
     }
     // A quarter-world-unit lip: exactly one eighth of a two-unit tile.
     const edge = SIZE * TILE_SIZE / 2 + BORDER_WIDTH / 2;
@@ -297,6 +304,7 @@ export class World {
         "sand",
       );
       tile.scale.set(TILE_SIZE, 1, TILE_SIZE);
+      tile.position.y+=this.elevation(i);
       this.tiles.push(tile);
       tile.userData.cell = i;
       tile.userData.sandMaterial = tile.material;
@@ -317,12 +325,12 @@ export class World {
         chip.position.set(x - 0.27, 0.08, z + 0.24);
         this.root.add(chip);
       }
-      if(t === "building" && this.game.level.story?.kind === "city")tile.material=this.mat(0xd1bd95,"stone");
+
       if (t === "ravine") {
         tile.visible=false;
       }
       if (["source", "channel", "target", "basin", "aqueduct"].includes(t))
-        tile.position.y = -0.3;
+        tile.position.y = -.3+this.elevation(i);
       if (["channel", "target", "basin"].includes(t))
         tile.material = this.mat(t === "basin" ? 0x94603b : 0x6a452d, "soil");
       if(bridge && (t === "basin" || t === "target"))
@@ -610,7 +618,7 @@ export class World {
     const mesh = this.box(
       this.root,
       x,
-      elevated ? (this.game.level.story?.kind === "city" ? -.1 : 1.74) : -0.14,
+      (elevated ? (this.game.level.story?.kind === "city" ? -.1 : 1.74) : -.14)+this.elevation(i),
       z,
       elevated && this.game.level.story?.kind === "city" ? .38 : elevated || pool ? 0.985 : 0.72,
       0.035,
@@ -665,7 +673,7 @@ export class World {
       const dug = this.game.digs.includes(i),
         t = this.game.level.tiles[i];
       if (dug) {
-        this.tiles[i].position.y = -0.32;
+        this.tiles[i].position.y = -.32+this.elevation(i);
         this.tiles[i].material = this.mat(0x64402b, "soil");
         this.addWater(i);
         if (!this.banks.has(i)) {
@@ -679,7 +687,7 @@ export class World {
             const bank = this.box(
               this.root,
               gridWorld(i % SIZE) + dx * 0.88,
-              -0.085,
+              -.085+this.elevation(i),
               gridWorld(Math.floor(i / SIZE)) + dz * 0.88,
               dx ? 0.24 : 1.97,
               0.17,
@@ -693,7 +701,7 @@ export class World {
           this.banks.set(i, edges);
         }
       } else if (t === "sand") {
-        this.tiles[i].position.y = -0.09;
+        this.tiles[i].position.y = -.09+this.elevation(i);
         this.tiles[i].material = this.tiles[i].userData.sandMaterial;
       }
       this.banks.get(i)?.forEach((bank) => {
@@ -724,7 +732,7 @@ export class World {
   }
   tapBlocked(i:number,point?:{x:number;y:number}){
     const water=this.waters.get(i),wet=!!water?.visible;
-    const y=wet?water!.position.y:this.game.level.tiles[i]==='rock'?.55:.12;
+    const y=wet?water!.position.y:this.elevation(i)+(this.game.level.tiles[i]==='rock'?.55:.12);
     const origin=new T.Vector3(gridWorld(i%SIZE),y,gridWorld(Math.floor(i/SIZE)));
     if(point){
       const r=this.host.getBoundingClientRect();
@@ -740,7 +748,7 @@ export class World {
       const angle=n*2.399,radius=.2+(n%3)*.18;
       const material=new T.MeshBasicMaterial({color:n%2?0xd6ba87:0xe6d0a6,transparent:true,opacity:0,depthWrite:false});
       const mesh=new T.Mesh(new T.SphereGeometry(.12+(n%3)*.035,7,5),material);
-      mesh.position.set(gridWorld(i%SIZE)+Math.cos(angle)*radius,.03,gridWorld(Math.floor(i/SIZE))+Math.sin(angle)*radius);
+      mesh.position.set(gridWorld(i%SIZE)+Math.cos(angle)*radius,.03+this.elevation(i),gridWorld(Math.floor(i/SIZE))+Math.sin(angle)*radius);
       mesh.raycast=()=>{};mesh.userData.ownedMaterial=material;this.root.add(mesh);
       const duration=.5+(n%3)*.07;
       this.particles.push({mesh,v:new T.Vector3(Math.cos(angle)*.35,.2+(n%2)*.07,Math.sin(angle)*.35),life:duration,duration,dust:true});
@@ -750,7 +758,7 @@ export class World {
     if (this.reduced) return;
     if(!celebrate){
       this.scoopedAt.set(i,this.elapsed);
-      this.waterEffects.splash(gridWorld(i%SIZE),-.05,gridWorld(Math.floor(i/SIZE)),this.elapsed,true);
+      this.waterEffects.splash(gridWorld(i%SIZE),-.05+this.elevation(i),gridWorld(Math.floor(i/SIZE)),this.elapsed,true);
       return;
     }
     for (let k = 0; k < (celebrate ? 45 : 8); k++) {
@@ -819,14 +827,14 @@ export class World {
     if (valid)
       this.hover.position.set(
         gridWorld(i % SIZE),
-        0.035,
+        .035+this.elevation(i),
         gridWorld(Math.floor(i / SIZE)),
       );
   }
   screen(i: number) {
     const p = new T.Vector3(
         gridWorld(i % SIZE),
-        0,
+        this.elevation(i),
         gridWorld(Math.floor(i / SIZE)),
       ).project(this.camera),
       r = this.host.getBoundingClientRect();
@@ -838,7 +846,7 @@ export class World {
   screenTile(i:number){
     const r=this.host.getBoundingClientRect(),x=gridWorld(i%SIZE),z=gridWorld(Math.floor(i/SIZE));
     return [[-.88,-.88],[.88,-.88],[.88,.88],[-.88,.88]].map(([dx,dz])=>{
-      const p=new T.Vector3(x+dx,.035,z+dz).project(this.camera);
+      const p=new T.Vector3(x+dx,.035+this.elevation(i),z+dz).project(this.camera);
       return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2};
     });
   }

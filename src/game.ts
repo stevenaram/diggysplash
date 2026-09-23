@@ -23,6 +23,8 @@ export interface Level {
   budget: number;
   solution: number[];
   links?: [number, number][];
+  /** Render elevations only; connectivity remains the explicit puzzle graph. */
+  elevations?: number[];
   story?: {
     kind:
       | "oasis"

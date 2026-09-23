@@ -4,6 +4,7 @@ import {PixelSprites} from './pixel-sprites';
 import {buildPalm,placePalmOnTile} from './palm-model';
 import {MonsterArt} from './monster-art';
 import {metricUV} from './metric-uv';
+import {CityWaterfall} from './city-waterfall';
 import {bakeColored} from './battle-mesh';
 import {CITY_DURATION,CITY_CUES,cityPose,cityEase as ease} from './city-timeline';
 import type {World} from './world';
@@ -36,11 +37,14 @@ export class CitySprites extends PixelSprites{
   private floorStarts=new Map<number,T.Vector3>();
   private outletRing:T.Mesh;
   private stream:T.Mesh;
+  private lakeFall:CityWaterfall;
+  private outletFall:CityWaterfall;
+  private surgeFall:CityWaterfall;
   constructor(world:World){
     super(world);
     const w=world,box=w.box.bind(w);
     // The source is one playable tile. The elevated lake is scenery behind it.
-    const hill=new T.Group();this.root.add(hill);
+    const hill=new T.Group();hill.position.y=1.15;this.root.add(hill);
     for(let k=0;k<3;k++){
       const geometry=new T.CylinderGeometry(1,1.1,.44,10);geometry.scale(3.65-k*.25,1,1.04-k*.1);
       const projected=metricUV(geometry);geometry.dispose();
@@ -56,53 +60,66 @@ export class CitySprites extends PixelSprites{
     for(let k=0;k<6;k++){
       const glint=box(hill,-6.5+k*.64,1.27,-7+(k%2)*.22-.12,.28,.015,.035,0xa1e6d9);this.lakeGlints.push(glint);
     }
-    for(const [x,z] of [[-7.2,-7.5],[-2.1,-7.45],[-2.5,-6.4]]){const grass=this.add('grass',x,z);grass.position.y=1.15;}
-    const chute=box(hill,-5,.64,-6.1,.7,1.2,.09,0x60d7ce,'water');chute.rotation.x=-.18;
-    for(const x of [-5.5,-4.5])box(hill,x,.5,-6.1,.18,1,.4,0xd7bc8b,'stone');
+    // Reeds sit on the flat upper bank, with their roots inset into the soil.
+    for(const [x,z] of [[-6.65,-7.38],[-2.35,-7.15]]){
+      const bed=this.ellipse(0xbaa576,.3,.16,1.205);bed.position.set(x,1.205,z);hill.add(bed);
+      for(let n=0;n<5;n++){
+        const reed=box(hill,x+(n-2)*.065,1.32+(n%2)*.04,z,.045,.3+(n%2)*.08,.04,n%2?0x647d4b:0x8b9b59);reed.rotation.z=(n-2)*.14;
+      }
+    }
+    this.lakeFall=new CityWaterfall(w,this.root,[new T.Vector3(-5,2.40,-6.5),new T.Vector3(-5,2.39,-6.1),new T.Vector3(-5,2.1,-5.96),new T.Vector3(-5,1.55,-5.78),new T.Vector3(-5,1.03,-5.52)],.72);
     // Shared palm asset and the same metric UVs as chapters one and two.
-    const palm=new T.Group();placePalmOnTile(palm,7,1);this.root.add(palm);
+    const palm=new T.Group();placePalmOnTile(palm,7,2);palm.position.y=1.15;this.root.add(palm);
+    const palmBed=this.ellipse(0xb39764,.72,.6,1.17);palmBed.position.set(7,1.17,-3);this.root.add(palmBed);
     this.fronds=buildPalm(palm,this.art).fronds;
     palm.traverse(o=>{if(o instanceof T.Mesh){const old=o.geometry;o.geometry=metricUV(old);if(old!==o.geometry)old.dispose();}});
-    world.game.level.tiles.forEach((t,i)=>{if(t==='rock'){const sprite=this.addTileRock(gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE)));if(i>=32)this.looseRocks.push({sprite,start:sprite.position.clone()});}});
+    world.game.level.tiles.forEach((t,i)=>{if(t==='rock'){const sprite=this.addTileRock(gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE)));sprite.position.y+=w.elevation(i);if(i>=32)this.looseRocks.push({sprite,start:sprite.position.clone()});}});
     // Low city wall, with a clear stone water passage through its eastern arch.
     for(let col=0;col<8;col++){
       if(col===6)continue;
       const g=this.structure(gridWorld(col),-1,.22+col*.025);
-      box(g,0,.63,0,1.96,1.26,.7,0xc8b18a,'stone');
-      box(g,0,1.32,0,2,.16,.85,0xe6d3a9,'stone');
+      box(g,0,.63,0,1.96,1.26,.7,0xbca07b,'stone');
+      box(g,0,1.32,0,2,.16,.85,0xd8bb90,'stone');
       for(const dx of [-.72,0,.72])box(g,dx,1.57,0,.38,.4,.78,0xd9c49a,'stone');
       if(col===0||col===7){box(g,0,1.13,0,1,2.26,1.2,0xcbb691,'stone');box(g,0,2.32,0,1.16,.16,1.34,0xf0d8a4,'stone');}
     }
-    const arch=this.structure(5,-1,.38);
-    for(const x of [-.83,.83])box(arch,x,.8,0,.32,1.6,.85,0xd9c49a,'stone');
-    for(let k=0;k<9;k++){
-      const a=k*Math.PI/8,m=box(arch,Math.cos(a)*.83,1.5+Math.sin(a)*.68,0,.35,.33,.9,0xe5d1a6,'stone');m.rotation.z=a-Math.PI/2;
+    // Pale limestone carries the water above the wall opening; dark slate makes the trough legible.
+    const flume=this.structure(5,-1,.48);
+    for(const dz of [-.7,.7]){
+      for(const dx of [-.66,.66])box(flume,dx,.43,dz,.28,.86,.3,0xdce0cf,'stone');
+      for(let k=0;k<7;k++){
+        const a=k*Math.PI/6,stone=box(flume,Math.cos(a)*.64,.48+Math.sin(a)*.44,dz,.30,.24,.35,0xe7e9d8,'stone');stone.rotation.z=a-Math.PI/2;
+      }
     }
-    // Unbroken flume: intake -> wall crossing -> outlet. No hidden teleport.
-    const flumeParts:T.Object3D[]=[];
-    for(const z of [-3,-1,1]){
-      const from=this.root.children.length;
-      box(this.root,5,-.22,z,1.7,.2,1.98,0xaaa48c,'stone');
-      box(this.root,5.82,.02,z,.2,.48,1.98,0xd9cfb0,'stone');
-      if(z===-1)box(this.root,4.18,.02,z,.2,.48,1.98,0xd9cfb0,'stone');
-      else for(const dz of [-.73,.73])box(this.root,4.18,.02,z+dz,.2,.48,.5,0xd9cfb0,'stone');
-      if(z!==-3)flumeParts.push(...this.root.children.slice(from));
+    box(flume,0,.91,0,1.7,.18,2.1,0x909b92,'stone');
+    for(const x of [-.78,.78]){
+      box(flume,x,1.2,0,.2,.48,2.15,0xe2e4cf,'stone');
+      box(flume,x,1.47,0,.24,.08,2.2,0xf1ecd6,'stone');
+      box(flume,x*1.015,1.21,0,.025,.10,2.12,0x638a8b);
     }
-    // Preserve the left approach to the intake and the outlet.
-    for(const z of [-3.86,1.86]){const end=box(this.root,5,.02,z,1.75,.48,.18,0xcac1a2,'stone');if(z>0)flumeParts.push(end);}
-    const flume=this.structure(5,-.5,.48);flumeParts.forEach(part=>flume.attach(part));
+    // Ground-level intake on the upper terrace, with a clear western opening.
+    box(this.root,5,.96,-3,1.65,.16,1.98,0x909b92,'stone');
+    box(this.root,5.78,1.2,-3,.2,.48,1.98,0xe2e4cf,'stone');
+    for(const dz of [-.76,.76])box(this.root,4.22,1.2,-3+dz,.2,.48,.46,0xe2e4cf,'stone');
+    box(this.root,5,1.2,-3.9,1.75,.48,.18,0xe2e4cf,'stone');
+    // Low receiving basin, below the free-falling end of the aqueduct.
+    const receiver=this.structure(5,1,.5);
+    box(receiver,0,-.19,0,1.7,.12,1.9,0x909b92,'stone');
+    box(receiver,.8,.06,0,.18,.38,1.9,0xdce0cf,'stone');
+    for(const z of [-.83,.83])box(receiver,0,.06,z,1.7,.38,.18,0xdce0cf,'stone');
     const intake=w.waters.get(22)!,outlet=w.waters.get(38)!;
-    for(const m of [intake,outlet]){m.geometry.scale(.74,1,.82);m.userData.origin.y=-.10;}
-    const water=w.waters.get(30)!;water.userData.origin.y=-.10;
+    for(const m of [intake,outlet])m.geometry.scale(.74,1,.82);
+    intake.userData.origin.y=1.05;outlet.userData.origin.y=-.10;
+    w.waters.get(30)!.userData.origin.y=1.05;
+    this.outletFall=new CityWaterfall(w,receiver,[new T.Vector3(0,1.06,-1.06),new T.Vector3(0,1.04,-.85),new T.Vector3(0,.68,-.6),new T.Vector3(0,-.075,-.15)],.8);
     this.outletRing=new T.Mesh(new T.RingGeometry(.55,.6,24),w.mat(0x9ee8ce));this.outletRing.rotation.x=-Math.PI/2;this.outletRing.position.set(5,.13,1);this.root.add(this.outletRing);
-    this.stream=box(this.root,5,-.09,-1,.13,.02,5,0xc4f2d6);this.stream.visible=false;
+    this.stream=box(this.root,5,1.08,-1.9,.11,.02,.4,0xc4f2d6);this.stream.visible=false;
     // Reserved sidewalks hold the stalls. The central dig squares stay uncovered.
-    this.house(-6,1.35,0xe2b984,2.5,1.55);
+    this.house(-6.3,.75,0xe2b984,2.8,3.0,1.5);
     this.stall(-6,4.5,0xc76f59);
     this.stall(6.6,4.3,0x629e94);
-    this.house(-4.8,7.2,0xe8c698,2.35,1.6);
-    this.house(-.5,7.2,0xd8b286,2.4,1.35);
-    this.house(4,7.2,0xe4bf8d,2.3,1.6);
+    this.house(-6,7.35,0xe8c698,3.1,2.9,1.0);
+    this.house(5.6,7.35,0xe4bf8d,3.1,3.15,1.0);
     // Well mouth is unmistakable, with an open western and northern approach.
     this.well=this.structure(-3,5,.04);
     const pit=new T.Mesh(new T.CylinderGeometry(.73,.73,.04,16),w.mat(0x333f43));pit.position.y=.1;this.well.add(pit);
@@ -115,7 +132,7 @@ export class CitySprites extends PixelSprites{
     box(this.well,.3,1.4,0,.045,.8,.045,0xc4a36c,'wood');
     w.cylinder(this.well,.3,1.02,0,.2,.25,0x9c7350,.24);
     // A handful of readable characters, all from the established 32px/unit bank.
-    for(const [n,x,z] of [[0,-7,3.1],[1,6,2.5],[2,1.4,6.3],[3,-6.5,6.4],[4,6.5,6.7]]){
+    for(const [n,x,z] of [[0,-6.3,3.05],[1,6.9,2.1],[2,.8,6.3]]){
       const sprite=this.add(n%2?'shepherd':'villager',x,z);
       this.people.push({sprite,start:sprite.position.clone(),scale:sprite.scale.clone()});
       this.alarms.push(this.add('alarm',x,z));
@@ -132,6 +149,7 @@ export class CitySprites extends PixelSprites{
     for(let k=0;k<5;k++){
       const spout=box(this.jet,(k-2)*.12,2.1,0,.18,4.2,.25,k%2?0xafece0:0x58cfc9);spout.rotation.z=(k-2)*.11;
     }
+    this.surgeFall=new CityWaterfall(w,this.root,[new T.Vector3(5,1.3,-2.1),new T.Vector3(5,1.2,-1.5),new T.Vector3(5,.65,-.3),new T.Vector3(5,.18,1.2)],1.8);
     this.torrent.position.set(4.8,.18,-2);this.root.add(this.torrent);
     for(let k=0;k<9;k++){
       const ribbon=box(this.torrent,(k-4)*.33,0,k*.28,.42,.08,8-k*.4,k%2?0x8bdfd4:0x3eaeb2,'water');ribbon.rotation.y=(k-4)*.025;
@@ -141,7 +159,7 @@ export class CitySprites extends PixelSprites{
     }
     this.root.add(this.surgeFeed);
     for(const [x,z,width,depth] of [[-5,-5.8,1,2.4],[-3,-5,5,1.1],[-1,-4,1.1,3],[2,-3,7,1.1],[5,-1,1.3,5]]){
-      box(this.surgeFeed,x,.17,z,width,.045,depth,0x55c7c2,'water');
+      box(this.surgeFeed,x,z<=-1?1.32:.17,z,width,.045,depth,0x55c7c2,'water');
     }
     this.debris=this.pool(100,0xc79c6c,.17);
     const debrisColors=[0xc7aa7c,0x9b704e,0xe2c49c,0x619d91,0xc97b61];
@@ -188,15 +206,17 @@ export class CitySprites extends PixelSprites{
     const root=new T.Group();root.position.set(x,0,z);this.root.add(root);
     this.ruins.push({root,start:root.position.clone(),delay,tilt:(this.ruins.length%2?1:-1)*.8});return root;
   }
-  private house(x:number,z:number,color:number,width:number,height:number){
+  private house(x:number,z:number,color:number,width:number,height:number,depth=1.3){
     const w=this.world,g=this.structure(x,z,.1+this.ruins.length*.012);
-    w.box(g,0,height/2,0,width,height,1.3,color,'plaster');
-    w.box(g,0,height+.09,0,width+.18,.18,1.5,0xf1dab2,'stone');
-    w.box(g,0,height+.21,0,width-.24,.1,1.1,0xa78260,'stone');
-    for(const dx of [-width/2,width/2])w.box(g,dx,height+.28,0,.13,.36,1.45,0xe7cba4,'stone');
-    w.box(g,-.35,.5,.665,.48,1,.045,0x75533e,'wood');
-    w.box(g,width*.25,height*.6,.68,.38,.44,.04,0x527f7d);
-    for(let k=0;k<3;k++)w.box(g,width*.25-.13+k*.13,height*.6,.71,.035,.44,.035,0xe6c294,'wood');
+    w.box(g,0,height/2,0,width,height,depth,color,'plaster');
+    w.box(g,0,height+.09,0,width+.18,.18,depth+.2,0xf1dab2,'stone');
+    w.box(g,0,height+.21,0,width-.24,.1,depth-.2,0xa78260,'stone');
+    for(const dx of [-width/2,width/2])w.box(g,dx,height+.28,0,.13,.36,depth+.15,0xe7cba4,'stone');
+    w.box(g,-.35,1.03,depth/2+.015,.8,2.06,.055,0x654c39,'wood');
+    w.box(g,-.35,2.12,depth/2+.06,1.02,.16,.18,0xe7cf9f,'stone');
+    w.box(g,-.35,.08,depth/2+.14,1.02,.16,.28,0xc4ab80,'stone');
+    w.box(g,width*.25,height*.62,depth/2+.03,.48,.6,.04,0x527f7d);
+    for(let k=0;k<3;k++)w.box(g,width*.25-.13+k*.13,height*.62,depth/2+.07,.035,.6,.035,0xe6c294,'wood');
   }
   private stall(x:number,z:number,color:number){
     const w=this.world,g=this.structure(x,z,.12+this.ruins.length*.01);
@@ -215,10 +235,14 @@ export class CitySprites extends PixelSprites{
     if(!w.reduced){for(const cue of CITY_CUES)if(this.previous<cue.at&&t>=cue.at)w.onCitySound(cue.cue);}
     this.previous=t;
     const delivered=!!w.waters.get(38)?.visible;
+    this.lakeFall.update(time,p.drain<.9,w.reduced);
+    this.surgeFall.update(time,p.surge>.04,w.reduced);
+    this.outletFall.update(time,delivered&&t<5.8,w.reduced);
     this.outletRing.visible=delivered&&progress===0;
     this.outletRing.scale.setScalar(1+Math.sin(time*4)*.12);
     this.stream.visible=delivered&&t<4.6;
     this.stream.position.x=5+Math.sin(time*2)*.1;
+    this.stream.position.z=-3.6+(w.reduced?.45:(time*.55)%1)*3.4;
     this.fronds.forEach((f,n)=>f.rotation.z=f.userData.baseTilt+(w.reduced?0:Math.sin(time*1.5+n)*.025));
     this.lakeGlints.forEach((g,n)=>{g.visible=p.drain<.9;g.scale.x=.7+Math.sin(time*1.3+n)*.3;});
     this.lake.scale.y=1;this.lake.position.y=1.24-p.drain*.025;
@@ -227,7 +251,7 @@ export class CitySprites extends PixelSprites{
     this.flood.position.x=-3*(1-p.flood);this.flood.position.z=5-.8*p.flood;
     this.flood.visible=p.flood>0&&p.drain<1;this.flood.scale.set(7.3*p.flood*(1-p.drain),3.8*p.flood*(1-p.drain),1);
     this.hole.visible=p.collapse>0;this.hole.scale.set(Math.max(.001,p.collapse),1,Math.max(.001,p.collapse));
-    this.surgeFeed.visible=p.surge>0;this.surgeFeed.scale.y=p.surge;
+    this.surgeFeed.visible=p.surge>0;this.surgeFeed.scale.y=1;
     this.torrent.visible=p.surge>0;this.torrent.scale.set(p.surge,1,p.surge);
     this.cracks.forEach((c,n)=>{c.visible=p.crack>0&&p.collapse<.8;c.scale.z=p.crack;c.scale.x=1+Math.sin(n)*p.crack;});
     for(const [n,r] of this.ruins.entries()){
