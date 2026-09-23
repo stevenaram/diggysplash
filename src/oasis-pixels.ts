@@ -28,8 +28,8 @@ export function drawPixel(kind: PixelKind, frame = 0): HTMLCanvasElement {
     poly([[10,18],[2,10],[1,14],[6,23],[13,24]],ink);
     oval(24,fat?20:19,fat?18:15,fat?10:8,ink);oval(24,fat?19:18,fat?17:14,fat?9:6,'#78888e');oval(21,16,fat?12:9,fat?6:4,'#a0adb0');
     for(const [x,y]of [[14,24+(step%2)],[28,25-(step%2)],[19,25-(step%2)],[34,24+(step%2)]]){rect(x,y,3,5,'#4a5661');rect(x-1,y+4,5,2,ink);}
-    const y=feeding?[16,19,17,14][step]:10;poly([[29,y+4],[30,y-8],[35,y-3],[39,y-8],[41,y+5]],ink);
-    oval(35,y+3,8,7,'#87979b');poly([[32,y+4],[44,y+5],[46,y+9],[34,y+10]],'#bec8c3');rect(43,y+5,4,3,ink);rect(36,y+1,2,2,'#e6c777');dot(37,y+1,ink);rect(31,y-4,2,4,'#c1b3a4');if(feeding){rect(39,y+9,6,step%2?2:1,ink);rect(40,y+9,2,1,'#ece4d0');}
+    const y=feeding?[14,16,15,12][step]:10;poly([[29,y+4],[30,y-8],[35,y-3],[39,y-8],[41,y+5]],ink);
+    oval(35,y+3,8,7,'#87979b');poly([[32,y+4],[44,y+5],[46,y+9],[34,y+10]],'#bec8c3');rect(43,y+5,4,3,ink);rect(36,y+1,2,2,'#e6c777');dot(37,y+1,ink);rect(31,y-4,2,4,'#c1b3a4');if(feeding){const jaw=[1,5,3,1][step];rect(37,y+8,10,jaw,ink);rect(39,y+8,6,1,'#ece4d0');rect(37,y+8+jaw,9,2,'#bec8c3');}
   } else if(kind==='alarm') {
     // Cream comic badge and a dark, high-contrast exclamation, at native density.
     rect(2,0,10,16,ink);rect(0,2,14,12,ink);
@@ -256,8 +256,8 @@ function drawFarmFarmer(kind:'farmer-full'|'farmer-down',frame:number):HTMLCanva
     const pose=Math.min(5,frame),f=pose/5,original=drawPixel('villager',0),head=original.getContext('2d')!;
     if(pose>=3){head.fillStyle='#efc496';head.fillRect(11,17,5,4);head.fillRect(18,17,5,4);head.fillStyle='#494353';for(const x of [12,19]){head.fillRect(x,18,1,1);head.fillRect(x+2,18,1,1);head.fillRect(x+1,19,1,1);head.fillRect(x,20,1,1);head.fillRect(x+2,20,1,1);}}
     const ellipse=(x:number,y:number,rx:number,ry:number,color:string)=>{c.fillStyle=color;for(let j=Math.floor(y-ry);j<=y+ry;j++)for(let i=Math.floor(x-rx);i<=x+rx;i++)if(((i-x)/rx)**2+((j-y)/ry)**2<=1)c.fillRect(i,j,1,1);};
-    const bx=32+8*f,by=49+3*f;
-    ellipse(bx,by,24-5*f,13-3*f,'#494353');ellipse(bx,by-1,23-5*f,12-3*f,'#985744');ellipse(bx-3,by-3,19-4*f,8-2*f,'#c58358');ellipse(bx-5,by-5,13-2*f,3,'#edb782');
+    const bx=32+7*f,by=49;
+    ellipse(bx,by,24,13,'#494353');ellipse(bx,by-1,23,12,'#985744');ellipse(bx-3,by-3,19,8,'#c58358');ellipse(bx-5,by-5,13,3,'#edb782');
     c.fillStyle='#aa805b';c.fillRect(bx-14,by+5,27,2);c.fillStyle='#494353';
     c.fillRect(22+35*f,59-12*f,6,3);c.fillRect(36+21*f,59-4*f,6,3);
     c.save();c.translate(32-17*f,34+16*f);c.rotate(-Math.PI/2*f);c.drawImage(original,0,0,32,25,-16,-12,32,25);c.restore();

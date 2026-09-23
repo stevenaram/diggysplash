@@ -2,7 +2,7 @@ import * as T from 'three';
 import {PixelSprites} from './pixel-sprites';
 import {gridWorld,SIZE} from './game';
 import {PIXEL_SIZES} from './oasis-pixels';
-import {FARM_DURATION,farmPose} from './farm-timeline';
+import {FARM_DURATION,farmPose,farmStoryTime} from './farm-timeline';
 import type {World} from './world';
 
 /** Two irrigated terraces and a harvest whose bounty proves disastrously excessive. */
@@ -24,7 +24,7 @@ export class HarvestScene extends PixelSprites{
     for(let side=0;side<2;side++){
       const cx=side?4:-4,targetX=side?5:-3;
       box(this.root,cx,.05,-6.1,7.25,.14,3.35,0x96714b,'soil');
-      for(let row=0;row<2;row++){
+      for(let row=1;row<2;row++){
         const z=-7.25+row*1.65;
         box(this.root,cx,.14,z,7.25,.14,.52,0x715036,'soil');
         for(let k=0;k<6;k++){
@@ -67,14 +67,18 @@ export class HarvestScene extends PixelSprites{
     this.update(0,[false,false],0,0);
   }
   update(dt:number,active:boolean[],progress:number,time:number){
-    const t=progress*FARM_DURATION,p=farmPose(t),motion=this.world.reduced?0:time;
+    const seconds=progress*FARM_DURATION,t=farmStoryTime(seconds),p=farmPose(seconds),motion=this.world.reduced?0:time;
     if(t<this.previous)this.previous=0;
     if(!this.world.reduced)for(const [at,cue]of [[2.5,'harvest-chime'],[4,'feast-pop'],[6,'feast-pop'],[8,'feast-pop'],[11,'farm-fall'],[12,'wolf-call']] as const){if(this.previous<at&&t>=at)this.world.onFarmSound(cue);}
+    if(!this.world.reduced){
+      for(let at=3.3;at<9;at+=.65)if(this.previous<at&&t>=at)this.world.onFarmSound('farmer-chew');
+      for(let at=14.1;at<17.9;at+=.45)if(this.previous<at&&t>=at)this.world.onFarmSound('wolf-chomp');
+    }
     this.previous=t;
     this.power=this.power.map((v,n)=>!active[n]?0:Math.min(1,v+dt/2));
     this.fields.forEach((field,n)=>field.forEach((s,k)=>{
       const grow=Math.max(this.power[n],progress>0?p.grow:0);
-      s.visible=!(k>=6&&t>3+(k-6)*.95);
+      s.visible=!(t>3+k*.95);
       s.material=this.material(s.userData.crop,grow>.8?2+Math.floor(motion*.9+k*.2)%2:grow>.12?1:0);
     }));
     this.channels.forEach((a,n)=>a.forEach(m=>m.visible=active[n]||progress>0));
@@ -99,12 +103,12 @@ export class HarvestScene extends PixelSprites{
     this.wolves.forEach((s,n)=>{
       const arrival=T.MathUtils.smoothstep(t,12+n*.2,14+n*.2),target=this.farmerX[n];
       const eating=t>14+n*.2&&t<17.5+n*.2,fat=t>=17.5+n*.2;
-      const wander=fat?Math.min(4,t-17.5-n*.2):0;
-      const sideways=Math.sin(wander*1.5+n*.3)*.25;
-      s.visible=t>=12+n*.2;
-      s.position.set(T.MathUtils.lerp(-8.8,target-.4,arrival)+(fat?sideways:0),.06,-3.9+(fat?Math.sin(wander*.8)*1.1:0));
+
+      const exit=T.MathUtils.smoothstep(t,18.5,22.5),clearLane=T.MathUtils.smoothstep(t,17.9,18.7);
+      s.visible=t>=12+n*.2&&t<22.5;
+      s.position.set(T.MathUtils.lerp(-8.8,target-.4,arrival)+exit*16,.06+(fat?Math.abs(Math.sin(motion*5+n))*.04:0),-3.9-clearLane*2.0+(fat?Math.sin(motion*5+n)*.10:0));
       const walkFrame=this.world.reduced||t>=22?0:Math.floor(motion*(fat?4:7)+n)%4;
-      s.material=this.material('wolf',fat?8+walkFrame:eating?4+walkFrame:walkFrame,fat&&Math.cos(wander*1.5+n*.3)<0);
+      s.material=this.material('wolf',fat?8+walkFrame:eating?4+walkFrame:walkFrame,false);
       if(eating)s.position.z+=Math.sin(motion*9+n)*.07;
     });
     this.crumbs.forEach((crumb,n)=>{
@@ -112,8 +116,8 @@ export class HarvestScene extends PixelSprites{
       const feeding=t>14+actor*.2&&t<17.5+actor*.2,eating=t>3&&t<9;
       crumb.visible=feeding||eating;
       const material=crumb.material as T.MeshBasicMaterial;
-      material.color.setHex(feeding?0xb96b5d:0xe4ad5c);material.opacity=(1-age)*.65;
-      crumb.position.set(this.farmerX[actor]+.4+Math.sin(n*2.399)*age*.3,(feeding?.4:1.25)+Math.sin(age*Math.PI)*.16-age*.2,-4.15+Math.cos(n*2.399)*age*.2);
+      material.color.setHex(feeding?0xc83e39:0xe4ad5c);material.opacity=(1-age)*(feeding?.95:.65);crumb.scale.setScalar(feeding?2.5:1);
+      crumb.position.set(this.farmerX[actor]+.4+Math.sin(n*2.399)*age*.65,(feeding?.65:1.25)+Math.sin(age*Math.PI)*(feeding?.42:.16)-age*.2,-4.15+Math.cos(n*2.399)*age*.2);
     });
   }
 }

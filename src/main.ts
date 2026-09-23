@@ -73,7 +73,7 @@ function sound(
   try {
     audio ??= new AudioContext();
     void audio.resume();
-    if(['harvest-chime','feast-pop','farm-fall','wolf-call'].includes(kind)){farmSound(audio,kind as FarmCue);return;}
+    if(['harvest-chime','feast-pop','farm-fall','wolf-call','farmer-chew','wolf-chomp'].includes(kind)){farmSound(audio,kind as FarmCue);return;}
     if(kind === "geyser" || kind === "collapse" || kind === "flood"){citySound(audio,kind);return;}
     if(kind === "blocked"){blockedSound(audio);return;}
     if(kind === "wood"){timberSound(audio);return;}
