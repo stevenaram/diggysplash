@@ -4,8 +4,8 @@ import {caravanPose,caravanRoad,CARAVAN_DURATION} from '../src/caravan-timeline'
 import {levels} from '../src/levels';
 import {minimumDigs,Game} from '../src/game';
 test('the caravan has three troughs, a reserved road and a verified exact-budget solution',()=>{
- const l=levels[4];assert.equal(l.targets.length,3);assert.equal(minimumDigs(l),16);
- assert.equal(l.tiles[29],'rock');assert.equal(l.tiles[37],'rock');
+ const l=levels[4];assert.equal(l.targets.length,3);assert.equal(minimumDigs(l),13);
+ assert.equal(l.tiles[29],'rock');assert.equal(l.tiles[26],'rock');
  assert.ok(l.tiles.slice(0,24).every(t=>t==='building'));
  const g=new Game(l);l.solution.forEach(i=>assert.equal(g.dig(i),true));assert.ok(g.won);assert.equal(g.remaining,0);
 });
@@ -23,10 +23,25 @@ test('road turns continuously within the map and reverses the convoy heading',()
 });
 
 test('the separated right trough needs its own branch and the torch arrives before ignition',()=>{
- const g=new Game(levels[4]);levels[4].solution.slice(0,11).forEach(i=>g.dig(i));
+ const g=new Game(levels[4]);levels[4].solution.slice(0,12).forEach(i=>g.dig(i));
  assert.deepEqual(g.active,[true,true,false]);assert.equal(g.dig(29),false);
- levels[4].solution.slice(11).forEach(i=>g.dig(i));assert.ok(g.won);
+ levels[4].solution.slice(12).forEach(i=>g.dig(i));assert.ok(g.won);
  assert.equal(caravanPose(17).torch,0);assert.equal(caravanPose(17.8).torch,1);
  assert.equal(caravanPose(17.8).fire,0);assert.equal(caravanPose(18.5).fire,1);
  assert.equal(caravanPose(18.5).escape,0);
+});
+
+test('caravan has one exact-budget network and two tempting but losing opening moves',()=>{
+ const level=levels[4];
+ const viable:number[]=[];
+ for(let i=0;i<64;i++)if(level.tiles[i]==='sand'){
+  const after=structuredClone(level);after.tiles[i]='channel';
+  if(1+minimumDigs(after)===level.budget)viable.push(i);
+ }
+ assert.deepEqual(viable,[...level.solution].sort((a,b)=>a-b));
+ for(const i of [40,56]){
+  assert.equal(level.tiles[i],'sand');
+  const after=structuredClone(level);after.tiles[i]='channel';
+  assert.equal(1+minimumDigs(after),level.budget+1);
+ }
 });

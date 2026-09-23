@@ -24,10 +24,10 @@ export class CaravanScene extends PixelSprites{
    box(this.root,x,.13,-1.65,1.95,.6,.15,0xd5d1b4,'stone');
    for(const dx of [-.68,.68])box(this.root,x+dx,.13,-.35,.5,.6,.15,0xd5d1b4,'stone');
    this.horses.push(this.add('horse',x-1.25,-1.8));this.people.push(this.add('shepherd',x+.6,-3.2));
-   this.bones.push(this.add('bones',1.9+n*.7,6.8+n*.08));
+   this.bones.push(this.add('bones',3.1+n*.7,6.8+n*.08));
    this.darkHorses.push(this.add('black-horse',8,-3));this.raiders.push(this.add('highwayman',8,-3));
    this.smiles.push(this.add('smirk',8,-3));this.sadness.push(this.add('sad',8,-3));
-   this.fires.push(this.add('campfire',1.9+n*.7,6.85+n*.08));
+   this.fires.push(this.add('campfire',3.1+n*.7,6.85+n*.08));
   }
   this.torch=this.add('torch',0,0);
   for(let n=0;n<8;n++){
@@ -64,7 +64,7 @@ export class CaravanScene extends PixelSprites{
    horse.visible=Math.abs(horse.position.x)<9.5;
    const person=this.people[n],escort=new T.Vector3(-5+n*5,.04,-3.2);
    if(p.defeat===0){person.position.set(T.MathUtils.lerp(this.starts[n]+.6,escort.x,p.hitch),.04,T.MathUtils.lerp(-3.2,escort.z,p.hitch));this.pose(person,'shepherd',t>11?9:walking?1+Math.floor(motion*6+n)%2:0);}
-   else {person.position.set(T.MathUtils.lerp(-5+n*5,2.6+(n-1)*.48,p.pile),.04+n*p.pile*.1,T.MathUtils.lerp(-3.2,6.6+n*.14,p.pile));this.pose(person,'shepherd-down');}
+   else {person.position.set(T.MathUtils.lerp(-5+n*5,3.8+(n-1)*.48,p.pile),.04+n*p.pile*.1,T.MathUtils.lerp(-3.2,6.6+n*.14,p.pile));this.pose(person,'shepherd-down');}
    person.visible=t<20.2;
    // The body keeps the same artwork and native pixel size all the way to the pile.
    if(p.defeat>0&&p.defeat<1){this.pose(person,'shepherd',9);person.material.rotation=-p.defeat*Math.PI/2;}else person.material.rotation=0;
@@ -92,7 +92,7 @@ export class CaravanScene extends PixelSprites{
   });
   const flight=Math.max(0,Math.min(1,(t-17)/.8));
   // Throw from the departing right-hand raider, landing in the unobstructed foreground pile.
-  const throwStart=new T.Vector3(4.41,1.9,4.34),throwEnd=new T.Vector3(2.6,.25,6.8);
+  const throwStart=new T.Vector3(4.41,1.9,4.34),throwEnd=new T.Vector3(3.8,.25,6.8);
   this.torch.visible=t>=17&&t<17.8;
   this.torch.position.copy(throwStart).lerp(throwEnd,flight);this.torch.position.y+=Math.sin(flight*Math.PI)*2;
   this.torch.material.rotation=-flight*Math.PI*2;
