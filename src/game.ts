@@ -23,6 +23,8 @@ export interface Level {
   budget: number;
   solution: number[];
   links?: [number, number][];
+  /** Water-operated inlet valves: destination waits for its prerequisite cell. */
+  requiresWater?: Record<number,number>;
   /** Render elevations only; connectivity remains the explicit puzzle graph. */
   elevations?: number[];
   story?: {
@@ -110,10 +112,14 @@ export class Game {
     this.wet = new Map(this.level.sources.map((i) => [i, 0]));
     const q = [...this.level.sources];
     const dug = new Set(this.digs);
+    let previousSize=-1;
+    while(previousSize!==this.wet.size){
+    previousSize=this.wet.size;
     for (let n = 0; n < q.length; n++)
       for (const j of connections(this.level, q[n]))
         if (
           !this.wet.has(j) &&
+          (this.level.requiresWater?.[j]===undefined||this.wet.has(this.level.requiresWater[j])) &&
           (dug.has(j) ||
             ["source", "channel", "target", "basin", "aqueduct"].includes(
               this.level.tiles[j],
@@ -122,6 +128,7 @@ export class Game {
           this.wet.set(j, this.wet.get(q[n])! + 1);
           q.push(j);
         }
+    }
   }
 }
 // Exact node-weighted Steiner tree DP. At most five terminals on 64 cells.

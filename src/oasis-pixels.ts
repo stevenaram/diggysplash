@@ -376,9 +376,14 @@ function drawCaravanPerson(kind:'highwayman'|'shepherd-down',frame:number):HTMLC
 /** Same face and native pixel scale as the shepherd, in a modest wrapped towel. */
 function drawBather(kind:'bather'|'bather-down',frame:number){
  const c=document.createElement('canvas');c.width=32;c.height=40;const x=c.getContext('2d')!;x.imageSmoothingEnabled=false;
- x.drawImage(drawPixel('shepherd',frame%2?1:0),0,0);x.clearRect(0,0,32,14);x.clearRect(24,12,8,28);
+ x.drawImage(drawPixel('shepherd',frame%2?1:0),0,0);x.clearRect(24,12,8,28);x.clearRect(6,24,20,16);
  const r=(a:number,b:number,w:number,h:number,col:string)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
- r(11,10,10,3,'#785748');r(12,9,8,2,'#a17a52');r(10,23,14,12,'#697e83');r(11,23,12,11,'#e6e1c8');r(12,24,4,9,'#fff2d4');r(19,24,2,10,'#b4c2b5');r(11,31,12,2,'#779b9c');r(7,24,3,7,'#efc496');r(22,24,3,7,'#efc496');
+ // Bare chest and arms above a folded waist towel; original face and hat remain intact.
+ r(10,24,13,6,'#bd8d69');r(11,24,11,5,'#efc496');r(12,24,4,3,'#f7d6aa');
+ r(7,24,3,7,'#bd8d69');r(8,24,2,6,'#efc496');r(23,24,3,7,'#bd8d69');r(23,24,2,6,'#efc496');
+ r(10,29,14,7,'#778d8b');r(11,29,12,6,'#ece6ce');r(12,30,4,5,'#fff3d7');r(20,30,2,5,'#b8c9bd');r(11,33,12,1,'#83a7a7');r(19,29,3,2,'#fff3d7');
+ const step=frame<4?frame%2:0;r(11,36,4,2+step,'#c79370');r(10,38+step,6,1,'#efc496');r(19,36,4,3-step,'#c79370');r(19,38-step,6,1,'#efc496');
+
  if(frame>=4){r(11,17,11,4,'#efc496');for(const a of [11,18])for(const [dx,dy]of [[0,0],[2,0],[1,1],[0,2],[2,2]])r(a+dx,17+dy,1,1,'#494353');}
  if(kind==='bather')return c;
  const down=document.createElement('canvas');down.width=48;down.height=32;const d=down.getContext('2d')!;d.imageSmoothingEnabled=false;d.translate(4,31);d.rotate(-Math.PI/2);d.drawImage(c,0,0);return down;
