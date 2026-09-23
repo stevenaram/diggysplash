@@ -1,5 +1,6 @@
 import * as T from 'three';
 import {TILE_SIZE} from './game';
+import {dirtPose} from './dirt-motion';
 const PARTICLE_SIZE=TILE_SIZE/32;
 const PARTICLES_PER_BURST=24;
 /** Shared fixed pool for soil scoops and splash jets; no expanding ripple rings. */
@@ -40,14 +41,10 @@ export class WaterEffects {
         const visible=age>=0&&age<life&&(!dirt||j<10);
         const a=(j%12)*Math.PI/6+n*.7+ring*Math.PI/12,speed=.8+(j%3)*.25;
         if(dirt){
-          // A sparse scoop from the center: uneven ballistic arcs, not a rim of confetti.
-          const angle=j*2.399963+n*.7;
-          const radius=.06+(j%3)*.045+Math.max(0,age)*(1.35+(j%4)*.22);
-          this.dummy.position.set(b.x+Math.cos(angle)*radius,b.y+.08+age*(1.8+(j%3)*.22)-age*age*6.5,b.z+Math.sin(angle)*radius);
-          const t=T.MathUtils.clamp((life-age)/.14,0,1);
-          const fade=visible?t*t*(3-2*t):0;
-          this.dummy.scale.setScalar(fade*(j%4===0?1.5:1));
-          this.dummy.rotation.set(angle+age*6,j+age*4,angle-age*5);
+          const pose=dirtPose(j,time-b.at);
+          this.dummy.position.set(b.x+pose.x,b.y+pose.y,b.z+pose.z);
+          this.dummy.scale.setScalar(pose.scale);
+          this.dummy.rotation.set(j+pose.spin,j*.7+pose.spin*.6,j*.4-pose.spin);
         }else{
           // Two interleaved rings of full-size droplets, with a short stagger.
           this.dummy.position.set(b.x+Math.cos(a)*(.12+ring*.16+age*speed),b.y+age*(3.2-ring*.45)-age*age*7.5,b.z+Math.sin(a)*(.12+ring*.16+age*speed));
