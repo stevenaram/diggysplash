@@ -1,3 +1,4 @@
+import type {FarmCue} from './farm-sound';
 import type {CityCue} from './city-sound';
 import {WaterEffects} from './water-effects';
 import {bakeColored} from './battle-mesh';
@@ -25,6 +26,7 @@ export class World {
   scoopedAt=new Map<number,number>();
   onHover: (i: number | null) => void = () => {};
   onViewChanged = () => {};
+  onFarmSound:(cue:FarmCue)=>void=()=>{};
   onCitySound:(cue:CityCue)=>void=()=>{};
   onCreatureSound: (cue:CreatureCue)=>void = ()=>{};
   onBattleSound: (kind: "wind" | "launch" | "impact" | "wood") => void = () => {};
@@ -338,7 +340,7 @@ export class World {
       if (["source", "channel", "target", "basin", "aqueduct"].includes(t))
         this.addWater(i);
     }
-    if (!["oasis","city"].includes(this.game.level.story?.kind ?? ""))
+    if (!["oasis","city","harvest"].includes(this.game.level.story?.kind ?? ""))
       this.game.level.targets.forEach((i, n) => this.machine(i, n));
     const sceneryStart = this.root.children.length;
     this.story = new StoryScene(this);

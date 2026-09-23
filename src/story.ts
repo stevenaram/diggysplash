@@ -1,4 +1,5 @@
 import * as T from "three";
+import {FARM_DURATION} from "./farm-timeline";
 import { HarvestScene } from "./harvest-scene";
 import { CitySprites } from "./city-sprites";
 import {CITY_DURATION} from "./city-timeline";
@@ -365,7 +366,7 @@ export class StoryScene {
             this.progress +
               dt /
                 (this.campaign?.duration ??
-                  (this.oasisSprites ? OASIS_DURATION : this.world.game.level.story?.kind === "city" ? CITY_DURATION : this.world.game.level.story?.kind === "bridge" ? BRIDGE_DURATION : 4)),
+                  (this.harvestScene ? FARM_DURATION : this.oasisSprites ? OASIS_DURATION : this.world.game.level.story?.kind === "city" ? CITY_DURATION : this.world.game.level.story?.kind === "bridge" ? BRIDGE_DURATION : 4)),
           );
       this.done = this.progress >= 1;
     }

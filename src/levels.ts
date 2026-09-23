@@ -126,9 +126,9 @@ city.links=[[22,30],[30,38]];
 city.elevations=Array.from({length:64},(_,i)=>i<24||i===30?1.15:0);
 const harvest = board(
   "harvest",
-  "Bread for everyone",
-  "Turn both mills. Save the harvest.",
-  "The town has bread again!",
+  "The last supper",
+  "Irrigate both farm terraces.",
+  "An all-you-can-eat disaster.",
   [
     "________",
     "________",

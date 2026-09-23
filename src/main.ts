@@ -1,3 +1,4 @@
+import {farmSound,type FarmCue} from './farm-sound';
 import {citySound,type CityCue} from './city-sound';
 import {CITY_DURATION} from './city-timeline';
 import {timberSound} from './timber-sound';
@@ -65,12 +66,13 @@ let retryTimer=0;
 let retryGeneration=0;
 function sound(
   kind:
-    "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact" | "wood" | "blocked" | CreatureCue | CityCue,
+    "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact" | "wood" | "blocked" | CreatureCue | CityCue | FarmCue,
 ) {
   if (muted) return;
   try {
     audio ??= new AudioContext();
     void audio.resume();
+    if(['harvest-chime','feast-pop','farm-fall','wolf-call'].includes(kind)){farmSound(audio,kind as FarmCue);return;}
     if(kind === "geyser" || kind === "collapse" || kind === "flood"){citySound(audio,kind);return;}
     if(kind === "blocked"){blockedSound(audio);return;}
     if(kind === "wood"){timberSound(audio);return;}
@@ -358,6 +360,7 @@ renderMute();
 world.onWater=()=>sound("water");
 world.onBattleSound = sound;
 world.onCitySound = sound;
+world.onFarmSound = sound;
 world.onCreatureSound = sound;
 document.addEventListener("visibilitychange",()=>{if(document.hidden)stopCreatureSounds();});
 update();
@@ -442,6 +445,12 @@ if (import.meta.env.DEV)
         world.story.progress=seconds/OASIS_DURATION;
         world.story.oasisSprites.update(world.story.progress,seconds);
         stopCreatureSounds();
+        world.renderer.render(world.scene,world.camera);
+      },
+      previewFarm(seconds:number){
+        if(!world.story?.harvestScene)return;
+        cancelAnimationFrame(world.frame);
+        world.story.harvestScene.update(2,[true,true],seconds/18,seconds);
         world.renderer.render(world.scene,world.camera);
       },
       previewCity(seconds:number){
