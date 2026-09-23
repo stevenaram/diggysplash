@@ -30,7 +30,7 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
-    assert.equal(minimumDigs(l), [4, 7, 11, 13, 9, 10, 11, 12][n]);
+    assert.equal(minimumDigs(l), [4, 7, 10, 13, 9, 10, 11, 12][n]);
     assert.equal(l.budget, minimumDigs(l));
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);
@@ -95,21 +95,30 @@ test("one shared connected network powers all branches and existing channels", (
   }
 });
 
-test("city wheels require separate ground branches and work in either order", () => {
-  const level=levels[2], game=new Game(level);
-  assert.equal(game.dig(cell(4,2)),false);
-  assert.equal(level.links?.length ?? 0,0);
-  level.solution.slice(0,6).forEach(i=>game.dig(i));
-  assert.deepEqual(game.active,[true,false]);
-  level.solution.slice(6).forEach(i=>game.dig(i));
-  assert.deepEqual(game.active,[true,true]);
-  game.undo();
-  assert.deepEqual(game.active,[true,false]);
-  const reverse=new Game(level);
-  [48,49,50,51,52,53,54,46,38].forEach(i=>reverse.dig(i));
-  assert.deepEqual(reverse.active,[false,true]);
-  [43,35].forEach(i=>reverse.dig(i));
-  assert.equal(reverse.won,true);
+test("city aqueduct delivers to a new digging area before the well", () => {
+  const level=levels[2],game=new Game(level);
+  level.solution.slice(0,5).forEach(i=>game.dig(i));
+  assert.equal(game.wet.has(22),true);
+  assert.equal(game.wet.has(30),true);
+  assert.equal(game.wet.has(38),true);
+  assert.equal(game.won,false);
+  assert.equal(game.remaining,5);
+  assert.deepEqual(connections(level,30).sort((a,b)=>a-b),[22,38]);
+  level.solution.slice(5).forEach(i=>game.dig(i));
+  assert.equal(game.won,true);assert.equal(game.remaining,0);
+  game.reset();
+  level.solution.slice(5).forEach(i=>game.dig(i));
+  assert.equal(game.wet.has(38),false);assert.equal(game.won,false);
+  level.solution.slice(0,5).forEach(i=>game.dig(i));
+  assert.equal(game.won,true);
+});
+test("city wall cannot be bypassed and a wrong side branch uses the last dig",()=>{
+  const game=new Game(levels[2]);
+  for(let i=24;i<32;i++)assert.equal(game.dig(i),false);
+  assert.equal(game.dig(13),true);
+  levels[2].solution.forEach(i=>game.dig(i));
+  assert.equal(game.failed,true);
+  game.reset();assert.equal(game.remaining,10);assert.equal(game.wet.has(38),false);
 });
 test("ravine blocks flow and cannot be dug; dry oasis fills without any gears", () => {
   const bridge = new Game(levels[1]);

@@ -1,3 +1,4 @@
+import type {CityCue} from './city-sound';
 import {WaterEffects} from './water-effects';
 import {bakeColored} from './battle-mesh';
 import * as T from "three";
@@ -24,6 +25,7 @@ export class World {
   scoopedAt=new Map<number,number>();
   onHover: (i: number | null) => void = () => {};
   onViewChanged = () => {};
+  onCitySound:(cue:CityCue)=>void=()=>{};
   onCreatureSound: (cue:CreatureCue)=>void = ()=>{};
   onBattleSound: (kind: "wind" | "launch" | "impact" | "wood") => void = () => {};
   tiles: T.Mesh[] = [];
@@ -200,7 +202,7 @@ export class World {
       spans.forEach(([u,v],face)=>{for(let j=0;j<4;j++){const i=face*4+j;uv.setXY(i,uv.getX(i)*u/(surface === "plaster" ? TILE_SIZE*2 : TILE_SIZE),uv.getY(i)*v/(surface === "plaster" ? TILE_SIZE*2 : TILE_SIZE));}});
     }
     let material: T.Material | T.Material[];
-    if (["battle", "fortress", "oasis"].includes(this.game.level.story?.kind ?? "")) {
+    if (["battle", "fortress", "oasis", "city"].includes(this.game.level.story?.kind ?? "")) {
       const vertexColors = colors.flatMap((c) =>
         Array.from({ length: 4 }, () => [c.r, c.g, c.b]).flat(),
       );
@@ -298,7 +300,7 @@ export class World {
       this.tiles.push(tile);
       tile.userData.cell = i;
       tile.userData.sandMaterial = tile.material;
-      if (t === "building")
+      if (t === "building" && this.game.level.story?.kind !== "city")
         this.box(this.root, x, 0.012, z, 1.94, 0.025, 1.94, 0xcaae83);
       if (t === "rock" && !["oasis", "bridge", "city", "harvest"].includes(this.game.level.story?.kind ?? "")) {
         const rock = this.shaded(
@@ -315,10 +317,11 @@ export class World {
         chip.position.set(x - 0.27, 0.08, z + 0.24);
         this.root.add(chip);
       }
+      if(t === "building" && this.game.level.story?.kind === "city")tile.material=this.mat(0xd1bd95,"stone");
       if (t === "ravine") {
         tile.visible=false;
       }
-      if (["source", "channel", "target", "basin"].includes(t))
+      if (["source", "channel", "target", "basin", "aqueduct"].includes(t))
         tile.position.y = -0.3;
       if (["channel", "target", "basin"].includes(t))
         tile.material = this.mat(t === "basin" ? 0x94603b : 0x6a452d, "soil");
@@ -327,7 +330,7 @@ export class World {
       if (["source", "channel", "target", "basin", "aqueduct"].includes(t))
         this.addWater(i);
     }
-    if (this.game.level.story?.kind !== "oasis")
+    if (!["oasis","city"].includes(this.game.level.story?.kind ?? ""))
       this.game.level.targets.forEach((i, n) => this.machine(i, n));
     const sceneryStart = this.root.children.length;
     this.story = new StoryScene(this);
@@ -607,11 +610,11 @@ export class World {
     const mesh = this.box(
       this.root,
       x,
-      elevated ? (this.game.level.story?.kind === "city" ? 3.34 : 1.74) : -0.14,
+      elevated ? (this.game.level.story?.kind === "city" ? -.1 : 1.74) : -0.14,
       z,
-      elevated || pool ? 0.985 : 0.72,
+      elevated && this.game.level.story?.kind === "city" ? .38 : elevated || pool ? 0.985 : 0.72,
       0.035,
-      elevated ? 0.38 : pool ? 0.985 : 0.72,
+      elevated ? (this.game.level.story?.kind === "city" ? .985 : .38) : pool ? .985 : 0.72,
       palette.water,
       "water",
     );

@@ -1,6 +1,7 @@
 import * as T from "three";
 import { HarvestScene } from "./harvest-scene";
 import { CitySprites } from "./city-sprites";
+import {CITY_DURATION} from "./city-timeline";
 import { BRIDGE_DURATION } from "./bridge-timeline";
 import { BridgeSprites } from "./bridge-sprites";
 import { OasisSprites } from "./oasis-sprites";
@@ -299,33 +300,7 @@ export class StoryScene {
     this.bridge=this.bridgeSprites.deck;
   }
   city() {
-    const w=this.world;
-    this.citySprites=new CitySprites(w);
-    // Two broad wheel silhouettes flank a deliberately clear central entrance.
-    w.house(-1.9,-6.4,1.9,1.3,1.25,0xe3bc86);
-    w.house(6.35,-6.4,1.7,1.2,1.4,0xe8c594);
-    for(const x of [-2.5,-1.5,-.5,.5,1,5,6,7]) {
-      const tower=x===1||x===5, h=tower?4.7:3.8;
-      w.box(w.root,x,h/2,-4.5,tower?1:.98,h,.85,0xe4c394,"stone");
-      w.box(w.root,x,h+.06,-4.5,tower?1.15:1.04,.2,1.02,0xf3d9aa,"stone");
-      for(const dx of [-.28,.28])w.box(w.root,x+dx,h+.3,-4.5,.24,.45,.92,0xe9cd9f,"stone");
-      if(tower)w.box(w.root,x,3.25,-4.04,.4,1.1,.04,x===1?0x579b96:0xc9815a);
-    }
-    // Twin lifting panels have a wide opening for full-size billboard people.
-    for(const x of [2.2,3.8]) {
-      const gate=new T.Group();gate.position.set(x,0,-4.5);w.root.add(gate);this.gates.push(gate);
-      for(let j=0;j<6;j++)w.box(gate,-.65+j*.26,1.85,0,.13,3.7,.2,0x826c51,"wood");
-      for(const y of [.35,1.8,3.25])w.box(gate,0,y,0,1.5,.18,.26,0x92754f,"wood");
-    }
-    w.box(w.root,3,4.05,-4.5,3.3,.4,1.02,0xeccf9f,"stone");
-    w.box(w.root,3,4.36,-4.5,3.3,.2,1.1,0xf3d9aa,"stone");
-    for(const x of [1.55,2.15,2.75,3.35,3.95,4.45])
-      w.box(w.root,x,4.65,-4.5,.3,.4,.95,0xe9cd9f,"stone");
-    // Dry drive shafts stay behind each wheel. Water reaches the two ground inlets independently.
-    for(const x of [0,6]) {
-      this.pole(w.root,new T.Vector3(x,2.24,-1.45),new T.Vector3(x,2.24,-3.85),.055,0x8d7657);
-      w.box(w.root,x,2.24,-3.85,.35,.35,.3,0x80533b,"wood");
-    }
+    this.citySprites=new CitySprites(this.world);
   }
   aqueductArch(x: number, z: number) {
     const w = this.world,
@@ -390,7 +365,7 @@ export class StoryScene {
             this.progress +
               dt /
                 (this.campaign?.duration ??
-                  (this.oasisSprites ? OASIS_DURATION : this.world.game.level.story?.kind === "city" ? 9 : this.world.game.level.story?.kind === "bridge" ? BRIDGE_DURATION : 4)),
+                  (this.oasisSprites ? OASIS_DURATION : this.world.game.level.story?.kind === "city" ? CITY_DURATION : this.world.game.level.story?.kind === "bridge" ? BRIDGE_DURATION : 4)),
           );
       this.done = this.progress >= 1;
     }
@@ -404,7 +379,7 @@ export class StoryScene {
       this.bridge.rotation.z =
         -(1 - ease(this.progress / 0.35)) * Math.PI * 0.36;
     this.bridgeSprites?.update(this.progress,time);
-    this.citySprites?.update(this.progress,time);
+    if(this.citySprites){this.citySprites.update(this.progress,time);return;}
     this.harvestScene?.update(dt,active,this.progress,time);
     this.gates.forEach((g, n) => {
       const height = active[n] ? 3.85 : 0;

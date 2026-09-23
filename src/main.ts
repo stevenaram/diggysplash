@@ -1,3 +1,5 @@
+import {citySound,type CityCue} from './city-sound';
+import {CITY_DURATION} from './city-timeline';
 import {timberSound} from './timber-sound';
 import {splashSound,scoopSound,blockedSound} from './splash-sound';
 import { BRIDGE_DURATION } from "./bridge-timeline";
@@ -63,12 +65,13 @@ let retryTimer=0;
 let retryGeneration=0;
 function sound(
   kind:
-    "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact" | "wood" | "blocked" | CreatureCue,
+    "dig" | "water" | "win" | "undo" | "machine" | "wind" | "launch" | "impact" | "wood" | "blocked" | CreatureCue | CityCue,
 ) {
   if (muted) return;
   try {
     audio ??= new AudioContext();
     void audio.resume();
+    if(kind === "geyser" || kind === "collapse" || kind === "flood"){citySound(audio,kind);return;}
     if(kind === "blocked"){blockedSound(audio);return;}
     if(kind === "wood"){timberSound(audio);return;}
     if(kind === "dig"){scoopSound(audio);return;}
@@ -354,6 +357,7 @@ muteButton.addEventListener('click',()=>{
 renderMute();
 world.onWater=()=>sound("water");
 world.onBattleSound = sound;
+world.onCitySound = sound;
 world.onCreatureSound = sound;
 document.addEventListener("visibilitychange",()=>{if(document.hidden)stopCreatureSounds();});
 update();
@@ -438,6 +442,13 @@ if (import.meta.env.DEV)
         world.story.progress=seconds/OASIS_DURATION;
         world.story.oasisSprites.update(world.story.progress,seconds);
         stopCreatureSounds();
+        world.renderer.render(world.scene,world.camera);
+      },
+      previewCity(seconds:number){
+        if(!world.story?.citySprites)return;
+        cancelAnimationFrame(world.frame);
+        world.story.progress=seconds/CITY_DURATION;
+        world.story.citySprites.update(world.story.progress,seconds);
         world.renderer.render(world.scene,world.camera);
       },
       previewBridge(seconds:number){

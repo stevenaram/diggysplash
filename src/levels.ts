@@ -105,22 +105,24 @@ const bridge = board(
 );
 const city = board(
   "city",
-  "Welcome home",
-  "Bring water to both wheels. Open both gates.",
-  "Everyone is home!",
+  "Market day",
+  "Carry lake water through the aqueduct to the village well.",
+  "Well, that escalated.",
   [
-    "........",
-    ".._____.",
-    "...____.",
-    ".#.O_.O_",
-    "..#.__..",
-    "~.#.__..",
-    "........",
-    "........",
+    "________",
+    "_~..#.__",
+    "_.#...b_",
+    "______a_",
+    "__....b_",
+    "__..#.__",
+    "__O...__",
+    "________",
   ],
-  [48,49,50,51,43,35,52,53,54,46,38],
-  11,
+  [10,11,19,20,21,37,36,35,43,42],
+  10,
 );
+// The wall separates the two digging areas. Only the visible flume crosses it.
+city.links=[[22,30],[30,38]];
 const harvest = board(
   "harvest",
   "Bread for everyone",
