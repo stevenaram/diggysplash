@@ -22,3 +22,11 @@ test('a plausible separate southern route uses the budget before reaching both o
  const g=new Game(levels[5]);[1,9,10,11,19,40,48,56,57,58,59,52].forEach(i=>assert.ok(g.dig(i)));
  assert.equal(g.remaining,0);assert.equal(g.failed,true);assert.deepEqual(g.active,[false,true]);
 });
+
+test('bath stays full until every farmer is under, with a beat before draining',()=>{
+ for(let t=7;t<=9.6;t+=.1)assert.equal(bathPose(t).empty,0);
+ for(let n=0;n<3;n++)assert.equal(batherPose(9.6,n).pull,1);
+ assert.equal(bathPose(10).empty,0);
+ assert.ok(bathPose(10.1).empty>0);
+ assert.equal(bathPose(14).empty,1);
+});

@@ -6,8 +6,9 @@ import {PixelSprites} from './pixel-sprites';
 import {gridWorld,SIZE} from './game';
 import type {World} from './world';
 export const BATH_DURATION=20;
+const DRAIN_Z=-3.75;
 const ease=(x:number)=>{x=T.MathUtils.clamp(x,0,1);return x*x*(3-2*x);};
-export function bathPose(t:number){return {fill:ease(t/3),enter:ease((t-3)/3),vortex:ease((t-7)/1.1),empty:ease((t-9)/4)};}
+export function bathPose(t:number){return {fill:ease(t/3),enter:ease((t-3)/3),vortex:ease((t-7)/1.1),empty:ease((t-10)/4)};}
 export function batherPose(t:number,n:number){return {pull:ease((t-7.6-n*.16)/1.65),eject:ease((t-11.3)/1.25)};}
 /** Cutaway Roman-style bath: all action and its plumbing stay inside the board. */
 export class BathhouseScene extends PixelSprites {
@@ -33,22 +34,22 @@ export class BathhouseScene extends PixelSprites {
   }
   for(const z of [-6.7,-5.2,-3.7]){box(this.root,7.27,.55,z,.45,.65,1.1,0x8b6550,'wood');box(this.root,7.22,.93,z,.65,.14,1.15,0xc2986b,'wood');}
   // Open drain is visible before filling, with a contrasting concentric stone rim.
-  const drain=world.shaded(new T.CircleGeometry(.72,24),0x263b40);drain.rotation.x=-Math.PI/2;drain.position.set(4.3,.31,-4.6);this.root.add(drain);
+  const drain=world.shaded(new T.CircleGeometry(.72,24),0x263b40);drain.rotation.x=-Math.PI/2;drain.position.set(4.3,.31,DRAIN_Z);this.root.add(drain);
   const rim=world.shaded(new T.TorusGeometry(.8,.13,5,24),0x7c9695,'stone');rim.rotation.x=-Math.PI/2;rim.position.copy(drain.position);this.root.add(rim);
   // Concentric geometry gives the whirlpool a continuous sloping surface, not a flat hole.
   const points:number[]=[],indices:number[]=[];
   for(let ring=0;ring<=8;ring++)for(let n=0;n<48;n++){
-   const a=n/48*Math.PI*2,c=Math.cos(a),v=Math.sin(a),edge=Math.min(2.98/Math.max(.0001,Math.abs(c)),(v>0?2.65:3.65)/Math.max(.0001,Math.abs(v))),r=T.MathUtils.lerp(.7,edge,ring/8);
+   const a=n/48*Math.PI*2,c=Math.cos(a),v=Math.sin(a),edge=Math.min(2.98/Math.max(.0001,Math.abs(c)),(v>0?3.5:2.8)/Math.max(.0001,Math.abs(v))),r=T.MathUtils.lerp(.7,edge,ring/8);
    points.push(c*r,v*r,0);
    if(ring<8){const i=ring*48+n,j=ring*48+(n+1)%48;indices.push(i,i+48,j,j,i+48,j+48);}
   }
   const surface=new T.BufferGeometry();surface.setAttribute('position',new T.Float32BufferAttribute(points,3));surface.setIndex(indices);surface.computeVertexNormals();
-  this.pool=world.shaded(surface,0x40b8bb,'water');this.pool.rotation.x=-Math.PI/2;this.pool.position.set(4.3,.8,-4.6);this.root.add(this.pool);
+  this.pool=world.shaded(surface,0x40b8bb,'water');this.pool.rotation.x=-Math.PI/2;this.pool.position.set(4.3,.8,DRAIN_Z);this.root.add(this.pool);
   this.waterCap=world.shaded(new T.CircleGeometry(.705,32),0x40b8bb,'water');this.waterCap.rotation.x=-Math.PI/2;this.root.add(this.waterCap);
   for(let n=0;n<26;n++)this.glints.push(box(this.root,0,0,0,.2+(n%3)*.09,.012,.035,n%2?0x78d6cf:0x5fc5c6));
   const funnelMaterial=new T.MeshBasicMaterial({color:0x319ca6,side:T.DoubleSide});
-  this.funnel=new T.Mesh(new T.CylinderGeometry(.7,.09,1.2,24,1,true),funnelMaterial);this.funnel.userData.ownedMaterial=funnelMaterial;this.funnel.position.set(4.3,.22,-4.6);this.root.add(this.funnel);
-  this.root.add(this.swirl);this.swirl.position.set(4.3,.82,-4.6);
+  this.funnel=new T.Mesh(new T.CylinderGeometry(.7,.09,1.2,24,1,true),funnelMaterial);this.funnel.userData.ownedMaterial=funnelMaterial;this.funnel.position.set(4.3,.22,DRAIN_Z);this.root.add(this.funnel);
+  this.root.add(this.swirl);this.swirl.position.set(4.3,.82,DRAIN_Z);
   for(let n=0;n<48;n++){
    const u=(n%16)/16,r=.75+u*1.75,a=Math.floor(n/16)*Math.PI*2/3+u*4.8;const streak=box(this.swirl,Math.cos(a)*r,0,Math.sin(a)*r,.19,.018,.055,n%2?0xa5ece0:0x72d4d0);streak.rotation.y=Math.PI/2-a;
   }
@@ -139,7 +140,7 @@ export class BathhouseScene extends PixelSprites {
   this.valve.position.y=active[1]?1.05:.35;
   const full=(active[0]?(.28+.72*p.fill):0)*(1-p.empty);this.pool.visible=full>.01;this.pool.position.y=.32+full*.48;
   const vertices=this.pool.geometry.getAttribute('position');for(let i=0;i<vertices.count;i++){const r=Math.hypot(vertices.getX(i),vertices.getY(i));vertices.setZ(i,-Math.min(.4,Math.max(0,this.pool.position.y-.33))*p.vortex*(1-ease((r-.7)/2.1)));}vertices.needsUpdate=true;
-  this.waterCap.visible=this.pool.visible&&p.vortex<.999;this.waterCap.position.set(4.3,this.pool.position.y+.002,-4.6);this.waterCap.scale.setScalar(1-p.vortex);
+  this.waterCap.visible=this.pool.visible&&p.vortex<.999;this.waterCap.position.set(4.3,this.pool.position.y+.002,DRAIN_Z);this.waterCap.scale.setScalar(1-p.vortex);
   this.glints.forEach((m,n)=>{m.visible=this.pool.visible;m.position.set(1.55+(n%6)*.98+Math.sin(motion*.3+n)*.07,this.pool.position.y+.014,-6.7+Math.floor(n/6)*1.15);m.scale.x=.6+Math.sin(motion*.7+n)*.25;});
   this.funnel.visible=p.vortex>0&&full>.02;this.funnel.position.y=this.pool.position.y-.6;
   this.swirl.visible=full>.05&&p.vortex>0;this.swirl.position.y=this.pool.position.y+.025;this.swirl.rotation.y=-t*.85;this.swirl.scale.setScalar(1-p.empty*.5);
@@ -151,7 +152,7 @@ export class BathhouseScene extends PixelSprites {
    s.visible=true;s.scale.set(2,2.5,1);s.material=this.material('bather',p.enter>0&&p.enter<1?Math.floor(motion*6)%2:0);s.material.rotation=0;
    const enter=p.enter;s.position.set(T.MathUtils.lerp(startX,homeX,enter),T.MathUtils.lerp(.9,.47,enter),T.MathUtils.lerp(-4.5,homeZ,enter));
    if(enter>=1)s.position.y=.47+Math.sin(motion*2+n)*.04;
-   if(b.pull>0){const a=n*2.1+b.pull*4.2,r=(1-b.pull)*1.65;s.position.set(4.3+Math.cos(a)*r,.45-b.pull*.6,-4.6+Math.sin(a)*r);s.scale.multiplyScalar(1-ease((b.pull-.65)/.35));}
+   if(b.pull>0){const a=n*2.1+b.pull*4.2,r=(1-b.pull)*1.65;s.position.set(4.3+Math.cos(a)*r,.45-b.pull*.6,DRAIN_Z+Math.sin(a)*r);s.scale.multiplyScalar(1-ease((b.pull-.65)/.35));}
    if(b.pull>=1)s.visible=false;
    if(t>=11.3){
     s.visible=true;s.material=this.hotPeople[n];s.center.set(.5,.5);
