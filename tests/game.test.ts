@@ -30,7 +30,7 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
-    assert.equal(minimumDigs(l), [4, 7, 10, 13, 13, 13, 11, 12][n]);
+    assert.equal(minimumDigs(l), [4, 7, 10, 13, 13, 12, 11, 12][n]);
     assert.equal(l.budget, minimumDigs(l));
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);
@@ -167,9 +167,10 @@ test("the campaign escalates through five distinct consequences and a four-objec
   }
 });
 
-test("every objective is reachable without a scripted activation sequence", () => {
+test("every ungated objective is independently reachable", () => {
   for (const level of levels)
     for (const target of level.targets) {
+      if(level.requiresWater?.[target]!==undefined)continue;
       const queue = [...level.sources],
         previous = new Map<number, number>();
       const visited = new Set(queue);

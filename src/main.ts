@@ -1,3 +1,4 @@
+import {BATH_DURATION} from './bathhouse-scene';
 import {bathSound} from './bathhouse-sound';
 import {caravanSound} from './caravan-sound';
 import {CARAVAN_DURATION} from './caravan-timeline';
@@ -459,7 +460,7 @@ if (import.meta.env.DEV)
       },
       previewBathhouse(seconds:number){
         if(!world.story?.bathhouseScene)return;cancelAnimationFrame(world.frame);
-        world.story.bathhouseScene.update(seconds/24,[true,true],seconds);
+        world.story.bathhouseScene.update(seconds/BATH_DURATION,[true,true],seconds);
         world.renderer.render(world.scene,world.camera);
       },
       previewCaravan(seconds:number){
