@@ -90,7 +90,7 @@ test("last available dig can win, while exhausted failed attempts can be undone"
 test("one shared connected network powers all branches and existing channels", () => {
   for (const l of levels.slice(1)) {
     const g = new Game(l);
-    for (const i of [...l.solution].reverse()) g.dig(i);
+    for (const i of l.hardSoil?l.solution:[...l.solution].reverse()) g.dig(i);
     assert.equal(g.active.filter(Boolean).length, l.targets.length);
   }
 });

@@ -241,13 +241,13 @@ function autoRetry(manual=false){
   $("#dig-tutorial").hidden=true;
   $("#app").classList.add("retrying");
   sound("undo");
-  const interval=world.reduced?30:Math.min(160,1000/game.digs.length);
-  $("#retry-notice").style.setProperty("--retry-duration",`${(world.reduced?500:850)+interval*game.digs.length+220}ms`);
+  const interval=world.reduced?30:Math.min(160,1000/Math.max(1,game.history.length));
+  $("#retry-notice").style.setProperty("--retry-duration",`${(world.reduced?500:850)+interval*game.history.length+220}ms`);
   const rewind=()=>{
     if(generation!==retryGeneration)return;
     if(document.hidden){retryTimer=window.setTimeout(rewind,100);return;}
-    if(game.digs.length){
-      const cell=game.digs[game.digs.length-1];
+    if(game.history.length){
+      const cell=game.history[game.history.length-1].cell;
       game.undo();world.sync();
       if(!world.reduced)world.restoreDust(cell);
       sound("undo");update();
