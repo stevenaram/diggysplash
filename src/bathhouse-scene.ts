@@ -65,6 +65,7 @@ export class BathhouseScene extends PixelSprites {
    if(x!==-1)box(this.root,x,.91,-1.54,1.96,1.0,.23,0xe7e0c4,'stone');
    else for(const dx of [-.78,.78])box(this.root,x+dx,.56,-1.65,.34,.32,.5,0xe7e0c4,'stone');
    const water=box(this.root,x,.5,-1,1.96,.045,.9,0x3bbabd,'water');water.userData.cell=24+Math.round((x+7)/2);this.relay.push(water);
+   for(let k=0;k<2;k++)box(water,-.48+k*.78,.036,.14-k*.25,.28,.012,.045,0x86e4d4);
    if(x!==-1)for(const dx of [-.65,.65])box(this.root,x+dx,.12,-1,.18,.45,.7,0xa5ada0,'stone');
   }
   box(this.root,-7.93,.88,-1,.18,.95,1.25,0xe7e0c4,'stone');
@@ -75,7 +76,12 @@ export class BathhouseScene extends PixelSprites {
   this.relay.push(box(this.root,-7,-.12,.05,.95,.06,.8,0x3bbabd,'water'));
   this.root.children.slice(relayStart).forEach(o=>o.position.z+=.36);
   this.relay[4].userData.cell=27;this.relay[5].userData.cell=32;this.relay[6].userData.cell=32;
-  for(const i of [24,25,26,27]){world.waters.get(i)!.visible=false;world.waters.get(i)!.geometry.scale(0,0,0);}
+  for(const i of [24,25,26,27]){
+   const generic=world.waters.get(i)!;generic.visible=false;generic.geometry.scale(0,0,0);
+   // The custom trough owns its highlights. Hiding only the generic surface left its children floating above it.
+   generic.children.forEach(child=>child.visible=false);
+   generic.userData.origin.set(gridWorld(i%SIZE),.5,-.64);
+  }
   // Intake and heater are unmistakable stone receivers; channels remain uncovered.
   for(const z of [1]){
    box(this.root,1,-.23,z,1.8,.10,1.8,0x949f97,'stone');
