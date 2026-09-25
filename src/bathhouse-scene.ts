@@ -19,7 +19,7 @@ export class BathhouseScene extends PixelSprites {
  private splash:T.Mesh[]=[];private previous=0;
  constructor(world:World){
   super(world);const box=world.box.bind(world);
-  box(this.root,-4,-.15,-5,8,.6,6,0xc5a36e,'sand');
+  box(this.root,-4,-.15,-6,8,.6,4,0xc5a36e,'sand');
   // Pale limestone shell with a low front parapet and a central stair opening.
   box(this.root,4.35,.10,-4.15,6.7,.26,7.05,0x989d91,'stone');
   for(let x=0;x<6;x++)for(let z=0;z<7;z++)box(this.root,1.85+x,.25,-6.8+z*.9, .965,.09,.965,(x+z)%2?0xd9dcc6:0xbfcbbb,'stone');
@@ -57,31 +57,20 @@ export class BathhouseScene extends PixelSprites {
   const tube=world.shaded(new T.CylinderGeometry(.79,.79,2.2,12,1,true),0xb9b8a5,'stone');tube.material=world.mat(0xb9b8a5,'stone',true);tube.rotation.x=Math.PI/2;tube.position.set(5.2,.48,-.55);this.root.add(tube);
   const outlet=world.shaded(new T.CircleGeometry(.66,20),0x293a3a);outlet.position.set(5.2,.48,.57);this.root.add(outlet);
   const lip=world.shaded(new T.TorusGeometry(.74,.14,5,20),0xdfd5b9,'stone');lip.position.copy(outlet.position);lip.position.z+=.02;this.root.add(lip);
-  // Raised leftward relay, isolated from the sand underneath by explicit level links.
-  const relayStart=this.root.children.length;
-  for(const x of [-7,-5,-3,-1]){
-   box(this.root,x,.36,-1,1.9,.18,.94,0x87988e,'stone');
-   box(this.root,x,.62,-.46,1.96,.4,.15,0xe7e0c4,'stone');
-   if(x!==-1)box(this.root,x,.91,-1.54,1.96,1.0,.23,0xe7e0c4,'stone');
-   else for(const dx of [-.78,.78])box(this.root,x+dx,.56,-1.65,.34,.32,.5,0xe7e0c4,'stone');
-   const water=box(this.root,x,.5,-1,1.96,.045,.9,0x3bbabd,'water');water.userData.cell=24+Math.round((x+7)/2);this.relay.push(water);
-   for(let k=0;k<2;k++)box(water,-.48+k*.78,.036,.14-k*.25,.28,.012,.045,0x86e4d4);
-   if(x!==-1)for(const dx of [-.65,.65])box(this.root,x+dx,.12,-1,.18,.45,.7,0xa5ada0,'stone');
+  // Three-cell downhill flume. Its open head accepts the upper trench;
+  // side walls isolate it from the tempting ground routes beside it.
+  for(const [n,i] of [16,24,32].entries()){
+   const z=gridWorld(Math.floor(i/SIZE)),height=.45-n*.18;
+   const floor=box(this.root,-7,height-.08,z,.98,.16,2.04,0x87988e,'stone');floor.rotation.x=.09;
+   for(const x of [-7.59,-6.41]){const rail=box(this.root,x,height+.12,z,.18,.42,2.04,0xe7e0c4,'stone');rail.rotation.x=.09;}
+   const water=box(this.root,-7,height+.025,z,.94,.035,2.04,0x3bbabd,'water');water.rotation.x=.09;water.userData.cell=i;this.relay.push(water);
+   for(let k=0;k<2;k++)box(water,-.15+k*.25,.027,-.5+k*.85,.2,.012,.05,0x86e4d4);
+   const generic=world.waters.get(i)!;generic.geometry.scale(0,0,0);generic.children.forEach(child=>child.visible=false);generic.userData.origin.set(-7,height+.025,z);
   }
-  box(this.root,-7.93,.88,-1,.18,.95,1.25,0xe7e0c4,'stone');
-  // A wide, open north-facing notch is the only low intake in the high rear parapet.
-  for(const dx of [-.63,.63])box(this.root,-1+dx,.45,-1.97,.15,.25,.7,0xadc0b1,'stone');
-  this.relay.push(box(this.root,-1,.49,-1.9,.95,.06,.85,0x3bbabd,'water'));
-  this.relay.push(box(this.root,-7,.18,-.35,.95,.66,.09,0x3bbabd,'water'));
-  this.relay.push(box(this.root,-7,-.12,.05,.95,.06,.8,0x3bbabd,'water'));
-  this.root.children.slice(relayStart).forEach(o=>o.position.z+=.36);
-  this.relay[4].userData.cell=27;this.relay[5].userData.cell=32;this.relay[6].userData.cell=32;
-  for(const i of [24,25,26,27]){
-   const generic=world.waters.get(i)!;generic.visible=false;generic.geometry.scale(0,0,0);
-   // The custom trough owns its highlights. Hiding only the generic surface left its children floating above it.
-   generic.children.forEach(child=>child.visible=false);
-   generic.userData.origin.set(gridWorld(i%SIZE),.5,-.64);
-  }
+  // Flared entry and a short spill into the lower basin keep both ends readable.
+  for(const x of [-7.67,-6.33])box(this.root,x,.55,-4.13,.16,.3,.45,0xe7e0c4,'stone');
+  const entry=box(this.root,-7,.48,-4.13,1.16,.035,.4,0x3bbabd,'water');entry.userData.cell=16;this.relay.push(entry);
+  const spill=box(this.root,-7,-.01,2.04,.94,.27,.1,0x3bbabd,'water');spill.userData.cell=40;this.relay.push(spill);
   // Intake and heater are unmistakable stone receivers; channels remain uncovered.
   for(const z of [1]){
    box(this.root,1,-.23,z,1.8,.10,1.8,0x949f97,'stone');
@@ -129,7 +118,7 @@ export class BathhouseScene extends PixelSprites {
   const texture=new T.CanvasTexture(canvas);texture.magFilter=texture.minFilter=T.NearestFilter;texture.generateMipmaps=false;this.root.userData.ownedTexture=texture;
   for(let n=0;n<16;n++){const material=new T.SpriteMaterial({map:texture,color:0xf3eee0,transparent:true,depthWrite:false,toneMapped:false});const puff=new T.Sprite(material);puff.userData.ownedMaterial=material;this.root.add(puff);this.steam.push(puff);}
   for(let n=0;n<30;n++){const m=world.shaded(new T.BoxGeometry(.09,.09,.09),n%2?0x72d1ca:0xd5e7d4);this.root.add(m);this.splash.push(m);}
-  world.game.level.tiles.forEach((tile,i)=>{if(tile==='rock'&&i!==25&&i!==26){const rock=this.addTileRock(gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE)));rock.position.y+=world.game.level.elevations?.[i]??0;}});
+  world.game.level.tiles.forEach((tile,i)=>{if(tile==='rock'){const rock=this.addTileRock(gridWorld(i%SIZE),gridWorld(Math.floor(i/SIZE)));rock.position.y+=world.game.level.elevations?.[i]??0;}});
   this.root.userData.ownedMaterial=this.heatMetal;
   this.update(0,[false,false],0);
  }

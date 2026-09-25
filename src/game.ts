@@ -23,8 +23,6 @@ export interface Level {
   budget: number;
   solution: number[];
   links?: [number, number][];
-  /** Two strokes while dry; connected neighboring water softens it to one. */
-  hardSoil?: number[];
   /** Water-operated inlet valves: destination waits for its prerequisite cell. */
   requiresWater?: Record<number,number>;
   /** Render elevations only; connectivity remains the explicit puzzle graph. */
@@ -73,16 +71,12 @@ export function connections(level: Level, i: number): number[] {
 }
 export class Game {
   digs: number[] = [];
-  history: {cell:number;opened:boolean}[] = [];
-  cracked = new Set<number>();
-  softened(i:number){return neighbors(i).some(j=>this.wet.has(j)&&this.level.tiles[j]!=="aqueduct"&&(this.level.elevations?.[i]??0)===(this.level.elevations?.[j]??0));}
-  digCost(i:number){return this.level.hardSoil?.includes(i)&&!this.cracked.has(i)&&!this.softened(i)?2:1;}
   wet = new Map<number, number>();
   constructor(public level: Level) {
     this.flow();
   }
   get remaining() {
-    return this.level.budget - this.history.length;
+    return this.level.budget - this.digs.length;
   }
   get active() {
     return this.level.targets.map((i) => this.wet.has(i));
@@ -102,20 +96,16 @@ export class Game {
       this.digs.includes(i)
     )
       return false;
-    const opened=this.digCost(i)===1;
-    this.history.push({cell:i,opened});
-    if(opened)this.digs.push(i);else this.cracked.add(i);
+    this.digs.push(i);
     this.flow();
     return true;
   }
   undo() {
-    const action=this.history.pop();
-    if(action?.opened)this.digs.pop();else if(action)this.cracked.delete(action.cell);
+    this.digs.pop();
     this.flow();
   }
   reset() {
     this.digs = [];
-    this.history=[];this.cracked.clear();
     this.flow();
   }
   flow() {

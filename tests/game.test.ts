@@ -30,7 +30,7 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
-    assert.equal(minimumDigs(l), [4, 7, 10, 13, 13, 12, 11, 12][n]);
+    assert.equal(minimumDigs(l), [4, 7, 10, 13, 13, 10, 11, 12][n]);
     assert.equal(l.budget, minimumDigs(l));
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);
@@ -90,7 +90,7 @@ test("last available dig can win, while exhausted failed attempts can be undone"
 test("one shared connected network powers all branches and existing channels", () => {
   for (const l of levels.slice(1)) {
     const g = new Game(l);
-    for (const i of l.hardSoil?l.solution:[...l.solution].reverse()) g.dig(i);
+    for (const i of [...l.solution].reverse()) g.dig(i);
     assert.equal(g.active.filter(Boolean).length, l.targets.length);
   }
 });

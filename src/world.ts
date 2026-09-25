@@ -36,7 +36,6 @@ export class World {
   onBattleSound: (kind: "wind" | "launch" | "impact" | "wood") => void = () => {};
   tiles: T.Mesh[] = [];
   waters = new Map<number, T.Mesh>();
-  hardGround = new Map<number,T.Group>();
   wheels: T.Group[] = [];
   palms: T.Group[] = [];
   markers: T.Mesh[] = [];
@@ -253,7 +252,6 @@ export class World {
     this.banks.clear();
     this.story = undefined;
     this.waters.clear();
-    this.hardGround.clear();
     this.wheels = [];
     this.palms = [];
     this.markers = [];
@@ -314,7 +312,6 @@ export class World {
       tile.scale.set(TILE_SIZE, 1, TILE_SIZE);
       tile.position.y+=this.elevation(i);
       this.tiles.push(tile);
-      if(this.game.level.hardSoil?.includes(i))this.addHardGround(i);
       tile.userData.cell = i;
       tile.userData.sandMaterial = tile.material;
       if (t === "building" && this.game.level.story?.kind !== "city")
@@ -676,27 +673,8 @@ export class World {
         0x86e4d4,
       );
   }
-  addHardGround(i:number){
-    const group=new T.Group();group.position.set(gridWorld(i%SIZE),.024+this.elevation(i),gridWorld(Math.floor(i/SIZE)));this.root.add(group);
-    const canvas=document.createElement('canvas');canvas.width=canvas.height=32;const ctx=canvas.getContext('2d')!;
-    ctx.fillStyle='#ffffff';
-    const paths=[[[3,9],[10,11],[14,8],[20,12],[28,9]],[[10,11],[8,18],[13,24],[11,29]],[[20,12],[19,20],[26,24]],[[8,18],[2,21]],[[19,20],[13,24]]];
-    for(const path of paths)for(let k=1;k<path.length;k++){const [x,y]=path[k-1],[a,b]=path[k],steps=Math.max(Math.abs(a-x),Math.abs(b-y));for(let n=0;n<=steps;n++)ctx.fillRect(Math.round(x+(a-x)*n/steps),Math.round(y+(b-y)*n/steps),1,1);}
-    const texture=new T.CanvasTexture(canvas);texture.magFilter=texture.minFilter=T.NearestFilter;texture.generateMipmaps=false;
-    const material=new T.MeshBasicMaterial({map:texture,color:0x986c42,transparent:true,depthWrite:false});
-    const cracks=new T.Mesh(new T.PlaneGeometry(2,2),material);cracks.rotation.x=-Math.PI/2;cracks.userData.ownedTexture=texture;cracks.userData.ownedMaterial=material;group.add(cracks);
-    for(const x of [-.17,.17])this.box(group,x,.045,.72,.19,.055,.16,0xf7e7bd);
-    this.hardGround.set(i,group);
-  }
   sync() {
     this.settled = false;
-    this.hardGround.forEach((group,i)=>{
-      group.visible=!this.game.digs.includes(i);
-      const soft=this.game.softened(i),cracked=this.game.cracked.has(i);
-      (group.children[0] as T.Mesh<T.PlaneGeometry,T.MeshBasicMaterial>).material.color.set(soft?0x426d64:cracked?0x68452f:0x986c42);
-      group.children[2].visible=this.game.digCost(i)===2;
-      this.tiles[i].material=this.mat(soft?0xb7b28a:cracked?0xc89f68:0xe0b879,'sand');
-    });
     for (let i = 0; i < CELL_COUNT; i++) {
       const dug = this.game.digs.includes(i),
         t = this.game.level.tiles[i];
@@ -730,12 +708,13 @@ export class World {
         }
       } else if (t === "sand") {
         this.tiles[i].position.y = -.09+this.elevation(i);
-        if(!this.game.level.hardSoil?.includes(i))this.tiles[i].material = this.tiles[i].userData.sandMaterial;
+        this.tiles[i].material = this.tiles[i].userData.sandMaterial;
       }
       this.banks.get(i)?.forEach((bank) => {
         const j = bank.userData.neighbor;
         bank.visible =
           dug &&
+          !(this.game.level.tiles[j]==="aqueduct"&&connections(this.game.level,i).includes(j)) &&
           !this.game.digs.includes(j) &&
           !["source", "channel", "target", "basin"].includes(
             this.game.level.tiles[j],
