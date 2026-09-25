@@ -155,14 +155,14 @@ const caravan = board(
 );
 const bathhouse = board(
   "bathhouse", "Last bath", "Fill the bath and feed the steam room.", "Down the drain.",
-  ["#..~____","..#.____","a...____","a###____","a##.O___","b...#___",".#...___","...#O___"],
-  [2,1,9,8,41,42,43,35,51,52],
-  10,
+  ["..~.____","....____",".a..____",".a..____",".a..O___",".b..#___",".....___","....O___"],
+  [1,9,42,43,35,51,52],
+  7,
 );
 // Isolated aqueduct endpoints: only the north intake accepts water, then the
 // three-cell downhill spillway becomes the starting point of the southern network.
 bathhouse.requiresWater={36:60};
-bathhouse.links=[[8,16],[16,24],[24,32],[32,40]];
+bathhouse.links=[[9,17],[17,25],[25,33],[33,41]];
 bathhouse.elevations=Array.from({length:64},(_,i)=>i<16&&i%8<4?.6:0);
 const fortress = board(
   "fortress",

@@ -59,18 +59,18 @@ export class BathhouseScene extends PixelSprites {
   const lip=world.shaded(new T.TorusGeometry(.74,.14,5,20),0xdfd5b9,'stone');lip.position.copy(outlet.position);lip.position.z+=.02;this.root.add(lip);
   // Three-cell downhill flume. Its open head accepts the upper trench;
   // side walls isolate it from the tempting ground routes beside it.
-  for(const [n,i] of [16,24,32].entries()){
+  for(const [n,i] of [17,25,33].entries()){
    const z=gridWorld(Math.floor(i/SIZE)),height=.45-n*.18;
-   const floor=box(this.root,-7,height-.08,z,.98,.16,2.04,0x87988e,'stone');floor.rotation.x=.09;
-   for(const x of [-7.59,-6.41]){const rail=box(this.root,x,height+.12,z,.18,.42,2.04,0xe7e0c4,'stone');rail.rotation.x=.09;}
-   const water=box(this.root,-7,height+.025,z,.94,.035,2.04,0x3bbabd,'water');water.rotation.x=.09;water.userData.cell=i;this.relay.push(water);
+   const floor=box(this.root,-5,height-.08,z,.98,.16,2.04,0x87988e,'stone');floor.rotation.x=.09;
+   for(const x of [-5.59,-4.41]){const rail=box(this.root,x,height+.12,z,.18,.42,2.04,0xe7e0c4,'stone');rail.rotation.x=.09;}
+   const water=box(this.root,-5,height+.025,z,.94,.035,2.04,0x3bbabd,'water');water.rotation.x=.09;water.userData.cell=i;this.relay.push(water);
    for(let k=0;k<2;k++)box(water,-.15+k*.25,.027,-.5+k*.85,.2,.012,.05,0x86e4d4);
-   const generic=world.waters.get(i)!;generic.geometry.scale(0,0,0);generic.children.forEach(child=>child.visible=false);generic.userData.origin.set(-7,height+.025,z);
+   const generic=world.waters.get(i)!;generic.geometry.scale(0,0,0);generic.children.forEach(child=>child.visible=false);generic.userData.origin.set(-5,height+.025,z);
   }
   // Flared entry and a short spill into the lower basin keep both ends readable.
-  for(const x of [-7.67,-6.33])box(this.root,x,.55,-4.13,.16,.3,.45,0xe7e0c4,'stone');
-  const entry=box(this.root,-7,.48,-4.13,1.16,.035,.4,0x3bbabd,'water');entry.userData.cell=16;this.relay.push(entry);
-  const spill=box(this.root,-7,-.01,2.04,.94,.27,.1,0x3bbabd,'water');spill.userData.cell=40;this.relay.push(spill);
+  for(const x of [-5.67,-4.33])box(this.root,x,.55,-4.13,.16,.3,.45,0xe7e0c4,'stone');
+  const entry=box(this.root,-5,.48,-4.13,1.16,.035,.4,0x3bbabd,'water');entry.userData.cell=17;this.relay.push(entry);
+  const spill=box(this.root,-5,-.01,2.04,.94,.27,.1,0x3bbabd,'water');spill.userData.cell=41;this.relay.push(spill);
   // Intake and heater are unmistakable stone receivers; channels remain uncovered.
   for(const z of [1]){
    box(this.root,1,-.23,z,1.8,.10,1.8,0x949f97,'stone');

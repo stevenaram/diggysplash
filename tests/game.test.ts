@@ -30,7 +30,7 @@ function fixture(): Level {
 test("all handcrafted boards meet their exact difficulty budgets", () => {
   levels.forEach((l, n) => {
     assert.equal(l.tiles.length, CELL_COUNT);
-    assert.equal(minimumDigs(l), [4, 7, 10, 13, 13, 10, 11, 12][n]);
+    assert.equal(minimumDigs(l), [4, 7, 10, 13, 13, 7, 11, 12][n]);
     assert.equal(l.budget, minimumDigs(l));
     const g = new Game(l);
     for (const i of l.solution) assert.equal(g.dig(i), true);
@@ -190,7 +190,8 @@ test("every ungated objective is independently reachable", () => {
       const route: number[] = [];
       for (let at = target; previous.has(at); at = previous.get(at)!)
         if (level.tiles[at] === "sand") route.push(at);
-      const game = new Game(level);
+      // This checks connectivity; BFS minimizes edges, not paid digs through free channels.
+      const game = new Game({...level,budget:64});
       for (const i of route.reverse()) game.dig(i);
       assert.ok(
         game.wet.has(target),
