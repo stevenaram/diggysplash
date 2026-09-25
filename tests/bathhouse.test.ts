@@ -1,6 +1,6 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {Game,minimumDigs} from '../src/game';import {levels} from '../src/levels';
-import {bathPose,batherPose,BATH_DURATION} from '../src/bathhouse-scene';
+import {bathPose,batherPose,BATH_DURATION,bathWaterLevel} from '../src/bathhouse-scene';
 test('the buried pipe connects its inlet to the right-facing outlet after two digs',()=>{
  const l=levels[5],g=new Game(l);assert.equal(l.story?.kind,'bathhouse');assert.equal(l.sources[0],2);assert.equal(l.targets.length,2);
  assert.deepEqual(l.tiles.flatMap((t,i)=>t==='aqueduct'?[i]:[]),[8,40]);
@@ -13,9 +13,9 @@ test('bath fills before bathing, then the quick suction precedes a synchronized 
  for(let n=0;n<3;n++){assert.equal(batherPose(10,n).pull,1);assert.equal(batherPose(11.3,n).eject,0);assert.equal(batherPose(12.55,n).eject,1);}
  assert.equal(bathPose(BATH_DURATION).empty,1);
 });
-test('bath inlet still waits for the hot stones',()=>{
- const g=new Game({...levels[5],budget:20});[1,0,42,43,35,51].forEach(i=>assert.ok(g.dig(i)));assert.deepEqual(g.active,[false,false]);
- g.dig(52);assert.deepEqual(g.active,[true,true]);g.undo();assert.deepEqual(g.active,[false,false]);
+test('bath inlet fills immediately, but the bath waits for both objectives',()=>{
+ const g=new Game({...levels[5],budget:20});[1,0,42,43,35,51].forEach(i=>assert.ok(g.dig(i)));assert.deepEqual(g.active,[true,false]);assert.equal(bathWaterLevel(0,g.active),0);
+ g.dig(52);assert.deepEqual(g.active,[true,true]);assert.ok(bathWaterLevel(0,g.active)>0);g.undo();assert.deepEqual(g.active,[true,false]);assert.equal(bathWaterLevel(0,g.active),0);
 });
 test('bath stays full until every farmer is under, with a beat before draining',()=>{
  for(let t=7;t<=9.6;t+=.1)assert.equal(bathPose(t).empty,0);

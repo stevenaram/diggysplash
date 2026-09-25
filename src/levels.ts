@@ -161,7 +161,6 @@ const bathhouse = board(
 );
 // Buried connection: a north-facing inlet feeds a right-facing outlet.
 // Intermediate ground remains independent, diggable terrain.
-bathhouse.requiresWater={36:60};
 bathhouse.links=[[0,8],[8,40],[40,41]];
 
 const fortress = board(
