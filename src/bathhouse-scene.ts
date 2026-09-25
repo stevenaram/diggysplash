@@ -19,7 +19,6 @@ export class BathhouseScene extends PixelSprites {
  private splash:T.Mesh[]=[];private previous=0;
  constructor(world:World){
   super(world);const box=world.box.bind(world);
-  box(this.root,-4,-.15,-6,8,.6,4,0xc5a36e,'sand');
   // Pale limestone shell with a low front parapet and a central stair opening.
   box(this.root,4.35,.10,-4.15,6.7,.26,7.05,0x989d91,'stone');
   for(let x=0;x<6;x++)for(let z=0;z<7;z++)box(this.root,1.85+x,.25,-6.8+z*.9, .965,.09,.965,(x+z)%2?0xd9dcc6:0xbfcbbb,'stone');
@@ -57,20 +56,18 @@ export class BathhouseScene extends PixelSprites {
   const tube=world.shaded(new T.CylinderGeometry(.79,.79,2.2,12,1,true),0xb9b8a5,'stone');tube.material=world.mat(0xb9b8a5,'stone',true);tube.rotation.x=Math.PI/2;tube.position.set(5.2,.48,-.55);this.root.add(tube);
   const outlet=world.shaded(new T.CircleGeometry(.66,20),0x293a3a);outlet.position.set(5.2,.48,.57);this.root.add(outlet);
   const lip=world.shaded(new T.TorusGeometry(.74,.14,5,20),0xdfd5b9,'stone');lip.position.copy(outlet.position);lip.position.z+=.02;this.root.add(lip);
-  // Three-cell downhill flume. Its open head accepts the upper trench;
-  // side walls isolate it from the tempting ground routes beside it.
-  for(const [n,i] of [17,25,33].entries()){
-   const z=gridWorld(Math.floor(i/SIZE)),height=.45-n*.18;
-   const floor=box(this.root,-5,height-.08,z,.98,.16,2.04,0x87988e,'stone');floor.rotation.x=.09;
-   for(const x of [-5.59,-4.41]){const rail=box(this.root,x,height+.12,z,.18,.42,2.04,0xe7e0c4,'stone');rail.rotation.x=.09;}
-   const water=box(this.root,-5,height+.025,z,.94,.035,2.04,0x3bbabd,'water');water.rotation.x=.09;water.userData.cell=i;this.relay.push(water);
+  // Four-cell inset flume, level with the surrounding puzzle tiles.
+  for(const i of [8,16,24,32]){
+   const z=gridWorld(Math.floor(i/SIZE)),height=-.17;
+   box(this.root,-7,height-.08,z,.98,.16,2.04,0x87988e,'stone');
+   for(const x of [-7.59,-6.41])box(this.root,x,height+.12,z,.18,.42,2.04,0xe7e0c4,'stone');
+   const water=box(this.root,-7,height+.025,z,.94,.035,2.04,0x3bbabd,'water');water.userData.cell=i;this.relay.push(water);
    for(let k=0;k<2;k++)box(water,-.15+k*.25,.027,-.5+k*.85,.2,.012,.05,0x86e4d4);
-   const generic=world.waters.get(i)!;generic.geometry.scale(0,0,0);generic.children.forEach(child=>child.visible=false);generic.userData.origin.set(-5,height+.025,z);
+   const generic=world.waters.get(i)!;generic.geometry.scale(0,0,0);generic.children.forEach(child=>child.visible=false);generic.userData.origin.set(-7,height+.025,z);
   }
-  // Flared entry and a short spill into the lower basin keep both ends readable.
-  for(const x of [-5.67,-4.33])box(this.root,x,.55,-4.13,.16,.3,.45,0xe7e0c4,'stone');
-  const entry=box(this.root,-5,.48,-4.13,1.16,.035,.4,0x3bbabd,'water');entry.userData.cell=17;this.relay.push(entry);
-  const spill=box(this.root,-5,-.01,2.04,.94,.27,.1,0x3bbabd,'water');spill.userData.cell=41;this.relay.push(spill);
+  for(const x of [-7.67,-6.33])box(this.root,x,.02,-6.13,.16,.3,.45,0xe7e0c4,'stone');
+  const entry=box(this.root,-7,-.145,-6.13,1.16,.035,.4,0x3bbabd,'water');entry.userData.cell=8;this.relay.push(entry);
+  const spill=box(this.root,-7,-.145,2.04,.94,.035,.4,0x3bbabd,'water');spill.userData.cell=40;this.relay.push(spill);
   // Intake and heater are unmistakable stone receivers; channels remain uncovered.
   for(const z of [1]){
    box(this.root,1,-.23,z,1.8,.10,1.8,0x949f97,'stone');

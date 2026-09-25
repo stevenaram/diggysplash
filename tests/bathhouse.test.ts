@@ -1,10 +1,11 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {Game,minimumDigs} from '../src/game';import {levels} from '../src/levels';
 import {bathPose,batherPose,BATH_DURATION} from '../src/bathhouse-scene';
-test('the shifted three-tile trough reaches the lower basin after two digs',()=>{
+test('the shifted four-tile trough reaches both landing tiles after two digs',()=>{
  const l=levels[5],g=new Game(l);assert.equal(l.story?.kind,'bathhouse');assert.equal(l.sources[0],2);assert.equal(l.targets.length,2);
- assert.deepEqual(l.tiles.flatMap((t,i)=>t==='aqueduct'?[i]:[]),[17,25,33]);
- assert.ok(!g.wet.has(41));[1,9].forEach(i=>g.dig(i));for(const i of [17,25,33,41])assert.ok(g.wet.has(i));assert.ok(!g.won);
+ assert.deepEqual(l.tiles.flatMap((t,i)=>t==='aqueduct'?[i]:[]),[8,16,24,32]);
+ assert.equal(l.tiles[9],'rock');assert.equal(l.elevations,undefined);
+ assert.ok(!g.wet.has(41));[1,0].forEach(i=>g.dig(i));for(const i of [8,16,24,32,40,41])assert.ok(g.wet.has(i));assert.ok(!g.won);
  l.solution.slice(2).forEach(i=>g.dig(i));assert.ok(g.won);assert.equal(g.remaining,0);g.reset();assert.ok(!g.wet.has(41));
 });
 test('bath fills before bathing, then the quick suction precedes a synchronized landing',()=>{
@@ -13,7 +14,7 @@ test('bath fills before bathing, then the quick suction precedes a synchronized 
  assert.equal(bathPose(BATH_DURATION).empty,1);
 });
 test('bath inlet still waits for the hot stones',()=>{
- const g=new Game({...levels[5],budget:20});[1,9,42,43,35,51].forEach(i=>assert.ok(g.dig(i)));assert.deepEqual(g.active,[false,false]);
+ const g=new Game({...levels[5],budget:20});[1,0,42,43,35,51].forEach(i=>assert.ok(g.dig(i)));assert.deepEqual(g.active,[false,false]);
  g.dig(52);assert.deepEqual(g.active,[true,true]);g.undo();assert.deepEqual(g.active,[false,false]);
 });
 test('bath stays full until every farmer is under, with a beat before draining',()=>{
